@@ -1,0 +1,7 @@
+{
+  "name": "ba-mentor-poc",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": { "tauri": "tauri" },
+  "devDependencies": { "@tauri-apps/cli": "^2" }
+}

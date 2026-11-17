@@ -1,0 +1,42 @@
+{
+  "sqlite_version": "3.53.1",
+  "checks": [
+    {
+      "name": "journal DELETE",
+      "ok": true,
+      "detail": "mode=delete 5000 lignes/1 tx=15.5 ms ; 200 commits=344.9 ms ; fichiers annexes apres fermeture=aucun"
+    },
+    {
+      "name": "journal WAL",
+      "ok": true,
+      "detail": "mode=wal 5000 lignes/1 tx=6.7 ms ; 200 commits=93.5 ms ; fichiers annexes apres fermeture=aucun"
+    },
+    {
+      "name": "sauvegarde en ligne (API backup)",
+      "ok": true,
+      "detail": "20000 lignes copiees, integrity_check=ok"
+    },
+    {
+      "name": "empreinte SHA-256 stable d'une copie",
+      "ok": true,
+      "detail": "542d9b4dddc0d8cc..."
+    },
+    {
+      "name": "10 arrets brutaux pendant l'ecriture",
+      "ok": true,
+      "detail": "integrite OK et nombre de lignes toujours pair (transactions de 2 lignes) : 10/10 ; lignes=[3204, 3874, 4330]"
+    },
+    {
+      "name": "ATTACH refuse par l'autoriseur",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "couverture de sauvegarde (tables via sqlite_master)",
+      "ok": true,
+      "detail": "tables vues dans la copie : ['a']"
+    }
+  ],
+  "note_journal": "WAL laisse -wal/-shm a cote de la base et exige la memoire partagee : mauvais choix sur support amovible. DELETE retenu.",
+  "all_ok": true
+}

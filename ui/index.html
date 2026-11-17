@@ -1,0 +1,16 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Validation V2.0</title>
+<style>body{font:14px system-ui;margin:20px;background:#0a1120;color:#dde7f6}button{padding:8px 12px;margin:4px 6px 4px 0;background:#68a8ff;border:0;border-radius:6px;color:#06101f;cursor:pointer}
+pre{background:#101a2e;padding:12px;border-radius:6px;white-space:pre-wrap;max-height:48vh;overflow:auto}h1{font-size:18px}.m{color:#8c9dba}</style></head><body>
+<h1>BA-Mentor Portable - validation technique V2.0</h1>
+<p class="m">Si cette fenêtre s'affiche, WebView2 fonctionne. Lancez d'abord « Tout tester », puis le test de retrait de clé.</p>
+<button id="all">Tout tester</button><button id="ws">Démarrer l'écriture continue</button><button id="chk">Vérifier la base après relance</button><button id="save">Enregistrer le rapport</button>
+<div id="cnt" class="m">Compteur d'écriture : -</div><pre id="out">En attente.</pre>
+<script>
+const inv=window.__TAURI__.core.invoke, out=document.getElementById('out'), R={};
+const show=()=>out.textContent=JSON.stringify(R,null,2);
+async function step(k,cmd,args){try{R[k]=await inv(cmd,args)}catch(e){R[k]={erreur:String(e)}}show()}
+document.getElementById('all').onclick=async()=>{await step('probe','probe');await step('db_delete','db_test',{mode:'DELETE'});await step('db_wal','db_test',{mode:'WAL'});await step('sauvegarde','db_backup')};
+document.getElementById('ws').onclick=async()=>{await step('ecriture','writer_start');setInterval(async()=>{const s=await inv('writer_status');document.getElementById('cnt').textContent='Compteur d\'écriture : '+s.lignes_validees+(s.actif?' (en cours)':' (arrêté)')},200)};
+document.getElementById('chk').onclick=()=>step('apres_relance','db_check');
+document.getElementById('save').onclick=async()=>{const p=await inv('save_report',{text:JSON.stringify(R,null,2)});out.textContent='Rapport enregistré : '+p+'\n\n'+out.textContent};
+</script></body></html>
