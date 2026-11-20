@@ -28,6 +28,32 @@
 - Le pilote de test (`tests/helpers/node-driver.ts`) reproduit le comportement du noyau ; il ne le remplace pas. Le noyau a ses propres tests (`cargo test`).
 - Pas de sauvegarde à heure fixe application fermée (spécification : hors V2).
 
+## Lot V2.2b : import des données de la V1
+
+### Format vérifié sur un export réel
+Un export réel de la V1 a été analysé avant d'écrire le moindre code : il est conforme au format théorique (enveloppe `format`, `formatVersion: 1`, `exportedAt`, `generator`, `state`). Deux faits que la théorie ne donnait pas : (1) le dossier « 99 Archives » est un **enfant** du projet, pas une racine ; le type `archive` s'applique donc à n'importe quel niveau ; (2) les dossiers n'ont aucune date. L'export ne contenait que les données d'exemple de la V1 et peu de réglages : les cas délicats (livrable validé ou archivé, envois, contacts, flags personnalisés) sont couverts par un jeu **synthétique** (`tests/fixtures/`), pas par des données réelles. Le fichier réel n'est pas versionné ; un équivalent anonymisé l'est.
+
+### Décisions validées par David (D1 à D5)
+- **D1** : un projet ou dossier est daté du plus ancien livrable qu'il contient (à tous les niveaux), à défaut de la date d'export.
+- **D2** : chaque ligne importée reçoit une ligne `imported` au journal, dans la même transaction (18 lignes pour l'export réel). Les projets et livrables sont journalisés à leur date, les autres éléments à l'instant de l'import. Le détail du journal ne contient jamais de titre ni de contenu.
+- **D3** : pas d'export réel dans le dépôt ; fixture anonymisé équivalent.
+- **D4** : un export qui ne contient que les données d'exemple de la V1 est signalé dans l'aperçu (reconnaissance par noms et empreinte du contenu), sans rien écarter automatiquement.
+- **D5** : doublon détecté par l'empreinte SHA-256 du fichier (`meta`, clé `import_v1_<empreinte>`) ; second import = confirmation explicite. Réglages, contacts, notes, étapes PSPO et interrupteurs déjà présents sont conservés sans écrasement ; la définition de « terminé » n'est importée que si la table est vide.
+
+### Choix de conception
+1. **Séparation** : `import-v1-parse.ts` (fonction pure : contrôle du format, normalisation, avertissements) ; `import-v1.ts` (plan d'écritures pur `buildPlan`, lecture de l'état de la base, service). Le noyau Rust ne fait que choisir et lire le fichier (`import_pick_file`, limite 50 Mo, UTF-8, empreinte des octets, marque d'ordre des octets retirée).
+2. **Identifiants attribués explicitement** (plus haut identifiant jamais attribué + 1, `sqlite_sequence` comprise) plutôt que table de correspondance : `mutate()` envoie des instructions à plat sans relire les résultats. Un identifiant supprimé n'est jamais réutilisé (testé).
+3. **Structure refusée, donnée corrigée** : JSON invalide, mauvais `format`, `formatVersion` inconnue ou plus récente, identifiant manquant ou en double, type de nœud inconnu, boucle d'arborescence → refus avec le chemin de la clé fautive. Statut inconnu, date illisible, envoi sans destinataire, contact sans adresse, doublon d'adresse → corrigé et listé en avertissement.
+4. **Éléments sans dossier valide** (parent absent) : rattachés à un projet « Import V1 — éléments sans dossier », créé seulement si nécessaire.
+5. **Ordre et atomicité** : doublon non confirmé refusé → sauvegarde de sécurité (échec = import annulé, rien d'écrit) → une seule transaction. L'état de la base est lu après la sauvegarde. Un échec en cours d'import annule tout, y compris l'empreinte du fichier (testé avec une panne simulée).
+6. **Sauvegarde de sécurité de type `pre-migration`** : la base n'admet pas d'autre type sans migration ; elle apparaît donc sous « Avant migration » (rotation : 5).
+7. **Contrôle « avant = après » (E9)** : l'aperçu annonce les totaux ; après import, le nombre de lignes réellement écrites par instruction est comparé ; l'écran affiche les deux colonnes.
+
+### Limites connues
+- Seules les données d'exemple de la V1 ont été vues en réel. Un export plus riche (livrable validé, archivé, envoi, contact, flag personnalisé) reste à passer avant la vraie migration.
+- Un flag de la V1 absent de `flags` et de `customFlags` n'est pas créé : la V2 appliquera ses valeurs par défaut.
+- Les dates d'un livrable : la V1 ne stocke que la dernière modification ; `created_at` reçoit cette date.
+
 ## Non vérifié lors de l'écriture (à valider via GitHub Actions)
-- Compilation et tests de `backup.rs` et `main.rs` (dépendent de `rusqlite` et de Tauri, inaccessibles ici). `files.rs` (std seule) a été compilé et testé ici : 10 tests.
+- Compilation et tests de `backup.rs` et `main.rs` (dépendent de `rusqlite` et de Tauri, inaccessibles ici), dont la commande `import_pick_file` et la boîte de dialogue Windows. `files.rs` (std seule) a été compilé et testé ici : 12 tests.
 - Build Vite + Tailwind, rendu final, `tauri build`, exécution réelle.
