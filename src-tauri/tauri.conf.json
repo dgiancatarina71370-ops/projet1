@@ -1,13 +1,19 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "BA-Mentor-POC",
-  "version": "0.0.1",
-  "identifier": "fr.giancatarina.bamentor.poc",
-  "build": { "frontendDist": "../ui" },
+  "productName": "BA-Mentor",
+  "version": "0.2.1",
+  "identifier": "fr.giancatarina.bamentor",
+  "build": {
+    "frontendDist": "../dist"
+  },
   "app": {
     "withGlobalTauri": true,
     "windows": [],
-    "security": { "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'" }
+    "security": {
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+    }
   },
-  "bundle": { "active": false }
+  "bundle": {
+    "active": false
+  }
 }

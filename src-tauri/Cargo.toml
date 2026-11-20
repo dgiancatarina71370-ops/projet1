@@ -1,7 +1,8 @@
 [package]
-name = "ba-mentor-poc"
-version = "0.0.1"
+name = "ba-mentor"
+version = "0.2.1"
 edition = "2021"
+description = "BA-Mentor Portable Ultimate Edition - Développé par David Giancatarina"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

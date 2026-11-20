@@ -1,7 +1,33 @@
 {
-  "name": "ba-mentor-poc",
-  "version": "0.0.1",
+  "name": "ba-mentor",
+  "version": "0.2.1",
   "private": true,
-  "scripts": { "tauri": "tauri" },
-  "devDependencies": { "@tauri-apps/cli": "^2" }
+  "type": "module",
+  "description": "BA-Mentor Portable Ultimate Edition — Développé par David Giancatarina",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "node --disable-warning=ExperimentalWarning --test tests/*.test.ts",
+    "check:architecture": "node scripts/check-architecture.mjs",
+    "check:versions": "node scripts/check-versions.mjs",
+    "verify": "npm run check:versions && npm run check:architecture && npm test && npm run typecheck",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "@types/node": "^22",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
+  }
 }
