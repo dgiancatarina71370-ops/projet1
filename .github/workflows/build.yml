@@ -45,3 +45,4 @@ jobs:
         with:
           name: ba-mentor-exe
           path: src-tauri/target/release/ba-mentor.exe
+
