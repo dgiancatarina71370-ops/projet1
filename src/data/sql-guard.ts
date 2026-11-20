@@ -91,3 +91,28 @@ export function assertMutation(sql: string): void {
     throw new SqlRefusedError('Le journal d\'activité s\'écrit uniquement par le champ « activity » de mutate().');
   }
 }
+
+/**
+ * Tables techniques : écrites sans ligne de journal d'activité (décision validée au lot V2.2a).
+ * Elles décrivent le fonctionnement de l'application (version du schéma, historique des sauvegardes), pas le travail de l'utilisateur.
+ * Toute autre table exige un champ « activity » dans mutate().
+ */
+export const TECHNICAL_TABLES: readonly string[] = ['backups_log', 'meta'];
+
+/** Nom de la table visée par un INSERT, UPDATE, DELETE ou REPLACE ; null si l'instruction n'a pas la forme attendue. */
+export function writeTarget(sql: string): string | null {
+  const body = stripSql(sql);
+  const m =
+    /^\s*(?:INSERT\s+(?:OR\s+\w+\s+)?INTO|REPLACE\s+INTO|UPDATE\s+(?:OR\s+\w+\s+)?|DELETE\s+FROM)\s*[`"\[]?(\w+)/i.exec(body);
+  return m ? m[1].toLowerCase() : null;
+}
+
+/** Une écriture sans « activity » n'est admise que sur une table technique. */
+export function assertTechnicalWrite(sql: string): void {
+  const table = writeTarget(sql);
+  if (table === null || !TECHNICAL_TABLES.includes(table)) {
+    throw new SqlRefusedError(
+      `Écriture sans journal d'activité refusée${table ? ` sur « ${table} »` : ''} : ajoutez le champ « activity » (seules les tables ${TECHNICAL_TABLES.join(' et ')} en sont dispensées).`,
+    );
+  }
+}

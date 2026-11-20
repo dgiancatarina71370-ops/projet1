@@ -1,29 +1,45 @@
-// BA-Mentor Portable Ultimate Edition - noyau Tauri (lot V2.1).
-// Aucune logique métier ici : ouvrir la base, exécuter des instructions SQL avec paramètres liés, sauvegarder, et ouvrir la fenêtre.
-// Les requêtes, les migrations et les règles vivent côté TypeScript (src/data).
+// BA-Mentor Portable Ultimate Edition - noyau Tauri (lot V2.2a).
+// Aucune logique métier ici : ouvrir la base, exécuter des instructions SQL avec paramètres liés, sauvegarder, restaurer, verrouiller, ouvrir la fenêtre.
+// Les requêtes, les migrations et les règles (quand sauvegarder, combien conserver) vivent côté TypeScript (src/data).
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use rusqlite::{backup::Backup, params_from_iter, types::Value as SqlValue, types::ValueRef, Connection};
+mod backup;
+mod files;
+
+use rusqlite::{params_from_iter, types::Value as SqlValue, types::ValueRef, Connection};
 use serde::Deserialize;
 use serde_json::{json, Map, Value};
 use std::{
     fs,
-    path::PathBuf,
-    sync::Mutex,
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    path::{Path, PathBuf},
+    sync::{atomic::{AtomicBool, Ordering}, Mutex},
+    time::Duration,
 };
 use tauri::{Manager, State, WebviewUrl, WebviewWindowBuilder};
+use tauri_plugin_dialog::DialogExt;
 
 /// Connexion unique, ou la raison pour laquelle elle n'a pas pu être ouverte (affichée par l'interface).
 struct Db {
     conn: Mutex<Option<Connection>>,
-    error: Option<String>,
+    error: Mutex<Option<String>>,
+    /// Un autre BA-Mentor tient déjà les données : cette instance ne doit rien écrire ni restaurer.
+    locked_out: bool,
+    /// Le verrou n'a pas pu être posé (système de fichiers sans verrou) : l'application fonctionne, avec un avertissement.
+    lock_warning: Option<String>,
 }
 
 struct Paths {
     data_dir: PathBuf,
     db_file: PathBuf,
+    backups_dir: PathBuf,
 }
+
+/// Garde le fichier de verrou ouvert aussi longtemps que l'application.
+#[allow(dead_code)]
+struct LockHolder(Option<fs::File>);
+
+/// Passe à vrai à la première demande de fermeture : la seconde ferme sans attendre.
+struct Closing(AtomicBool);
 
 #[derive(Deserialize)]
 struct Stmt {
@@ -39,7 +55,7 @@ fn exe_dir() -> PathBuf {
         .unwrap_or_else(|| PathBuf::from("."))
 }
 
-fn open_db(path: &PathBuf) -> Result<Connection, String> {
+fn open_db(path: &Path) -> Result<Connection, String> {
     let c = Connection::open(path).map_err(|e| format!("Ouverture de la base impossible : {e}"))?;
     // Mode de journal classique et écriture synchrone : choix validé par le lot V2.0 pour une base sur clé USB.
     c.execute_batch("PRAGMA journal_mode = DELETE; PRAGMA synchronous = FULL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;")
@@ -97,30 +113,8 @@ fn with_conn<T>(db: &Db, f: impl FnOnce(&mut Connection) -> Result<T, String>) -
     let mut guard = db.conn.lock().map_err(|_| "Verrou de la base indisponible.".to_string())?;
     match guard.as_mut() {
         Some(c) => f(c),
-        None => Err(db.error.clone().unwrap_or_else(|| "Base indisponible.".into())),
+        None => Err(db.error.lock().ok().and_then(|e| e.clone()).unwrap_or_else(|| "Base indisponible.".into())),
     }
-}
-
-fn utc_stamp() -> String {
-    let secs = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs() as i64).unwrap_or(0);
-    stamp_from_secs(secs)
-}
-
-fn stamp_from_secs(secs: i64) -> String {
-    let days = secs.div_euclid(86_400);
-    let rem = secs.rem_euclid(86_400);
-    let (h, m, s) = (rem / 3600, (rem % 3600) / 60, rem % 60);
-    // Date civile à partir du nombre de jours depuis 1970 (algorithme de H. Hinnant).
-    let z = days + 719_468;
-    let era = z.div_euclid(146_097);
-    let doe = z.rem_euclid(146_097);
-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let d = doy - (153 * mp + 2) / 5 + 1;
-    let mth = if mp < 10 { mp + 3 } else { mp - 9 };
-    let y = yoe + era * 400 + if mth <= 2 { 1 } else { 0 };
-    format!("{y:04}{mth:02}{d:02}-{h:02}{m:02}{s:02}")
 }
 
 #[tauri::command]
@@ -130,7 +124,10 @@ fn app_info(app: tauri::AppHandle, paths: State<'_, Paths>, db: State<'_, Db>) -
         "dataDir": paths.data_dir.to_string_lossy(),
         "dbFile": paths.db_file.to_string_lossy(),
         "mode": "portable",
-        "dbError": db.error,
+        "dbError": db.error.lock().ok().and_then(|e| e.clone()),
+        "lockWarning": db.lock_warning,
+        "lockedOut": db.locked_out,
+        "backupsDir": paths.backups_dir.to_string_lossy(),
     })
 }
 
@@ -191,62 +188,168 @@ async fn db_transaction(db: State<'_, Db>, statements: Vec<Stmt>) -> Result<Vec<
     })
 }
 
-/// Sauvegarde cohérente par l'API de sauvegarde en ligne de SQLite, vérifiée par integrity_check.
-/// (Empreinte SHA-256, rotation, restauration et déclencheurs : lot V2.2.)
+fn refuse_if_locked_out(db: &Db) -> Result<(), String> {
+    if db.locked_out {
+        Err("BA-Mentor est déjà ouvert sur ces données : cette fenêtre ne peut ni sauvegarder, ni restaurer, ni supprimer.".into())
+    } else {
+        Ok(())
+    }
+}
+
+/// Sauvegarde cohérente, vérifiée, avec empreinte SHA-256 ; copie facultative dans un dossier secondaire.
 #[tauri::command]
-async fn db_backup(db: State<'_, Db>, paths: State<'_, Paths>, kind: String) -> Result<Value, String> {
-    if !["manual", "auto", "pre-migration", "pre-restore"].contains(&kind.as_str()) {
-        return Err("Type de sauvegarde inconnu.".into());
+async fn backup_create(db: State<'_, Db>, paths: State<'_, Paths>, kind: String, secondary_dir: Option<String>) -> Result<backup::Created, String> {
+    refuse_if_locked_out(&db)?;
+    let secondary = secondary_dir.filter(|d| !d.trim().is_empty()).map(PathBuf::from);
+    with_conn(&db, |conn| backup::create_backup(conn, &paths.backups_dir, &kind, secondary.as_deref()))
+}
+
+/// Liste d'un dossier de sauvegardes (le dossier de l'application par défaut, ou le dossier secondaire).
+#[tauri::command]
+async fn backup_list(paths: State<'_, Paths>, dir: Option<String>) -> Result<Vec<backup::Entry>, String> {
+    match dir.filter(|d| !d.trim().is_empty()) {
+        Some(d) => backup::list_backups(Path::new(&d)),
+        None => backup::list_backups(&paths.backups_dir),
     }
-    let dir = paths.data_dir.join("backups");
-    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    let stamp = utc_stamp();
-    let mut target = dir.join(format!("ba-mentor-{stamp}-{kind}.db"));
-    let mut n = 2;
-    while target.exists() {
-        target = dir.join(format!("ba-mentor-{stamp}-{kind}-{n}.db"));
-        n += 1;
+}
+
+#[tauri::command]
+async fn backup_verify(file: String) -> Result<backup::Verified, String> {
+    backup::verify_file(Path::new(&file))
+}
+
+/// Remplace la base par une sauvegarde (ou par un fichier venu d'un autre poste). `rollback_file` : copie pre-restore pour le retour arrière.
+#[tauri::command]
+async fn backup_restore(db: State<'_, Db>, paths: State<'_, Paths>, file: String, rollback_file: Option<String>) -> Result<(), String> {
+    refuse_if_locked_out(&db)?;
+    let mut slot = db.conn.lock().map_err(|_| "Verrou de la base indisponible.".to_string())?;
+    let rollback = rollback_file.map(PathBuf::from);
+    backup::restore_database(&mut slot, &paths.db_file, Path::new(&file), rollback.as_deref(), &|p| open_db(p))?;
+    if let Ok(mut e) = db.error.lock() {
+        *e = None;
     }
-    with_conn(&db, |conn| {
-        let verdict = {
-            let mut dst = Connection::open(&target).map_err(|e| e.to_string())?;
-            {
-                let b = Backup::new(conn, &mut dst).map_err(|e| e.to_string())?;
-                b.run_to_completion(100, Duration::from_millis(0), None).map_err(|e| e.to_string())?;
-            }
-            dst.query_row("PRAGMA integrity_check", [], |r| r.get::<_, String>(0)).map_err(|e| e.to_string())?
-        };
-        if verdict != "ok" {
-            let _ = fs::remove_file(&target);
-            return Err(format!("La copie n'a pas passé la vérification d'intégrité : {verdict}"));
-        }
-        let size = fs::metadata(&target).map(|m| m.len()).unwrap_or(0);
-        Ok(json!({ "file": target.to_string_lossy(), "sizeBytes": size }))
-    })
+    Ok(())
+}
+
+/// Supprime une sauvegarde : uniquement un fichier nommé comme une sauvegarde, dans le dossier de l'application ou le dossier secondaire.
+#[tauri::command]
+async fn backup_delete(db: State<'_, Db>, paths: State<'_, Paths>, file: String, secondary_dir: Option<String>) -> Result<(), String> {
+    refuse_if_locked_out(&db)?;
+    let mut allowed = vec![paths.backups_dir.clone()];
+    if let Some(d) = secondary_dir.filter(|d| !d.trim().is_empty()) {
+        allowed.push(PathBuf::from(d));
+    }
+    let path = PathBuf::from(&file);
+    files::check_deletable(&path, &allowed)?;
+    fs::remove_file(&path).map_err(|e| format!("Suppression impossible : {e}"))
+}
+
+/// Boîte de dialogue système : choisir une base .db (restauration depuis un autre poste).
+#[tauri::command]
+async fn pick_database_file(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    let picked = app.dialog().file().add_filter("Base BA-Mentor", &["db"]).blocking_pick_file();
+    match picked {
+        Some(p) => Ok(Some(p.into_path().map_err(|e| e.to_string())?.to_string_lossy().to_string())),
+        None => Ok(None),
+    }
+}
+
+/// Boîte de dialogue système : choisir un dossier (dossier de sauvegarde secondaire).
+#[tauri::command]
+async fn pick_folder(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    let picked = app.dialog().file().blocking_pick_folder();
+    match picked {
+        Some(p) => Ok(Some(p.into_path().map_err(|e| e.to_string())?.to_string_lossy().to_string())),
+        None => Ok(None),
+    }
+}
+
+/// Fermeture demandée par l'interface une fois la sauvegarde de fermeture faite.
+#[tauri::command]
+fn app_exit(app: tauri::AppHandle) {
+    app.exit(0);
 }
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let data_dir = exe_dir().join("BAMentorData");
             let _ = fs::create_dir_all(&data_dir);
             let db_file = data_dir.join("ba-mentor.db");
-            let (conn, error) = match open_db(&db_file) {
-                Ok(c) => (Some(c), None),
-                Err(e) => (None, Some(e)),
+            let backups_dir = data_dir.join("backups");
+
+            // Un seul BA-Mentor à la fois sur un dossier de données : la restauration remplace le fichier de base.
+            let (lock, locked_out, lock_warning) = match files::lock_data_dir(&data_dir) {
+                Ok(f) => (Some(f), false, None),
+                Err(files::LockError::AlreadyRunning) => (None, true, None),
+                Err(files::LockError::Io(e)) => (None, false, Some(format!("Protection contre l'ouverture multiple indisponible : {e}"))),
             };
-            app.manage(Db { conn: Mutex::new(conn), error });
-            app.manage(Paths { data_dir: data_dir.clone(), db_file });
+
+            // Reste d'une restauration interrompue (clé retirée avant le renommage) : la base d'origine est intacte, ce fichier est inutile.
+            // Seulement si nous détenons le verrou : une autre instance pourrait être en pleine restauration.
+            if !locked_out {
+                let _ = fs::remove_file(data_dir.join("ba-mentor.db.restoring"));
+            }
+
+            let (conn, error) = if locked_out {
+                (None, Some("BA-Mentor est déjà ouvert sur ces données (autre fenêtre, ou autre poste utilisant cette clé). Fermez l'autre instance puis relancez BA-Mentor.".to_string()))
+            } else {
+                match open_db(&db_file) {
+                    Ok(c) => (Some(c), None),
+                    Err(e) => (None, Some(e)),
+                }
+            };
+            app.manage(Db { conn: Mutex::new(conn), error: Mutex::new(error), locked_out, lock_warning });
+            app.manage(Paths { data_dir: data_dir.clone(), db_file, backups_dir });
+            app.manage(LockHolder(lock));
+            app.manage(Closing(AtomicBool::new(false)));
+
             // Données de WebView2 à côté de l'exécutable : rien n'est écrit dans le profil de l'utilisateur (validé par T4).
-            WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
+            // Une instance refusée utilise son propre dossier pour ne pas partager le profil de l'instance en cours.
+            let webview_dir = data_dir.join(if locked_out { "webview-secondaire" } else { "webview" });
+            let window = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
                 .title("BA-Mentor Portable Ultimate Edition")
                 .inner_size(1200.0, 800.0)
                 .min_inner_size(900.0, 600.0)
-                .data_directory(data_dir.join("webview"))
+                .data_directory(webview_dir)
                 .build()?;
+
+            // Fermeture : on laisse l'interface faire la sauvegarde de fermeture, puis elle demande app_exit.
+            // Filet de sécurité : si l'interface ne répond pas en 15 s, on ferme quand même. Un second clic sur la croix ferme tout de suite.
+            let handle = app.handle().clone();
+            let win = window.clone();
+            window.on_window_event(move |event| {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    let closing = handle.state::<Closing>();
+                    if closing.0.swap(true, Ordering::SeqCst) {
+                        return;
+                    }
+                    api.prevent_close();
+                    let _ = win.eval("window.dispatchEvent(new Event('bamentor-close'))");
+                    let h = handle.clone();
+                    std::thread::spawn(move || {
+                        std::thread::sleep(Duration::from_secs(15));
+                        h.exit(0);
+                    });
+                }
+            });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![app_info, db_select, db_execute, db_transaction, db_backup])
+        .invoke_handler(tauri::generate_handler![
+            app_info,
+            db_select,
+            db_execute,
+            db_transaction,
+            backup_create,
+            backup_list,
+            backup_verify,
+            backup_restore,
+            backup_delete,
+            pick_database_file,
+            pick_folder,
+            app_exit
+        ])
         .run(tauri::generate_context!())
         .expect("erreur au lancement de BA-Mentor");
 }
@@ -254,13 +357,6 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn stamp_matches_known_dates() {
-        assert_eq!(stamp_from_secs(0), "19700101-000000");
-        assert_eq!(stamp_from_secs(1_700_000_000), "20231114-221320");
-        assert_eq!(stamp_from_secs(1_709_164_800), "20240229-000000");
-    }
 
     #[test]
     fn guard_refuses_attach_pragma_and_empty() {

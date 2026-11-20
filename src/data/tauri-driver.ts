@@ -1,5 +1,5 @@
 // Seul fichier de l'application qui parle aux commandes Tauri (règle vérifiée par scripts/check-architecture.mjs).
-import type { BackupKind, BackupResult, DbDriver, Row, SqlValue, Statement, WriteResult } from './driver.ts';
+import type { BackupCreated, BackupEntry, BackupKind, BackupResult, DbDriver, Row, SqlValue, Statement, VerifyReport, WriteResult } from './driver.ts';
 
 interface TauriGlobal {
   core: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> };
@@ -27,6 +27,11 @@ export interface AppInfo {
   mode: string;
   /** Renseigné si la base n'a pas pu être ouverte au démarrage. */
   dbError?: string | null;
+  /** Renseigné si la protection contre l'ouverture multiple n'a pas pu être posée. */
+  lockWarning?: string | null;
+  /** Un autre BA-Mentor tient déjà ces données : cette fenêtre ne peut rien modifier. */
+  lockedOut?: boolean;
+  backupsDir?: string;
 }
 
 export function appInfo(): Promise<AppInfo> {
@@ -38,5 +43,22 @@ export const tauriDriver: DbDriver = {
   execute: (sql: string, params: SqlValue[]) => invoke<WriteResult>('db_execute', { sql, params }),
   transaction: (statements: Statement[]) =>
     invoke<WriteResult[]>('db_transaction', { statements: statements.map((s) => ({ sql: s.sql, params: s.params ?? [] })) }),
-  backup: (kind: BackupKind) => invoke<BackupResult>('db_backup', { kind }),
+  backup: (kind: BackupKind) => invoke<BackupResult>('backup_create', { kind, secondaryDir: null }),
+  backupCreate: (kind: BackupKind, secondaryDir: string | null) => invoke<BackupCreated>('backup_create', { kind, secondaryDir }),
+  backupList: (dir: string | null) => invoke<BackupEntry[]>('backup_list', { dir }),
+  backupVerify: (file: string) => invoke<VerifyReport>('backup_verify', { file }),
+  backupRestore: (file: string, rollbackFile: string | null) => invoke<void>('backup_restore', { file, rollbackFile }),
+  backupDelete: (file: string, secondaryDir: string | null) => invoke<void>('backup_delete', { file, secondaryDir }),
+  pickDatabaseFile: () => invoke<string | null>('pick_database_file'),
+  pickFolder: () => invoke<string | null>('pick_folder'),
 };
+
+/** Demande de fermeture de la fenêtre : le noyau la suspend et attend que l'interface appelle exitApp() (15 s au plus). */
+export function onCloseRequested(handler: () => void): () => void {
+  window.addEventListener('bamentor-close', handler);
+  return () => window.removeEventListener('bamentor-close', handler);
+}
+
+export function exitApp(): Promise<void> {
+  return invoke<void>('app_exit');
+}
