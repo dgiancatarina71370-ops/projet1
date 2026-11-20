@@ -24,6 +24,24 @@ jobs:
         run: npm run typecheck
         continue-on-error: true
 
+  # Tests du noyau Rust (BLOQUANTS : un job rouge ici = ne pas valider le lot, même si l'exécutable a été produit).
+  # Séparés du build pour qu'un échec de test ne vous prive pas de l'exécutable nécessaire au diagnostic.
+  rust-tests:
+    needs: verify
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: src-tauri }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm install
+      - run: npm run build
+      - run: npx tauri icon app-icon.png
+      - name: Tests Rust (files.rs, backup.rs, main.rs)
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+
   build:
     needs: verify
     runs-on: windows-latest
@@ -37,12 +55,8 @@ jobs:
       - run: npm install
       - run: npm run build
       - run: npx tauri icon app-icon.png
-      - name: Tests Rust (non bloquants au premier lot)
-        run: cargo test --manifest-path src-tauri/Cargo.toml
-        continue-on-error: true
       - run: npx tauri build --no-bundle
       - uses: actions/upload-artifact@v4
         with:
           name: ba-mentor-exe
           path: src-tauri/target/release/ba-mentor.exe
-
