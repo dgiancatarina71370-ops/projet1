@@ -1,0 +1,178 @@
+import { useCallback, useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
+import { boot } from './boot.ts';
+import type { BootResult } from './boot.ts';
+import { query } from '../data/db.ts';
+import { createProject, deleteProject, listProjects, recentActivity } from '../data/repositories/projects.ts';
+import type { ActivityEntry, Project } from '../data/repositories/projects.ts';
+import { rawBackup } from '../data/internal.ts';
+import { buildSignature, signatureLines } from '../shared/signature.ts';
+
+interface Snapshot {
+  tables: Array<{ name: string; rows: number }>;
+  projects: Project[];
+  activity: ActivityEntry[];
+}
+
+async function takeSnapshot(): Promise<Snapshot> {
+  const names = await query<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name");
+  const tables: Snapshot['tables'] = [];
+  for (const t of names) {
+    const [r] = await query<{ n: number }>(`SELECT count(*) AS n FROM ${t.name}`);
+    tables.push({ name: t.name, rows: Number(r.n) });
+  }
+  return { tables, projects: await listProjects(), activity: await recentActivity(12) };
+}
+
+function Card(props: { title: string; children: ReactNode }) {
+  return (
+    <section className="rounded-lg border border-hub-line bg-hub-panel p-4">
+      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-hub-muted">{props.title}</h2>
+      {props.children}
+    </section>
+  );
+}
+
+export function App() {
+  const [result, setResult] = useState<BootResult | null>(null);
+  const [snap, setSnap] = useState<Snapshot | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [backupMsg, setBackupMsg] = useState('');
+
+  const refresh = useCallback(async () => setSnap(await takeSnapshot()), []);
+
+  useEffect(() => {
+    let dead = false;
+    boot().then(async (r) => {
+      if (dead) return;
+      setResult(r);
+      if (r.status === 'ready') await refresh();
+    });
+    return () => {
+      dead = true;
+    };
+  }, [refresh]);
+
+  const act = async (fn: () => Promise<unknown>) => {
+    setBusy(true);
+    setError('');
+    try {
+      await fn();
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const version = result && result.status !== 'browser' && result.info ? result.info.version : '—';
+  const sig = buildSignature(version);
+  const buildDate = typeof __BUILD_DATE__ === 'string' ? __BUILD_DATE__.slice(0, 16).replace('T', ' ') + ' UTC' : '';
+
+  return (
+    <div className="flex min-h-full flex-col">
+      <header className="border-b border-hub-line px-6 py-4">
+        <h1 className="text-lg font-semibold">BA-Mentor — état technique</h1>
+        <p className="text-sm text-hub-muted">Lot V2.1 : socle, base de données, migrations et journal d’activité. Les modules arrivent aux lots suivants.</p>
+      </header>
+
+      <main className="mx-auto w-full max-w-5xl flex-1 space-y-4 p-6">
+        {!result && <p className="text-hub-muted">Démarrage…</p>}
+
+        {result?.status === 'browser' && (
+          <Card title="Application requise">
+            <p>Cette page doit s’exécuter dans l’application BA-Mentor (Tauri). Lancez l’exécutable plutôt que d’ouvrir la page dans un navigateur.</p>
+          </Card>
+        )}
+
+        {result?.status === 'error' && (
+          <Card title="Démarrage impossible">
+            <p role="alert" className="text-hub-bad">{result.message}</p>
+            {result.info && <p className="mt-2 text-sm text-hub-muted">Dossier de données : {result.info.dataDir}</p>}
+          </Card>
+        )}
+
+        {result?.status === 'ready' && (
+          <>
+            <Card title="Base de données">
+              <dl className="grid grid-cols-[10rem_1fr] gap-y-1 text-sm">
+                <dt className="text-hub-muted">Version de l’application</dt><dd>{result.info.version}</dd>
+                <dt className="text-hub-muted">Dossier de données</dt><dd className="break-all">{result.info.dataDir}</dd>
+                <dt className="text-hub-muted">Fichier de base</dt><dd className="break-all">{result.info.dbFile}</dd>
+                <dt className="text-hub-muted">Schéma</dt>
+                <dd>
+                  version {result.report.to}
+                  {result.report.applied.length > 0 ? ` (migrations appliquées : ${result.report.applied.join(', ')} ; ancienne version ${result.report.from})` : ' (à jour)'}
+                </dd>
+                <dt className="text-hub-muted">Sauvegarde avant migration</dt>
+                <dd className="break-all">{result.report.backup ? result.report.backup.file : 'aucune (non nécessaire)'}</dd>
+              </dl>
+            </Card>
+
+            <Card title="Sauvegarde de test (commande Rust db_backup)">
+              <button
+                type="button"
+                disabled={busy}
+                className="rounded border border-hub-line px-3 py-1.5 text-sm disabled:opacity-50"
+                onClick={() => act(async () => { const b = await rawBackup('manual'); setBackupMsg(`${b.file} (${b.sizeBytes} octets)`); })}
+              >
+                Créer une sauvegarde manuelle
+              </button>
+              {backupMsg && <p className="mt-2 break-all text-sm text-hub-muted">Créée : {backupMsg}</p>}
+            </Card>
+
+            <Card title="Projets de démonstration (écriture par mutate, avec journal)">
+              <button
+                type="button"
+                disabled={busy}
+                className="rounded bg-hub-accent px-3 py-1.5 text-sm font-medium text-hub-bg disabled:opacity-50"
+                onClick={() => act(() => createProject(`Projet de démonstration ${(snap?.projects.length ?? 0) + 1}`))}
+              >
+                Créer un projet
+              </button>
+              {error && <p role="alert" className="mt-2 text-sm text-hub-bad">{error}</p>}
+              <ul className="mt-3 space-y-1 text-sm">
+                {snap?.projects.length === 0 && <li className="text-hub-muted">Aucun projet.</li>}
+                {snap?.projects.map((p) => (
+                  <li key={p.id} className="flex items-center justify-between rounded border border-hub-line px-3 py-1.5">
+                    <span>#{p.id} · {p.name}</span>
+                    <button type="button" disabled={busy} className="text-hub-bad disabled:opacity-50" onClick={() => act(() => deleteProject(p.id))}>
+                      Supprimer
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card title="Journal d’activité (12 derniers)">
+                <ul className="space-y-1 text-sm">
+                  {snap?.activity.length === 0 && <li className="text-hub-muted">Journal vide.</li>}
+                  {snap?.activity.map((a) => (
+                    <li key={a.id} className="text-hub-muted">
+                      <span className="text-hub-fg">{a.action}</span> · {a.object_type} #{a.object_id} · {a.at.slice(0, 19).replace('T', ' ')}
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+              <Card title="Tables (15 attendues)">
+                <ul className="grid grid-cols-2 gap-x-4 text-sm">
+                  {snap?.tables.map((t) => (
+                    <li key={t.name} className="flex justify-between"><span>{t.name}</span><span className="text-hub-muted">{t.rows}</span></li>
+                  ))}
+                </ul>
+              </Card>
+            </div>
+          </>
+        )}
+      </main>
+
+      <footer className="border-t border-hub-line px-6 py-3 text-xs text-hub-muted">
+        {signatureLines(sig).join(' · ')}
+        {buildDate && <span> · Compilé le {buildDate}</span>}
+      </footer>
+    </div>
+  );
+}
