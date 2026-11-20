@@ -5,7 +5,9 @@ import type { BootResult } from './boot.ts';
 import { query } from '../data/db.ts';
 import { createProject, deleteProject, listProjects, recentActivity } from '../data/repositories/projects.ts';
 import type { ActivityEntry, Project } from '../data/repositories/projects.ts';
-import { rawBackup } from '../data/internal.ts';
+import { BackupPanel } from './BackupPanel.tsx';
+import { installCloseHandler, setDatabaseReady, startMaintenance } from './maintenance.ts';
+import type { Notice } from './maintenance.ts';
 import { buildSignature, signatureLines } from '../shared/signature.ts';
 
 interface Snapshot {
@@ -38,7 +40,7 @@ export function App() {
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [backupMsg, setBackupMsg] = useState('');
+  const [notices, setNotices] = useState<Notice[]>([]);
 
   const refresh = useCallback(async () => setSnap(await takeSnapshot()), []);
 
@@ -47,12 +49,19 @@ export function App() {
     boot().then(async (r) => {
       if (dead) return;
       setResult(r);
-      if (r.status === 'ready') await refresh();
+      if (r.status === 'ready') {
+        setDatabaseReady(true);
+        await refresh();
+        startMaintenance((n) => setNotices((old) => [...old.slice(-4), n]));
+      }
     });
     return () => {
       dead = true;
     };
   }, [refresh]);
+
+  // Fermeture : sauvegarde si des données ont changé, puis sortie (voir maintenance.ts).
+  useEffect(() => installCloseHandler(), []);
 
   const act = async (fn: () => Promise<unknown>) => {
     setBusy(true);
@@ -75,7 +84,7 @@ export function App() {
     <div className="flex min-h-full flex-col">
       <header className="border-b border-hub-line px-6 py-4">
         <h1 className="text-lg font-semibold">BA-Mentor — état technique</h1>
-        <p className="text-sm text-hub-muted">Lot V2.1 : socle, base de données, migrations et journal d’activité. Les modules arrivent aux lots suivants.</p>
+        <p className="text-sm text-hub-muted">Lot V2.2a : sauvegarde, restauration et protection contre l’ouverture multiple. Les modules arrivent aux lots suivants.</p>
       </header>
 
       <main className="mx-auto w-full max-w-5xl flex-1 space-y-4 p-6">
@@ -88,11 +97,25 @@ export function App() {
         )}
 
         {result?.status === 'error' && (
-          <Card title="Démarrage impossible">
-            <p role="alert" className="text-hub-bad">{result.message}</p>
-            {result.info && <p className="mt-2 text-sm text-hub-muted">Dossier de données : {result.info.dataDir}</p>}
-          </Card>
+          <>
+            <Card title="Démarrage impossible">
+              <p role="alert" className="text-hub-bad">{result.message}</p>
+              {result.info && <p className="mt-2 text-sm text-hub-muted">Dossier de données : {result.info.dataDir}</p>}
+            </Card>
+            {result.info && !result.info.lockedOut && (
+              <Card title="Restaurer une sauvegarde">
+                <BackupPanel mode="recovery" />
+              </Card>
+            )}
+          </>
         )}
+
+        {result?.status === 'ready' && result.info.lockWarning && (
+          <p role="status" className="rounded border border-yellow-500 px-3 py-2 text-sm text-yellow-300">{result.info.lockWarning}</p>
+        )}
+        {notices.map((n, i) => (
+          <p key={i} role={n.level === 'error' ? 'alert' : 'status'} className={`rounded border px-3 py-2 text-sm ${n.level === 'error' ? 'border-hub-bad text-hub-bad' : n.level === 'warning' ? 'border-yellow-500 text-yellow-300' : 'border-hub-line text-hub-muted'}`}>{n.text}</p>
+        ))}
 
         {result?.status === 'ready' && (
           <>
@@ -111,16 +134,8 @@ export function App() {
               </dl>
             </Card>
 
-            <Card title="Sauvegarde de test (commande Rust db_backup)">
-              <button
-                type="button"
-                disabled={busy}
-                className="rounded border border-hub-line px-3 py-1.5 text-sm disabled:opacity-50"
-                onClick={() => act(async () => { const b = await rawBackup('manual'); setBackupMsg(`${b.file} (${b.sizeBytes} octets)`); })}
-              >
-                Créer une sauvegarde manuelle
-              </button>
-              {backupMsg && <p className="mt-2 break-all text-sm text-hub-muted">Créée : {backupMsg}</p>}
+            <Card title="Centre de sauvegarde">
+              <BackupPanel mode="normal" refreshKey={notices.length} />
             </Card>
 
             <Card title="Projets de démonstration (écriture par mutate, avec journal)">

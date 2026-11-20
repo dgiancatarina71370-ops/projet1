@@ -34,7 +34,11 @@ test('atomicité : si une écriture échoue, ni la donnée ni son journal ne sub
         params: ['project', 'Valide', NOW, NOW],
         activity: { objectType: 'project', action: 'created', objectId: 'inserted', projectId: 'inserted' },
       },
-      { sql: 'INSERT INTO projects (kind, name, created_at, updated_at) VALUES (?, ?, ?, ?)', params: ['invalide', 'Refusé', NOW, NOW] },
+      {
+        sql: 'INSERT INTO projects (kind, name, created_at, updated_at) VALUES (?, ?, ?, ?)',
+        params: ['invalide', 'Refusé', NOW, NOW],
+        activity: { objectType: 'project', action: 'created', objectId: 'inserted', projectId: 'inserted' },
+      },
     ]),
   );
   assert.equal(await count('projects'), 0);
@@ -140,5 +144,38 @@ test('le journal ne reçoit ni titre ni contenu : détail limité', async () => 
 test('sans pilote branché, toute lecture ou écriture est refusée proprement', async () => {
   setDriver(null);
   await assert.rejects(() => query('SELECT 1'), /non initialisée/);
-  await assert.rejects(() => mutate([{ sql: 'DELETE FROM projects' }]), /non initialisée/);
+  await assert.rejects(
+    () => mutate([{ sql: 'DELETE FROM projects WHERE id = 1', activity: { objectType: 'project', action: 'deleted', objectId: 1 } }]),
+    /non initialisée/,
+  );
+});
+
+test('tables techniques : seules backups_log et meta s\'écrivent sans journal ; toute autre table exige « activity »', async () => {
+  const t = await migratedDb();
+  // Admis, et aucune ligne de journal.
+  await mutate([{ sql: "INSERT INTO meta (key, value) VALUES ('essai', '1') ON CONFLICT(key) DO UPDATE SET value = excluded.value", params: [] }]);
+  await mutate([
+    {
+      sql: "INSERT INTO backups_log (at, kind, file, size_bytes, sha256, ok) VALUES (?, 'manual', 'f.db', 1, 'abc', 1)",
+      params: ['2026-11-20T10:00:00.000Z'],
+    },
+  ]);
+  assert.equal(await count('activity_log'), 0);
+  // Refusé : tout le reste, y compris les variantes d'écriture (REPLACE, UPDATE OR, guillemets, casse, commentaires).
+  for (const sql of [
+    "INSERT INTO projects (kind, name, created_at, updated_at) VALUES ('project', 'x', 'a', 'a')",
+    "insert or replace into settings (key, value) values ('a', 'b')",
+    "REPLACE INTO contacts (name, email) VALUES ('a', 'a@b.c')",
+    "UPDATE OR IGNORE documents SET name = 'x'",
+    'DELETE FROM "projects"',
+    "/* meta */ DELETE FROM flags",
+    "INSERT INTO `workspace_notes` (id, updated_at) VALUES (1, 'a')",
+  ]) {
+    await assert.rejects(() => mutate([{ sql }]), SqlRefusedError, sql);
+  }
+  assert.equal(await count('projects'), 0);
+  // La même écriture avec « activity » reste admise, y compris sur une table technique.
+  await mutate([{ sql: "UPDATE meta SET value = '2' WHERE key = 'essai'", activity: { objectType: 'meta', action: 'status_changed', objectId: 1 } }]);
+  assert.equal(await count('activity_log'), 1);
+  t.close();
 });

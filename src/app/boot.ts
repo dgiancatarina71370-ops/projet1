@@ -24,8 +24,8 @@ async function doBoot(): Promise<BootResult> {
   let info: AppInfo | undefined;
   try {
     info = await appInfo();
+    setDriver(tauriDriver); // avant le contrôle : lister et restaurer des sauvegardes doit rester possible si la base est illisible
     if (info.dbError) return { status: 'error', message: info.dbError, info };
-    setDriver(tauriDriver);
     const report = await migrate(migrations);
     return { status: 'ready', info, report };
   } catch (e) {

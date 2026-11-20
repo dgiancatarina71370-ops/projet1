@@ -32,3 +32,8 @@ export async function rawTransaction(statements: Statement[]): Promise<WriteResu
 export async function rawBackup(kind: BackupKind): Promise<BackupResult> {
   return current().backup(kind);
 }
+
+/** Pilote complet, pour le service de sauvegarde (opérations sur fichiers). Réservé à src/data/ comme le reste de ce fichier. */
+export function rawDriver(): DbDriver {
+  return current();
+}

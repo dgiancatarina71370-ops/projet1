@@ -2,7 +2,7 @@
 // Chaque écriture passe ici ; l'entrée du journal d'activité est écrite dans la MÊME transaction que l'écriture qu'elle décrit.
 import type { SqlValue, Statement, WriteResult } from './driver.ts';
 import { rawTransaction } from './internal.ts';
-import { assertMutation, SqlRefusedError } from './sql-guard.ts';
+import { assertMutation, assertTechnicalWrite, SqlRefusedError } from './sql-guard.ts';
 
 export type ActivityAction = 'created' | 'deleted' | 'status_changed' | 'imported';
 
@@ -53,6 +53,7 @@ function activityStatement(a: ActivitySpec): Statement {
 
 /**
  * Exécute des écritures dans une seule transaction, avec leurs entrées de journal.
+ * Une écriture sans « activity » n'est acceptée que sur une table technique (backups_log, meta).
  * Retourne un résultat par écriture (les instructions du journal ne sont pas renvoyées).
  */
 export async function mutate(ops: WriteOp[]): Promise<WriteResult[]> {
@@ -61,6 +62,7 @@ export async function mutate(ops: WriteOp[]): Promise<WriteResult[]> {
   const resultIndex: number[] = [];
   for (const op of ops) {
     assertMutation(op.sql);
+    if (!op.activity) assertTechnicalWrite(op.sql);
     resultIndex.push(statements.length);
     statements.push({ sql: op.sql, params: op.params ?? [] });
     if (op.activity) statements.push(activityStatement(op.activity));
