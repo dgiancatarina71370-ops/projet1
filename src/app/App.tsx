@@ -96,7 +96,7 @@ export function App() {
     <div className="flex min-h-full flex-col">
       <header className="border-b border-hub-line px-6 py-4">
         <h1 className="text-lg font-semibold">BA-Mentor — état technique</h1>
-        <p className="text-sm text-hub-muted">Lot V2.2c : protection contre le démarrage silencieux sur une base vide (après export signé Markdown et HTML, écran À propos, import V1, sauvegarde, restauration et protection contre l’ouverture multiple). Les modules arrivent aux lots suivants.</p>
+        <p className="text-sm text-hub-muted">Lot V2.3b : export Word signé (après la protection contre le démarrage sur une base vide, l’export Markdown et HTML, l’écran À propos, import V1, sauvegarde, restauration et protection contre l’ouverture multiple). Les modules arrivent aux lots suivants.</p>
       </header>
 
       <main className="mx-auto w-full max-w-5xl flex-1 space-y-4 p-6">
@@ -168,7 +168,7 @@ export function App() {
               />
             </Card>
 
-            <Card title="Exporter un livrable (Markdown, HTML)">
+            <Card title="Exporter un livrable (Markdown, HTML, Word)">
               <ExportPanel version={version} refreshKey={snap ? snap.tables.map((t) => t.rows).join(',') : ''} />
             </Card>
 

@@ -18,6 +18,6 @@ export interface ExportOptions {
 export async function exportDocumentToFile(documentId: number, format: ExportFormat, options: ExportOptions): Promise<SavedExport | null> {
   const doc = await getDocumentContent(documentId);
   if (!doc) throw new Error(`Livrable introuvable (n°${documentId}).`);
-  const result = exportDocument({ title: doc.name, markdown: doc.content }, format, { version: options.version, now: options.now });
+  const result = await exportDocument({ title: doc.name, markdown: doc.content }, format, { version: options.version, now: options.now });
   return saveExportFile(result.fileName, result.bytes, options.askWhere === true);
 }

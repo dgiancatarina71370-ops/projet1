@@ -16,7 +16,7 @@ interface Message {
 
 /**
  * Carte d'export technique (lot V2.3a), en attendant l'écran Documents (lot V2.7) : liste les livrables de la base et les exporte
- * en Markdown ou en HTML, signés. `refreshKey` : change après un import ou une écriture pour relire la liste.
+ * en Markdown, HTML ou Word, signés. `refreshKey` : change après un import ou une écriture pour relire la liste.
  */
 export function ExportPanel(props: { version: string; refreshKey: string }) {
   const [docs, setDocs] = useState<DocumentSummary[] | null>(null);
@@ -50,7 +50,7 @@ export function ExportPanel(props: { version: string; refreshKey: string }) {
   return (
     <div className="space-y-3 text-sm">
       <p className="text-hub-muted">
-        Exporte un livrable en Markdown ou en HTML. La signature (nom, auteur, version, date de génération) est ajoutée automatiquement ; un export sans signature est refusé. Le HTML saisi dans un livrable n’est jamais interprété.
+        Exporte un livrable en Markdown, en HTML ou en Word (.docx). La signature (nom, auteur, version, date de génération) est ajoutée automatiquement ; un export sans signature est refusé. Le HTML saisi dans un livrable n’est jamais interprété.
         Par défaut, le fichier est écrit dans le dossier <span className="font-mono">exports</span> de BAMentorData, sans jamais écraser un export existant. Les exports ne font pas partie des sauvegardes : ils se régénèrent depuis la base.
       </p>
       <label className="flex items-center gap-2">

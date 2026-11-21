@@ -80,8 +80,8 @@ Un export réel de la V1 a été analysé avant d'écrire le moindre code : il e
 
 ## État des validations (21/11/2026)
 - **V2.3a VALIDÉE** par David (tests 1 à 14 OK sur clé USB). Reste non vérifié en CI : voir « Limites connues » du lot.
-- **Campagne complémentaire V2.2a** : C1 à C8, C11, C12 OK ; C9 corrigé (texte dans la base) OK ; C10 à confirmer ; C13 facultatif non fait.
-- **Défaut D-A (constaté le 21/11/2026, test C9 d'origine)** : un fichier `ba-mentor.db` de 0 octet est une base SQLite valide ; l'application la migre à neuf et démarre sans alerte sur une liste vide, alors que des sauvegardes existent. Cause confirmée dans le code : `boot.ts` ne contrôle que `dbError` puis `migrate`. Hypothèse initiale fausse : la liste des sauvegardes vient du dossier (`backup_list`), pas de la base. Aggravant : `startMaintenance` lance ensuite des sauvegardes automatiques de la base vide, soumises à la rotation (10 automatiques conservées). Correction : lot V2.2c (livré en 0.2.5, en attente de validation).
+- **Campagne complémentaire V2.2a** : C1 à C8, C11, C12 OK ; C9 corrigé (texte dans la base) OK ; C10 OK (refait le 21/11/2026) ; C13 facultatif non fait. Test 12 (import V1 enrichi) reporté : à faire quand des livrables réels auront été créés.
+- **Défaut D-A (constaté le 21/11/2026, test C9 d'origine)** : un fichier `ba-mentor.db` de 0 octet est une base SQLite valide ; l'application la migre à neuf et démarre sans alerte sur une liste vide, alors que des sauvegardes existent. Cause confirmée dans le code : `boot.ts` ne contrôle que `dbError` puis `migrate`. Hypothèse initiale fausse : la liste des sauvegardes vient du dossier (`backup_list`), pas de la base. Aggravant : `startMaintenance` lance ensuite des sauvegardes automatiques de la base vide, soumises à la rotation (10 automatiques conservées). Correction : lot V2.2c (livré en 0.2.5 ; **V2.2c VALIDÉE** le 21/11/2026, tests 1 à 13 OK).
 
 ## Lot V2.2c : protection contre le démarrage silencieux sur une base vide (défaut D-A)
 
@@ -102,6 +102,28 @@ Un export réel de la V1 a été analysé avant d'écrire le moindre code : il e
 - Un échec de la pose du repère après une migration réussie laisse une base neuve sans protection au lancement suivant (le critère « schéma 0 » n'est plus vrai). Très improbable (une écriture sur la clé juste après une migration réussie) ; le démarrage est alors refusé avec un message.
 - La protection est liée à la base : si l'utilisateur supprime lui-même le fichier de base après « Continuer », la situation redevient « base vide avec sauvegardes » et l'écran revient.
 - Non vérifié ici : compilation Rust (inchangée dans ce lot) ; comportement réel d'un fichier vidé par le Bloc-notes sur Windows (test manuel 1).
+
+## Lot V2.3b : export Word (.docx) signé
+
+### Décisions validées par David
+- **D12** : V2.3 est découpé en V2.3b (Word) puis V2.3c (PDF avec pdfmake), pour isoler le risque lié à pdfmake.
+- **D13** : signature complète dans le document Word, plus les métadonnées du document.
+- **D14** : (pour V2.3c) signature complète dans le PDF et pied de page court sur chaque page.
+- **D15** : le HTML brut est affiché comme texte ; seuls les liens sûrs sont conservés ; les images sont remplacées par un texte descriptif.
+
+### Choix de conception
+1. **Même modèle que Markdown et HTML** : `parseMarkdown` → blocs → `renderDocx` (bibliothèque `docx`). Aucun code Rust modifié : le noyau acceptait déjà l'extension `docx`.
+2. **Pipeline asynchrone** : `exportDocument` retourne une promesse (le PDF le sera aussi). `ExportResult.text` vaut `null` pour un format binaire.
+3. **Signature contrôlée sur le fichier réel** (`docx-check.ts`) : le `.docx` produit est rouvert (archive ZIP) et on y relit les 4 lignes de signature (une par paragraphe, en fin de document), l'auteur logiciel et la description dans `docProps/core.xml`. Un fichier dont un élément manque est refusé (`ExportSignatureError`).
+4. **Métadonnées** : auteur et dernier auteur = « BA-Mentor Portable Ultimate Edition » ; description = « Développé par David Giancatarina — Version : x — Date de génération : … » ; titre = titre du livrable ; propriétés personnalisées `BAMentorGenerator`, `BAMentorVersion`, `BAMentorGeneratedAt` (ISO). Pied de page : « BA-Mentor Portable Ultimate Edition — Version : x — Page n / N ».
+5. **Contenu** : titres 1 à 6 (styles Word natifs), paragraphes (gras, italique, barré, code), listes à puces et numérotées (numéro de départ conservé, imbrication), cases à cocher (☑ ☐), tableaux (en-tête répétée, alignements), citations, blocs de code (Consolas), règles. A4, marges 2 cm, langue fr-FR.
+6. **Sécurité (D15)** : texte saisi jamais interprété ; liens Word seulement pour http, https et mailto (les ancres et chemins relatifs n'ont pas de cible dans Word : texte conservé, sans lien) ; aucune image ni objet intégré, aucune macro ; caractères interdits en XML 1.0 (contrôles, demi-paires) retirés pour ne pas déclencher la « réparation » de Word ; tabulations converties en espaces.
+7. **Dépendances ajoutées** : `docx` ^9.8.1 et `jszip` ^3.10.1. Le programme grossit d'environ 1 Mo côté interface.
+
+### Limites connues
+- Vérifié ici : structure, contenu et signature du `.docx` (tests automatiques, python-docx), mise en page par conversion LibreOffice, génération dans un navigateur. **Non vérifié** : l'ouverture dans Microsoft Word lui-même (absence de message de réparation, rendu exact) ; la build Vite/Tauri de Windows (CI).
+- Les polices Calibri, Consolas et Segoe UI Symbol sont référencées, pas embarquées : sur un poste qui ne les a pas, Word choisit une police voisine.
+- Pas de table des matières, d'images ni de commentaires dans le document Word.
 
 ## Non vérifié lors de l'écriture (à valider via GitHub Actions)
 - Compilation et tests de `backup.rs` et `main.rs` (dépendent de `rusqlite` et de Tauri, inaccessibles ici), dont la commande `import_pick_file` et la boîte de dialogue Windows. `files.rs` (std seule) a été compilé et testé ici : 15 tests. Pour V2.3a : la commande `export_save` et l'utilisation de `set_file_name` / `set_directory` / `blocking_save_file` du plugin de dialogue.
