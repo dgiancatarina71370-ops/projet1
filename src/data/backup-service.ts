@@ -89,8 +89,11 @@ export async function rotateBackups(): Promise<{ rotated: string[]; warnings: st
   return { rotated, warnings };
 }
 
-/** Sauvegarde manuelle ou automatique : copie vérifiée, historique, mémoire de l'état du journal, copie secondaire, rotation. */
-export async function createBackup(kind: 'manual' | 'auto'): Promise<BackupOutcome> {
+/**
+ * Sauvegarde manuelle, automatique ou de sécurité avant import : copie vérifiée, historique, mémoire de l'état du journal, copie secondaire, rotation.
+ * « pre-migration » sert aussi de sauvegarde de sécurité avant un import V1 (la base n'admet pas d'autre type sans migration).
+ */
+export async function createBackup(kind: 'manual' | 'auto' | 'pre-migration'): Promise<BackupOutcome> {
   const d = rawDriver();
   const secondary = await getSecondaryDir();
   const created = await d.backupCreate(kind, secondary); // lève une erreur en cas d'échec : rien n'est écrit, rien n'est supprimé

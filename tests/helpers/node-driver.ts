@@ -218,6 +218,9 @@ export function openTestDb(dir: string, name = 'ba-mentor.db'): TestDb {
     async pickFolder(): Promise<string | null> {
       return null;
     },
+    async pickImportFile() {
+      return null;
+    },
   };
 
   return {

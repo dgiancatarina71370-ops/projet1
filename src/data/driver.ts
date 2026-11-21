@@ -53,6 +53,15 @@ export interface VerifyReport {
   sizeBytes: number;
 }
 
+/** Fichier texte choisi par l'utilisateur et lu par le noyau (limite de taille, UTF-8, empreinte des octets). */
+export interface PickedTextFile {
+  path: string;
+  name: string;
+  sizeBytes: number;
+  sha256: string;
+  text: string;
+}
+
 export interface DbDriver {
   select(sql: string, params: SqlValue[]): Promise<Row[]>;
   execute(sql: string, params: SqlValue[]): Promise<WriteResult>;
@@ -71,4 +80,6 @@ export interface DbDriver {
   /** Boîtes de dialogue système ; null si l'utilisateur annule. */
   pickDatabaseFile(): Promise<string | null>;
   pickFolder(): Promise<string | null>;
+  /** Choisit puis lit un export JSON de la V1 ; null si l'utilisateur annule. */
+  pickImportFile(): Promise<PickedTextFile | null>;
 }

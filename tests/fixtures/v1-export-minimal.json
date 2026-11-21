@@ -1,0 +1,109 @@
+{
+  "format": "ba-mentor-v1-export",
+  "formatVersion": 1,
+  "exportedAt": "2026-11-20T17:31:06.971Z",
+  "generator": "BA-Mentor V1 (fixture anonymisé)",
+  "state": {
+    "v": 1,
+    "theme": "dark",
+    "flags": {},
+    "customFlags": [],
+    "settings": {
+      "author": "Auteur Test"
+    },
+    "nodes": [
+      {
+        "id": "ujaix9rt",
+        "parent": null,
+        "type": "folder",
+        "name": "Projet exemple — Référentiel clients"
+      },
+      {
+        "id": "ki6m7e54",
+        "parent": "ujaix9rt",
+        "type": "folder",
+        "name": "01 Cadrage"
+      },
+      {
+        "id": "0fte2s5h",
+        "parent": "ujaix9rt",
+        "type": "folder",
+        "name": "02 Ateliers"
+      },
+      {
+        "id": "pca08jfm",
+        "parent": "ujaix9rt",
+        "type": "folder",
+        "name": "03 Spécifications"
+      },
+      {
+        "id": "aenlyyvo",
+        "parent": "ujaix9rt",
+        "type": "folder",
+        "name": "04 Recette"
+      },
+      {
+        "id": "v9p59nci",
+        "parent": "ujaix9rt",
+        "type": "folder",
+        "name": "99 Archives",
+        "archive": true
+      },
+      {
+        "id": "e9t4q459",
+        "parent": "0fte2s5h",
+        "type": "doc",
+        "kind": "cr",
+        "name": "CR atelier — fusion des fiches (exemple)",
+        "status": "brouillon",
+        "updated": "2026-11-01T22:48:08.823Z",
+        "content": "# Compte-rendu d’atelier — Fusion des fiches clients\n\n**Exemple fourni avec l’application.**\n\n## Décisions\n- [x] Le CRM reste la source de vérité pour l’identité client\n- [ ] Seuil de fusion automatique à confirmer\n\n## Actions\n| # | Action | Porteur | Échéance | Statut |\n|---|---|---|---|---|\n| A1 | Mesurer le taux de doublons actuel | Data | À définir | À faire |\n\n## Points ouverts\n- Clients sans e-mail : quelle clé de rapprochement ?"
+      }
+    ],
+    "notes": {
+      "title": "Fusion des fiches clients (exemple)",
+      "text": "# Atelier — fusion des fiches clients (exemple)\n\nParticipants : métier gestion client, data, MOA, support.\n\n- Chaque client doit avoir une seule fiche, tous les canaux confondus.\n- Le CRM reste la source de vérité, l'ERP \"alimente\" les adresses de facturation.\n- Les doublons sont fusionnés automatiquement quand le nom et l'e-mail sont identiques.\n- Le support veut pouvoir défusionner \"rapidement\" en cas d'erreur.\n- La fiche doit être à jour en temps réel pour tous les utilisateurs.\n- Point à voir : les clients sans e-mail (environ 15 %).\n- Livraison souhaitée pour fin du trimestre."
+    },
+    "stakeholders": [],
+    "dod": [
+      {
+        "id": "p0gmqyqt",
+        "text": "Critères d’acceptation Gherkin validés par le Product Owner",
+        "on": true
+      },
+      {
+        "id": "xf95zzy9",
+        "text": "Règles de gestion référencées (RG-xx), sans contradiction",
+        "on": true
+      },
+      {
+        "id": "k6ppszqs",
+        "text": "Cas limites et cas d’erreur couverts",
+        "on": true
+      },
+      {
+        "id": "jg5xu1ju",
+        "text": "Revue par les pairs effectuée",
+        "on": true
+      },
+      {
+        "id": "7sfx0csj",
+        "text": "Cas de test rédigés (TU / TI / UAT)",
+        "on": true
+      },
+      {
+        "id": "kt18d3vh",
+        "text": "Impacts sur les autres équipes identifiés",
+        "on": true
+      },
+      {
+        "id": "ztq95876",
+        "text": "Documentation mise à jour dans l’outil de référence",
+        "on": false
+      }
+    ],
+    "pspo": {
+      "p1": true
+    }
+  }
+}

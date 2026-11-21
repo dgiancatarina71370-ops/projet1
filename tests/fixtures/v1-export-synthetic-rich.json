@@ -1,0 +1,180 @@
+{
+  "format": "ba-mentor-v1-export",
+  "formatVersion": 1,
+  "exportedAt": "2026-04-01T08:00:00.000Z",
+  "generator": "Jeu de test synthétique (pas un export réel)",
+  "state": {
+    "v": 1,
+    "theme": "light",
+    "flags": {
+      "challenge": true,
+      "agile": false,
+      "custom1": true
+    },
+    "customFlags": [
+      {
+        "key": "custom1",
+        "label": "Mon module",
+        "desc": "Module de test",
+        "group": "Perso",
+        "default": false,
+        "custom": true
+      },
+      {
+        "key": "custom2",
+        "label": "Autre module",
+        "desc": "",
+        "group": "Perso",
+        "default": true,
+        "custom": true
+      }
+    ],
+    "settings": {
+      "author": "Auteur Synthétique"
+    },
+    "nodes": [
+      {
+        "id": "aaaaaaa1",
+        "parent": null,
+        "type": "folder",
+        "name": "Projet A (synthétique)"
+      },
+      {
+        "id": "aaaaaaa2",
+        "parent": "aaaaaaa1",
+        "type": "folder",
+        "name": "Cadrage"
+      },
+      {
+        "id": "aaaaaaa3",
+        "parent": "aaaaaaa1",
+        "type": "folder",
+        "name": "Archives",
+        "archive": true
+      },
+      {
+        "id": "aaaaaaa4",
+        "parent": "aaaaaaa2",
+        "type": "folder",
+        "name": "Sous-dossier"
+      },
+      {
+        "id": "bbbbbbb1",
+        "parent": null,
+        "type": "folder",
+        "name": "Projet B (vide)"
+      },
+      {
+        "id": "ddddddd1",
+        "parent": "aaaaaaa4",
+        "type": "doc",
+        "kind": "us",
+        "name": "US connexion",
+        "status": "brouillon",
+        "updated": "2026-03-02T09:00:00.000Z",
+        "content": "En tant que testeur,\nje veux des accents : é è à ç — « guillemets » et un emoji 🙂\n"
+      },
+      {
+        "id": "ddddddd2",
+        "parent": "aaaaaaa2",
+        "type": "doc",
+        "kind": "sfd",
+        "name": "SFD règles de gestion",
+        "status": "validé",
+        "updated": "2026-03-10T14:30:00.000Z",
+        "validatedAt": "2026-03-10T14:30:00.000Z",
+        "content": "Contenu validé.",
+        "sent": [
+          {
+            "to": "alice@exemple.test, bob@exemple.test",
+            "at": "2026-03-11T08:00:00.000Z"
+          },
+          {
+            "to": "carole@exemple.test;dan@exemple.test",
+            "at": "2026-03-12T08:00:00.000Z"
+          }
+        ]
+      },
+      {
+        "id": "ddddddd3",
+        "parent": "aaaaaaa3",
+        "type": "doc",
+        "kind": "cr",
+        "name": "CR archivé",
+        "status": "archivé",
+        "updated": "2026-02-01T10:00:00.000Z",
+        "archivedAt": "2026-03-20T10:00:00.000Z",
+        "prevParent": "aaaaaaa2",
+        "content": "Ancien compte rendu."
+      },
+      {
+        "id": "ddddddd4",
+        "parent": "zzzzzzzz",
+        "type": "doc",
+        "kind": "dod",
+        "name": "Livrable sans dossier",
+        "status": "brouillon",
+        "updated": "2026-03-05T10:00:00.000Z",
+        "content": ""
+      },
+      {
+        "id": "ddddddd5",
+        "parent": "aaaaaaa2",
+        "type": "doc",
+        "kind": "sgd",
+        "name": "SGD statut inconnu",
+        "status": "en cours",
+        "updated": "pas une date",
+        "content": "x"
+      }
+    ],
+    "notes": {
+      "title": "Notes de test",
+      "text": "Ligne 1\nLigne 2"
+    },
+    "stakeholders": [
+      {
+        "id": "s1",
+        "name": "Alice Test",
+        "email": "alice@exemple.test"
+      },
+      {
+        "id": "s2",
+        "name": "Bob Test",
+        "email": "bob@exemple.test"
+      },
+      {
+        "id": "s3",
+        "name": "Alice en double",
+        "email": "ALICE@exemple.test"
+      },
+      {
+        "id": "s4",
+        "name": "Sans adresse",
+        "email": ""
+      }
+    ],
+    "dod": [
+      {
+        "id": "x1",
+        "text": "Critère actif",
+        "on": true
+      },
+      {
+        "id": "x2",
+        "text": "Critère inactif",
+        "on": false
+      },
+      {
+        "id": "x3",
+        "text": "Autre critère",
+        "on": true
+      }
+    ],
+    "pspo": {
+      "p1": true,
+      "p2": false,
+      "p3": true
+    }
+  }
+}

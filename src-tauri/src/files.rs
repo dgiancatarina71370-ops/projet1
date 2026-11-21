@@ -227,6 +227,38 @@ pub fn sha256_file(path: &Path) -> Result<String, String> {
 }
 
 // ---------------------------------------------------------------------------
+// Lecture d'un fichier texte choisi par l'utilisateur (import V1, lot V2.2b)
+// ---------------------------------------------------------------------------
+
+#[derive(Debug)]
+pub struct TextRead {
+    pub text: String,
+    pub size: u64,
+    /// Empreinte SHA-256 des octets du fichier tels qu'ils sont sur le disque (marque d'ordre des octets comprise).
+    pub sha256: String,
+}
+
+/// Lit un fichier UTF-8 d'au plus `max_bytes` octets. Le contenu n'est jamais lu au-delà de la limite : un fichier énorme est refusé sans être chargé.
+/// Une marque d'ordre des octets UTF-8 éventuelle est retirée du texte, pas de l'empreinte.
+pub fn read_text_limited(path: &Path, max_bytes: u64) -> Result<TextRead, String> {
+    let f = File::open(path).map_err(|e| format!("Lecture impossible ({}) : {e}", path.display()))?;
+    let declared = f.metadata().map_err(|e| format!("Lecture impossible ({}) : {e}", path.display()))?.len();
+    if declared > max_bytes {
+        return Err(format!("Fichier trop volumineux ({} Mo) : la limite est de {} Mo.", declared / 1_048_576, max_bytes / 1_048_576));
+    }
+    let mut bytes = Vec::new();
+    // take(max + 1) : si le fichier grossit pendant la lecture, on le détecte quand même.
+    f.take(max_bytes + 1).read_to_end(&mut bytes).map_err(|e| format!("Lecture impossible ({}) : {e}", path.display()))?;
+    if bytes.len() as u64 > max_bytes {
+        return Err(format!("Fichier trop volumineux : la limite est de {} Mo.", max_bytes / 1_048_576));
+    }
+    let sha256 = sha256_hex(&bytes);
+    let body = if bytes.starts_with(&[0xEF, 0xBB, 0xBF]) { &bytes[3..] } else { &bytes[..] };
+    let text = String::from_utf8(body.to_vec()).map_err(|_| "Ce fichier n'est pas un texte UTF-8 valide : ce n'est pas un export JSON de BA-Mentor.".to_string())?;
+    Ok(TextRead { text, size: bytes.len() as u64, sha256 })
+}
+
+// ---------------------------------------------------------------------------
 // Écriture durable et remplacement de fichier
 // ---------------------------------------------------------------------------
 
@@ -336,6 +368,33 @@ mod tests {
         let _ = fs::remove_dir_all(&p);
         fs::create_dir_all(&p).unwrap();
         p
+    }
+
+    #[test]
+    fn read_text_limited_reads_hashes_and_strips_bom() {
+        let d = temp_dir("readtext");
+        let p = d.join("a.json");
+        fs::write(&p, b"\xEF\xBB\xBF{\"x\":\"\xC3\xA9\"}").unwrap();
+        let r = read_text_limited(&p, 1024).unwrap();
+        assert_eq!(r.text, "{\"x\":\"é\"}");
+        assert_eq!(r.size, 13);
+        assert_eq!(r.sha256, sha256_hex(b"\xEF\xBB\xBF{\"x\":\"\xC3\xA9\"}"));
+    }
+
+    #[test]
+    fn read_text_limited_refuses_too_big_and_non_utf8() {
+        let d = temp_dir("readtext2");
+        let big = d.join("big.json");
+        fs::write(&big, vec![b'a'; 2048]).unwrap();
+        assert!(read_text_limited(&big, 1024).unwrap_err().contains("trop volumineux"));
+        let bad = d.join("bad.json");
+        fs::write(&bad, [0xFF, 0xFE, 0x00]).unwrap();
+        assert!(read_text_limited(&bad, 1024).unwrap_err().contains("UTF-8"));
+        assert!(read_text_limited(&d.join("absent.json"), 1024).is_err());
+        // pile à la limite : accepté
+        let exact = d.join("exact.json");
+        fs::write(&exact, vec![b'a'; 1024]).unwrap();
+        assert_eq!(read_text_limited(&exact, 1024).unwrap().size, 1024);
     }
 
     #[test]

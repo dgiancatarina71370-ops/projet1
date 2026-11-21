@@ -1,4 +1,4 @@
-// BA-Mentor Portable Ultimate Edition - noyau Tauri (lot V2.2a).
+// BA-Mentor Portable Ultimate Edition - noyau Tauri (lot V2.2b).
 // Aucune logique métier ici : ouvrir la base, exécuter des instructions SQL avec paramètres liés, sauvegarder, restaurer, verrouiller, ouvrir la fenêtre.
 // Les requêtes, les migrations et les règles (quand sauvegarder, combien conserver) vivent côté TypeScript (src/data).
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
@@ -264,6 +264,36 @@ async fn pick_folder(app: tauri::AppHandle) -> Result<Option<String>, String> {
     }
 }
 
+/// Fichier texte lu par le noyau pour l'import V1 : l'interface reçoit le texte et l'empreinte, jamais un chemin à rouvrir.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PickedText {
+    path: String,
+    name: String,
+    size_bytes: u64,
+    sha256: String,
+    text: String,
+}
+
+/// Limite de taille d'un export V1 (50 Mo) : un export réel fait quelques dizaines de Ko.
+const MAX_IMPORT_BYTES: u64 = 50 * 1024 * 1024;
+
+/// Boîte de dialogue système : choisir un export JSON de la V1, puis le lire (UTF-8, 50 Mo au plus). None si l'utilisateur annule.
+#[tauri::command]
+async fn import_pick_file(app: tauri::AppHandle) -> Result<Option<PickedText>, String> {
+    let picked = app.dialog().file().add_filter("Export BA-Mentor V1 (JSON)", &["json"]).blocking_pick_file();
+    let Some(p) = picked else { return Ok(None) };
+    let path = p.into_path().map_err(|e| e.to_string())?;
+    let read = files::read_text_limited(&path, MAX_IMPORT_BYTES)?;
+    Ok(Some(PickedText {
+        name: path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default(),
+        path: path.to_string_lossy().to_string(),
+        size_bytes: read.size,
+        sha256: read.sha256,
+        text: read.text,
+    }))
+}
+
 /// Fermeture demandée par l'interface une fois la sauvegarde de fermeture faite.
 #[tauri::command]
 fn app_exit(app: tauri::AppHandle) {
@@ -348,6 +378,7 @@ fn main() {
             backup_delete,
             pick_database_file,
             pick_folder,
+            import_pick_file,
             app_exit
         ])
         .run(tauri::generate_context!())
