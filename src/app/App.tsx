@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { boot } from './boot.ts';
+import { boot, continueWithEmptyDatabase } from './boot.ts';
 import type { BootResult } from './boot.ts';
 import { query } from '../data/db.ts';
 import { createProject, deleteProject, listProjects, recentActivity } from '../data/repositories/projects.ts';
@@ -9,6 +9,7 @@ import { BackupPanel } from './BackupPanel.tsx';
 import { ImportPanel } from './ImportPanel.tsx';
 import { ExportPanel } from './ExportPanel.tsx';
 import { AboutPanel } from './AboutPanel.tsx';
+import { EmptyDbPanel } from './EmptyDbPanel.tsx';
 import { installCloseHandler, setDatabaseReady, startMaintenance } from './maintenance.ts';
 import type { Notice } from './maintenance.ts';
 import { buildSignature, signatureLines } from '../shared/signature.ts';
@@ -47,21 +48,29 @@ export function App() {
 
   const refresh = useCallback(async () => setSnap(await takeSnapshot()), []);
 
-  useEffect(() => {
-    let dead = false;
-    boot().then(async (r) => {
-      if (dead) return;
+  // Entrée dans l'application : seulement quand la base est prête (jamais pendant l'écran « base vide »).
+  const enter = useCallback(
+    async (r: BootResult) => {
       setResult(r);
       if (r.status === 'ready') {
         setDatabaseReady(true);
         await refresh();
         startMaintenance((n) => setNotices((old) => [...old.slice(-4), n]));
       }
+    },
+    [refresh],
+  );
+
+  useEffect(() => {
+    let dead = false;
+    boot().then(async (r) => {
+      if (dead) return;
+      await enter(r);
     });
     return () => {
       dead = true;
     };
-  }, [refresh]);
+  }, [enter]);
 
   // Fermeture : sauvegarde si des données ont changé, puis sortie (voir maintenance.ts).
   useEffect(() => installCloseHandler(), []);
@@ -87,7 +96,7 @@ export function App() {
     <div className="flex min-h-full flex-col">
       <header className="border-b border-hub-line px-6 py-4">
         <h1 className="text-lg font-semibold">BA-Mentor — état technique</h1>
-        <p className="text-sm text-hub-muted">Lot V2.3a : export signé en Markdown et en HTML, écran À propos (après import V1, sauvegarde, restauration et protection contre l’ouverture multiple). Les modules arrivent aux lots suivants.</p>
+        <p className="text-sm text-hub-muted">Lot V2.2c : protection contre le démarrage silencieux sur une base vide (après export signé Markdown et HTML, écran À propos, import V1, sauvegarde, restauration et protection contre l’ouverture multiple). Les modules arrivent aux lots suivants.</p>
       </header>
 
       <main className="mx-auto w-full max-w-5xl flex-1 space-y-4 p-6">
@@ -97,6 +106,15 @@ export function App() {
           <Card title="Application requise">
             <p>Cette page doit s’exécuter dans l’application BA-Mentor (Tauri). Lancez l’exécutable plutôt que d’ouvrir la page dans un navigateur.</p>
           </Card>
+        )}
+
+        {result?.status === 'empty-db' && (
+          <EmptyDbPanel
+            dataDir={result.info.dataDir}
+            backupCount={result.backupCount}
+            newestStamp={result.newestStamp}
+            onContinue={async () => enter(await continueWithEmptyDatabase(result.info))}
+          />
         )}
 
         {result?.status === 'error' && (

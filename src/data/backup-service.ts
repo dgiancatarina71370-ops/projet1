@@ -8,8 +8,8 @@ import type { WriteOp } from './mutate.ts';
 import { migrate, SchemaTooNewError } from './migrate.ts';
 import type { Migration } from './migrate.ts';
 import { migrations as defaultMigrations } from './migrations/index.ts';
-import { decideAutoBackup, lastBackupMs, newestFirst, planRotation } from './backup-policy.ts';
-import type { AutoTrigger } from './backup-policy.ts';
+import { decideAutoBackup, formatProtection, lastBackupMs, newestFirst, parseProtection, planRotation, protectionMarkFor } from './backup-policy.ts';
+import type { AutoTrigger, ProtectionMark } from './backup-policy.ts';
 
 export class BackupRefusedError extends Error {
   constructor(message: string) {
@@ -20,6 +20,7 @@ export class BackupRefusedError extends Error {
 
 const META_SECONDARY = 'backup_secondary_dir';
 const META_LAST_ACTIVITY = 'last_backup_activity_id';
+const META_PROTECTION = 'rotation_protected_until';
 
 const upsertMeta = (key: string, value: string): WriteOp => ({
   sql: 'INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
@@ -51,6 +52,27 @@ export async function setSecondaryDir(dir: string | null): Promise<void> {
   await mutate([upsertMeta(META_SECONDARY, dir ? dir.trim() : '')]);
 }
 
+/** Repère de protection de la rotation (V2.2c), ou null si aucune sauvegarde n'est protégée. */
+export async function getRotationProtection(): Promise<ProtectionMark | null> {
+  return parseProtection(await getMeta(META_PROTECTION));
+}
+
+/**
+ * Choix « continuer avec une base vide » : les sauvegardes présentes dans le dossier de l'application ne sont plus jamais supprimées
+ * par la rotation, jusqu'à ce que l'utilisateur lève la protection (ou restaure une sauvegarde, la base restaurée ayant son propre état).
+ * À appeler dès que la base est migrée, avant toute sauvegarde automatique.
+ */
+export async function protectExistingBackups(): Promise<ProtectionMark | null> {
+  const mark = protectionMarkFor(await rawDriver().backupList(null));
+  if (mark === null) return null;
+  await mutate([upsertMeta(META_PROTECTION, formatProtection(mark))]);
+  return mark;
+}
+
+export async function releaseBackupProtection(): Promise<void> {
+  await mutate([upsertMeta(META_PROTECTION, '')]);
+}
+
 export interface BackupOutcome {
   created: BackupCreated;
   /** Fichiers supprimés par la rotation. */
@@ -66,6 +88,7 @@ export interface BackupOutcome {
 export async function rotateBackups(): Promise<{ rotated: string[]; warnings: string[] }> {
   const d = rawDriver();
   const secondary = await getSecondaryDir();
+  const mark = await getRotationProtection();
   const rotated: string[] = [];
   const warnings: string[] = [];
   const dirs: Array<string | null> = secondary ? [null, secondary] : [null];
@@ -77,7 +100,7 @@ export async function rotateBackups(): Promise<{ rotated: string[]; warnings: st
       warnings.push(`Rotation impossible (${dir ?? 'dossier de l\'application'}) : ${e instanceof Error ? e.message : String(e)}`);
       continue;
     }
-    for (const doomed of planRotation(entries)) {
+    for (const doomed of planRotation(entries, mark)) {
       try {
         await d.backupDelete(doomed.file, secondary);
         rotated.push(doomed.file);
@@ -143,6 +166,8 @@ export interface RestoreOptions {
   migrations?: Migration[];
   /** Base actuelle illisible (échec au démarrage) : la sauvegarde pre-restore est alors impossible et n'est pas exigée. */
   currentBaseUnreadable?: boolean;
+  /** Base actuelle neuve (aucune migration, aucune donnée) : une copie « avant restauration » serait inutile et pourrait écarter une vraie copie par la rotation. */
+  currentBaseEmpty?: boolean;
 }
 
 export interface RestoreResult {
@@ -169,7 +194,7 @@ export async function restoreBackup(file: string, options: RestoreOptions = {}):
 
   let pre: BackupCreated | null = null;
   try {
-    pre = await d.backupCreate('pre-restore', null);
+    if (!options.currentBaseEmpty) pre = await d.backupCreate('pre-restore', null);
   } catch (e) {
     if (!options.currentBaseUnreadable) {
       throw new BackupRefusedError(`Restauration annulée : la sauvegarde de la base actuelle (pre-restore) a échoué. ${e instanceof Error ? e.message : String(e)}`);

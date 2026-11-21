@@ -3,15 +3,18 @@ import type { BackupEntry, VerifyReport } from '../data/driver.ts';
 import {
   createBackup,
   deleteBackup,
+  getRotationProtection,
   getSecondaryDir,
   listBackups,
   pickDatabaseFile,
   pickFolder,
+  releaseBackupProtection,
   restoreBackup,
   setSecondaryDir,
   verifyBackup,
 } from '../data/backup-service.ts';
-import { stampToMs } from '../data/backup-policy.ts';
+import { isProtected, stampToMs } from '../data/backup-policy.ts';
+import type { ProtectionMark } from '../data/backup-policy.ts';
 import { formatBytes, formatLocal } from '../shared/format.ts';
 
 interface Message {
@@ -19,7 +22,7 @@ interface Message {
   text: string;
 }
 
-type Pending = { action: 'restore' | 'delete'; file: string; label: string; external?: VerifyReport } | null;
+type Pending = { action: 'restore' | 'delete' | 'unprotect'; file: string; label: string; external?: VerifyReport } | null;
 
 const KIND_LABEL: Record<string, string> = {
   manual: 'Manuelle',
@@ -35,17 +38,21 @@ const errorText = (e: unknown): string => (e instanceof Error ? e.message : Stri
 /**
  * Centre de sauvegarde. Mode « recovery » : la base est illisible au démarrage ; seule la restauration est proposée.
  */
-export function BackupPanel(props: { mode: 'normal' | 'recovery'; /** Change quand une sauvegarde automatique a eu lieu : la liste se relit. */ refreshKey?: number }) {
+export function BackupPanel(props: { mode: 'normal' | 'recovery'; /** Base neuve sans donnée (V2.2c) : pas de copie « avant restauration » inutile. */ emptyBase?: boolean; /** Change quand une sauvegarde automatique a eu lieu : la liste se relit. */ refreshKey?: number }) {
   const recovery = props.mode === 'recovery';
   const [entries, setEntries] = useState<BackupEntry[]>([]);
   const [secondary, setSecondary] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [pending, setPending] = useState<Pending>(null);
+  const [protection, setProtection] = useState<ProtectionMark | null>(null);
 
   const refresh = useCallback(async () => {
     setEntries(await listBackups());
-    if (!recovery) setSecondary(await getSecondaryDir());
+    if (!recovery) {
+      setSecondary(await getSecondaryDir());
+      setProtection(await getRotationProtection());
+    }
   }, [recovery]);
 
   useEffect(() => {
@@ -103,13 +110,14 @@ export function BackupPanel(props: { mode: 'normal' | 'recovery'; /** Change qua
     if (!p) return;
     setPending(null);
     if (p.action === 'delete') return run(() => deleteBackup(p.file));
+    if (p.action === 'unprotect') return run(() => releaseBackupProtection());
     return run(async () => {
-      const r = await restoreBackup(p.file, { currentBaseUnreadable: recovery });
+      const r = await restoreBackup(p.file, { currentBaseUnreadable: recovery, currentBaseEmpty: props.emptyBase });
       setTimeout(() => window.location.reload(), 1500);
       const out: Message[] = [
         {
           level: 'ok',
-          text: `Restauration terminée (schéma ${r.restoredSchema}${r.migrated ? `, migré vers ${r.currentSchema}` : ''}). L'état précédent est conservé : ${r.preRestoreFile ?? 'aucune copie possible (base illisible, fichier abîmé conservé dans le dossier de données)'}. Rechargement…`,
+          text: `Restauration terminée (schéma ${r.restoredSchema}${r.migrated ? `, migré vers ${r.currentSchema}` : ''}). L'état précédent est conservé : ${r.preRestoreFile ?? (props.emptyBase ? 'aucune copie nécessaire, la base était vide' : 'aucune copie possible (base illisible, fichier abîmé conservé dans le dossier de données)')}. Rechargement…`,
         },
       ];
       for (const w of r.warnings) out.push({ level: 'warning', text: w });
@@ -152,12 +160,12 @@ export function BackupPanel(props: { mode: 'normal' | 'recovery'; /** Change qua
       {pending && (
         <div role="alertdialog" className="rounded border border-hub-bad p-3">
           <p>
-            {pending.action === 'restore' ? 'Restaurer cette sauvegarde remplace TOUTES les données actuelles. Une copie de l\'état actuel est faite juste avant.' : 'Supprimer définitivement cette sauvegarde ?'}
+            {pending.action === 'restore' ? 'Restaurer cette sauvegarde remplace TOUTES les données actuelles. Une copie de l\'état actuel est faite juste avant.' : pending.action === 'unprotect' ? 'Lever la protection : la rotation automatique pourra de nouveau supprimer les anciennes sauvegardes automatiques, avant migration et avant restauration (les manuelles ne sont jamais supprimées automatiquement).' : 'Supprimer définitivement cette sauvegarde ?'}
           </p>
           <p className="mt-1 break-all text-hub-muted">{pending.label}</p>
           {pending.external && <p className="mt-1 text-hub-muted">Fichier contrôlé : intégrité correcte, schéma {pending.external.schemaVersion}, {formatBytes(pending.external.sizeBytes)}.</p>}
           <div className="mt-2 flex gap-2">
-            <button type="button" onClick={doConfirm} className="rounded bg-hub-bad px-3 py-1 font-medium text-hub-bg">{pending.action === 'restore' ? 'Confirmer la restauration' : 'Confirmer la suppression'}</button>
+            <button type="button" onClick={doConfirm} className="rounded bg-hub-bad px-3 py-1 font-medium text-hub-bg">{pending.action === 'restore' ? 'Confirmer la restauration' : pending.action === 'unprotect' ? 'Confirmer : lever la protection' : 'Confirmer la suppression'}</button>
             <button type="button" onClick={() => setPending(null)} className="rounded border border-hub-line px-3 py-1">Annuler</button>
           </div>
         </div>
@@ -178,7 +186,7 @@ export function BackupPanel(props: { mode: 'normal' | 'recovery'; /** Change qua
           {entries.map((e) => (
             <tr key={e.file} className="border-t border-hub-line">
               <td className="py-1 pr-3">{formatLocal(stampToMs(e.stamp))}</td>
-              <td className="pr-3">{KIND_LABEL[e.kind] ?? e.kind}</td>
+              <td className="pr-3">{KIND_LABEL[e.kind] ?? e.kind}{isProtected(e, protection) && <span className="ml-2 rounded border border-yellow-500 px-1 text-xs text-yellow-300">Protégée</span>}</td>
               <td className="pr-3">{formatBytes(e.sizeBytes)}</td>
               <td className="pr-3">{e.schemaVersion ?? '?'}</td>
               <td className="space-x-3 text-right">
@@ -192,6 +200,12 @@ export function BackupPanel(props: { mode: 'normal' | 'recovery'; /** Change qua
           ))}
         </tbody>
       </table>
+      {!recovery && protection && (
+        <div role="status" className="rounded border border-yellow-500 p-3 text-yellow-300">
+          <p>Les sauvegardes marquées « Protégée » datent d'avant votre choix de continuer avec une base vide : elles ne sont pas supprimées automatiquement. Restaurez la bonne sauvegarde, ou levez la protection quand vous êtes sûr de ne plus en avoir besoin.</p>
+          <button type="button" disabled={busy} onClick={() => setPending({ action: 'unprotect', file: '', label: 'Protection des sauvegardes existantes' })} className="mt-2 rounded border border-yellow-500 px-3 py-1 disabled:opacity-50">Lever la protection…</button>
+        </div>
+      )}
       <p className="text-xs text-hub-muted">Conservation : manuelles sans limite, automatiques 10, avant migration 5, avant restauration 5. Les dates sont affichées en heure locale.</p>
     </div>
   );

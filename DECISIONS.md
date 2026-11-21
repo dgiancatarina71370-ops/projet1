@@ -78,6 +78,31 @@ Un export réel de la V1 a été analysé avant d'écrire le moindre code : il e
 - Les composants React (`ExportPanel`, `AboutPanel`) sont vérifiés par compilation et un scénario simulé, pas par le vérificateur de types de React.
 - Pas encore de rendu Word ni PDF (V2.3b). La clé de module `export` n'existe pas avant V2.5 : `exportDocument` ne vérifie aucun drapeau pour l'instant.
 
+## État des validations (21/11/2026)
+- **V2.3a VALIDÉE** par David (tests 1 à 14 OK sur clé USB). Reste non vérifié en CI : voir « Limites connues » du lot.
+- **Campagne complémentaire V2.2a** : C1 à C8, C11, C12 OK ; C9 corrigé (texte dans la base) OK ; C10 à confirmer ; C13 facultatif non fait.
+- **Défaut D-A (constaté le 21/11/2026, test C9 d'origine)** : un fichier `ba-mentor.db` de 0 octet est une base SQLite valide ; l'application la migre à neuf et démarre sans alerte sur une liste vide, alors que des sauvegardes existent. Cause confirmée dans le code : `boot.ts` ne contrôle que `dbError` puis `migrate`. Hypothèse initiale fausse : la liste des sauvegardes vient du dossier (`backup_list`), pas de la base. Aggravant : `startMaintenance` lance ensuite des sauvegardes automatiques de la base vide, soumises à la rotation (10 automatiques conservées). Correction : lot V2.2c (livré en 0.2.5, en attente de validation).
+
+## Lot V2.2c : protection contre le démarrage silencieux sur une base vide (défaut D-A)
+
+### Décisions validées par David
+- Principe : une base neuve alors que des sauvegardes existent n'est jamais ouverte en silence (plan validé, « Go V2.2c »).
+- Le choix **« Continuer avec une base vide »** est conservé, présenté comme exceptionnel, avec un avertissement puis une confirmation séparée.
+- Les sauvegardes existantes sont **protégées automatiquement** quand l'utilisateur choisit de continuer, jusqu'à ce que la situation soit résolue (restauration) ou assumée (levée explicite de la protection).
+- V2.2c passe avant V2.3b (une perte apparente de données est plus grave qu'un retard sur Word et PDF).
+
+### Choix de conception
+1. **Critère** (`src/data/startup-check.ts`, avant la migration) : schéma 0 (aucune migration appliquée) **et** au moins une sauvegarde exploitable (schéma lisible ≥ 1) dans `backups\`. Une base migrée mais sans projet n'est jamais suspecte ; une première utilisation (aucune sauvegarde) démarre normalement ; un fichier illisible portant un nom de sauvegarde ne compte pas. Aucune modification du noyau Rust.
+2. **Nouvel état de démarrage** `empty-db` (`boot.ts`) : rien n'est migré, la maintenance automatique n'est pas lancée, aucune écriture. L'écran propose la restauration (liste lue sur le disque), « Restaurer depuis un fichier », et « Continuer avec une base vide… » (avertissement puis confirmation). Pas de création ni de suppression de sauvegarde dans cet état.
+3. **Restauration depuis cet état** : `currentBaseEmpty` supprime la copie « avant restauration » (une copie de base vide est inutile et la rotation de ce type, limitée à 5, pourrait écarter une vraie copie).
+4. **Protection** : repère `rotation_protected_until` = « AAAAMMJJ-HHMMSS|n » de la sauvegarde la plus récente au moment du choix, stocké dans `meta` (table technique). La rotation ignore toute sauvegarde dont (date, numéro) est ≤ au repère : elle n'est ni supprimée ni comptée dans la conservation. Le repère est posé juste après la migration, avant la maintenance ; si la pose échoue, le démarrage est refusé (jamais de base neuve non protégée). Le Centre de sauvegarde affiche « Protégée » sur ces lignes et un bouton « Lever la protection… » (confirmation). Restaurer une sauvegarde remplace `meta` : la protection disparaît d'elle-même (situation résolue). La suppression volontaire d'une sauvegarde reste possible.
+5. Valable aussi pour le dossier secondaire (même repère).
+
+### Limites connues
+- Un échec de la pose du repère après une migration réussie laisse une base neuve sans protection au lancement suivant (le critère « schéma 0 » n'est plus vrai). Très improbable (une écriture sur la clé juste après une migration réussie) ; le démarrage est alors refusé avec un message.
+- La protection est liée à la base : si l'utilisateur supprime lui-même le fichier de base après « Continuer », la situation redevient « base vide avec sauvegardes » et l'écran revient.
+- Non vérifié ici : compilation Rust (inchangée dans ce lot) ; comportement réel d'un fichier vidé par le Bloc-notes sur Windows (test manuel 1).
+
 ## Non vérifié lors de l'écriture (à valider via GitHub Actions)
 - Compilation et tests de `backup.rs` et `main.rs` (dépendent de `rusqlite` et de Tauri, inaccessibles ici), dont la commande `import_pick_file` et la boîte de dialogue Windows. `files.rs` (std seule) a été compilé et testé ici : 15 tests. Pour V2.3a : la commande `export_save` et l'utilisation de `set_file_name` / `set_directory` / `blocking_save_file` du plugin de dialogue.
 - Build Vite + Tailwind, rendu final, `tauri build`, exécution réelle.

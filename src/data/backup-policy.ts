@@ -19,13 +19,48 @@ export function newestFirst(a: BackupEntry, b: BackupEntry): number {
   return b.seq - a.seq;
 }
 
-/** Sauvegardes à supprimer pour respecter la conservation de chaque type. Ne supprime jamais une sauvegarde manuelle. */
-export function planRotation(entries: BackupEntry[]): BackupEntry[] {
+/**
+ * Repère de protection (lot V2.2c) : toute sauvegarde dont (date, numéro) est inférieure ou égale au repère n'est jamais supprimée par la rotation.
+ * Posé quand l'utilisateur choisit de continuer avec une base vide alors que des sauvegardes existent.
+ */
+export interface ProtectionMark {
+  stamp: string;
+  seq: number;
+}
+
+export function formatProtection(m: ProtectionMark): string {
+  return `${m.stamp}|${m.seq}`;
+}
+
+/** null si le texte est absent, vide ou invalide (protection levée). */
+export function parseProtection(text: string | null | undefined): ProtectionMark | null {
+  const m = /^(\d{8}-\d{6})\|(\d+)$/.exec((text ?? '').trim());
+  return m ? { stamp: m[1], seq: Number(m[2]) } : null;
+}
+
+export function isProtected(e: BackupEntry, mark: ProtectionMark | null): boolean {
+  if (mark === null) return false;
+  if (e.stamp !== mark.stamp) return e.stamp < mark.stamp;
+  return e.seq <= mark.seq;
+}
+
+/** Repère couvrant toutes les sauvegardes données (la plus récente), ou null s'il n'y en a aucune. */
+export function protectionMarkFor(entries: BackupEntry[]): ProtectionMark | null {
+  if (entries.length === 0) return null;
+  const newest = [...entries].sort(newestFirst)[0];
+  return { stamp: newest.stamp, seq: newest.seq };
+}
+
+/**
+ * Sauvegardes à supprimer pour respecter la conservation de chaque type. Ne supprime jamais une sauvegarde manuelle,
+ * ni une sauvegarde protégée (les sauvegardes protégées ne comptent pas dans la conservation).
+ */
+export function planRotation(entries: BackupEntry[], mark: ProtectionMark | null = null): BackupEntry[] {
   const doomed: BackupEntry[] = [];
   for (const kind of Object.keys(RETENTION) as BackupKind[]) {
     const keep = RETENTION[kind];
     if (keep === null) continue;
-    const ofKind = entries.filter((e) => e.kind === kind).sort(newestFirst);
+    const ofKind = entries.filter((e) => e.kind === kind && !isProtected(e, mark)).sort(newestFirst);
     doomed.push(...ofKind.slice(keep));
   }
   return doomed;
