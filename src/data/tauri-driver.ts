@@ -1,5 +1,5 @@
 // Seul fichier de l'application qui parle aux commandes Tauri (règle vérifiée par scripts/check-architecture.mjs).
-import type { PickedTextFile, BackupCreated, BackupEntry, BackupKind, BackupResult, DbDriver, Row, SqlValue, Statement, VerifyReport, WriteResult } from './driver.ts';
+import type { PickedTextFile, SavedExport, BackupCreated, BackupEntry, BackupKind, BackupResult, DbDriver, Row, SqlValue, Statement, VerifyReport, WriteResult } from './driver.ts';
 
 interface TauriGlobal {
   core: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> };
@@ -52,6 +52,7 @@ export const tauriDriver: DbDriver = {
   pickDatabaseFile: () => invoke<string | null>('pick_database_file'),
   pickFolder: () => invoke<string | null>('pick_folder'),
   pickImportFile: () => invoke<PickedTextFile | null>('import_pick_file'),
+  exportSave: (fileName, bytes, askWhere) => invoke<SavedExport | null>('export_save', { fileName, bytes: Array.from(bytes), askWhere }),
 };
 
 /** Demande de fermeture de la fenêtre : le noyau la suspend et attend que l'interface appelle exitApp() (15 s au plus). */

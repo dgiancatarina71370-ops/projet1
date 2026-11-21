@@ -1,0 +1,62 @@
+# Vérifie puis compile BA-Mentor sur un serveur Windows, sans rien installer sur votre PC.
+# Utilisation : onglet Actions -> « Build BA-Mentor » -> Run workflow -> télécharger l'artefact « ba-mentor-exe ».
+name: Build BA-Mentor
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 22 }
+      - run: npm install
+      - name: Versions alignées
+        run: npm run check:versions
+      - name: Règles d'architecture (bloquant)
+        run: npm run check:architecture
+      - name: Tests E8, E10, E13 (bloquant)
+        run: npm test
+      - name: Vérification des types (non bloquante au premier lot)
+        run: npm run typecheck
+        continue-on-error: true
+
+  # Tests du noyau Rust (BLOQUANTS : un job rouge ici = ne pas valider le lot, même si l'exécutable a été produit).
+  # Séparés du build pour qu'un échec de test ne vous prive pas de l'exécutable nécessaire au diagnostic.
+  rust-tests:
+    needs: verify
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: src-tauri }
+      - uses: actions/setup-node@v6
+        with: { node-version: 22 }
+      - run: npm install
+      - run: npm run build
+      - run: npx tauri icon app-icon.png
+      - name: Tests Rust (files.rs, backup.rs, main.rs)
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+
+  build:
+    needs: verify
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 22 }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: src-tauri }
+      - run: npm install
+      - run: npm run build
+      - run: npx tauri icon app-icon.png
+      - run: npx tauri build --no-bundle
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ba-mentor-exe
+          path: src-tauri/target/release/ba-mentor.exe

@@ -1,0 +1,50 @@
+{
+  "format": "ba-mentor-v1-export",
+  "formatVersion": 1,
+  "exportedAt": "2026-11-21T10:00:00.000Z",
+  "generator": "Jeu de test synthétique (pas un export réel)",
+  "state": {
+    "v": 1,
+    "theme": "dark",
+    "flags": {},
+    "customFlags": [],
+    "settings": {
+      "author": "Auteur Test"
+    },
+    "nodes": [
+      {
+        "id": "tttttt01",
+        "parent": null,
+        "type": "folder",
+        "name": "Projet piégé (synthétique)"
+      },
+      {
+        "id": "tttttt02",
+        "parent": "tttttt01",
+        "type": "doc",
+        "kind": "cr",
+        "name": "Livrable piégé : <b>test</b> / « 12 » * ?",
+        "status": "brouillon",
+        "updated": "2026-11-10T09:00:00.000Z",
+        "content": "# Titre <iframe src=\"http://evil.test\"></iframe>\n\n<script>alert(\"script-bloc\")</script>\n\nTexte <b onclick=\"alert('clic')\">gras HTML</b> et <img src=x onerror=alert(\"img\")> et <br> saut.\n\n[js](javascript:alert(\"lien\")) [ok](https://exemple.test/page?a=1&b=2) [mail](mailto:nom@exemple.test) [ancre](#fin)\n\n![pixel espion](http://evil.test/pixel.png)\n\n| A <script> | B |\n|---|---|\n| <img src=x onerror=alert(\"tableau\")> | `x</td><script>` |\n\n```html\n</code></pre><script>alert(\"code\")</script>\n```\n\n> citation <svg onload=alert(\"svg\")>\n\n- item <style>body{display:none}</style>\n- [x] fait\n- [ ] à faire\n\n&lt;script&gt;alert(\"entite\")&lt;/script&gt; &amp; fin"
+      },
+      {
+        "id": "tttttt03",
+        "parent": "tttttt01",
+        "type": "doc",
+        "kind": "us",
+        "name": "CON",
+        "status": "brouillon",
+        "updated": "2026-11-11T09:00:00.000Z",
+        "content": "Nom réservé par Windows : le fichier exporté doit quand même se créer."
+      }
+    ],
+    "notes": {
+      "title": "",
+      "text": ""
+    },
+    "stakeholders": [],
+    "dod": [],
+    "pspo": {}
+  }
+}

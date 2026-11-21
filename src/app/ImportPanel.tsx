@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { pickImportFile, previewImport, runImport } from '../data/import-v1.ts';
+import { keptSentence, pickImportFile, previewImport, runImport } from '../data/import-v1.ts';
 import type { ImportCounts, ImportPreview, ImportReport } from '../data/import-v1.ts';
 import type { PickedTextFile } from '../data/driver.ts';
 import { formatBytes } from '../shared/format.ts';
@@ -143,7 +143,7 @@ export function ImportPanel(props: { onImported: () => void }) {
           <CountsTable counts={preview.plan.expected} />
           {preview.plan.kept.length > 0 && (
             <ul className="list-disc pl-5 text-hub-muted">
-              {preview.plan.kept.map((k) => <li key={k.what}>{k.count} {k.what} : conservé(s) tel(s) quel(s), non écrasé(s).</li>)}
+              {preview.plan.kept.map((k) => <li key={k.what}>{keptSentence(k)}</li>)}
             </ul>
           )}
           <Warnings list={preview.parsed.warnings} />

@@ -308,6 +308,85 @@ pub fn copy_durable(src: &Path, dst: &Path) -> Result<(), String> {
 }
 
 // ---------------------------------------------------------------------------
+// Export de fichiers (lot V2.3a) : nom validé, jamais d'écrasement dans le dossier exports/
+// ---------------------------------------------------------------------------
+
+/// Extensions qu'un export peut avoir. « json » sert aux fichiers de modèles (lot V2.6).
+pub const EXPORT_EXTENSIONS: [&str; 5] = ["md", "html", "docx", "pdf", "json"];
+
+const RESERVED_NAMES: [&str; 22] = [
+    "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+];
+
+/// Contrôle un nom de fichier d'export : le code TypeScript l'a déjà assaini, mais le noyau ne lui fait pas confiance
+/// (aucun séparateur de dossier, aucun nom réservé de Windows, une extension connue).
+pub fn validate_export_name(name: &str) -> Result<(), String> {
+    let bad = |why: &str| Err(format!("Nom de fichier d'export refusé ({why}) : « {name} »."));
+    if name.is_empty() || name.len() > 150 {
+        return bad("longueur");
+    }
+    if name.chars().any(|c| c.is_control() || "<>:\"/\\|?*".contains(c)) {
+        return bad("caractère interdit");
+    }
+    if name == "." || name == ".." || name.starts_with(' ') || name.ends_with(' ') || name.ends_with('.') {
+        return bad("début ou fin interdit");
+    }
+    let Some((stem, ext)) = name.rsplit_once('.') else { return bad("extension absente") };
+    if stem.is_empty() {
+        return bad("nom vide");
+    }
+    if !EXPORT_EXTENSIONS.contains(&ext.to_ascii_lowercase().as_str()) {
+        return bad("extension inconnue");
+    }
+    let first = stem.split('.').next().unwrap_or(stem).trim_end().to_ascii_uppercase();
+    if RESERVED_NAMES.contains(&first.as_str()) {
+        return bad("nom réservé par Windows");
+    }
+    Ok(())
+}
+
+/// Écrit `bytes` dans `dir` sous `name`, ou sous `nom-2.ext`, `nom-3.ext`… si le fichier existe : jamais d'écrasement.
+/// La création exclusive (create_new) rend la vérification et la création indivisibles. Retourne le chemin écrit.
+pub fn write_export_unique(dir: &Path, name: &str, bytes: &[u8]) -> Result<PathBuf, String> {
+    validate_export_name(name)?;
+    fs::create_dir_all(dir).map_err(|e| format!("Dossier d'export inaccessible ({}) : {e}", dir.display()))?;
+    let (stem, ext) = name.rsplit_once('.').expect("validé : extension présente");
+    for n in 1..=999u32 {
+        let candidate = if n == 1 { dir.join(name) } else { dir.join(format!("{stem}-{n}.{ext}")) };
+        match OpenOptions::new().write(true).create_new(true).open(&candidate) {
+            Ok(mut f) => {
+                let result = f.write_all(bytes).and_then(|_| f.sync_all());
+                drop(f);
+                return match result {
+                    Ok(_) => Ok(candidate),
+                    Err(e) => {
+                        let _ = fs::remove_file(&candidate);
+                        Err(format!("Écriture impossible ({}) : {e}", candidate.display()))
+                    }
+                };
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(e) => return Err(format!("Création impossible ({}) : {e}", candidate.display())),
+        }
+    }
+    Err(format!("Trop de fichiers portant le même nom dans {}.", dir.display()))
+}
+
+/// Écrit `bytes` à un emplacement choisi par l'utilisateur dans la boîte « Enregistrer sous » (qui a déjà demandé confirmation
+/// s'il existait) : fichier voisin, écriture durable, puis remplacement d'un coup.
+pub fn write_export_replace(dst: &Path, bytes: &[u8]) -> Result<(), String> {
+    let tmp = PathBuf::from(format!("{}.tmp-export", dst.to_string_lossy()));
+    let result = (|| {
+        let mut f = File::create(&tmp).map_err(|e| format!("Écriture impossible ({}) : {e}", tmp.display()))?;
+        f.write_all(bytes).and_then(|_| f.sync_all()).map_err(|e| format!("Écriture impossible ({}) : {e}", tmp.display()))?;
+        drop(f);
+        replace_file(&tmp, dst)
+    })();
+    let _ = fs::remove_file(&tmp);
+    result
+}
+
+// ---------------------------------------------------------------------------
 // Suppression : jamais autre chose qu'une sauvegarde nommée comme il faut, dans un dossier autorisé
 // ---------------------------------------------------------------------------
 
@@ -368,6 +447,48 @@ mod tests {
         let _ = fs::remove_dir_all(&p);
         fs::create_dir_all(&p).unwrap();
         p
+    }
+
+    #[test]
+    fn export_names_are_validated() {
+        for ok in ["CR atelier-20261121-170000.md", "a.html", "x.DOCX", "Rapport (v2) é.pdf", "m.bamodeles.json"] {
+            assert!(validate_export_name(ok).is_ok(), "{ok}");
+        }
+        for bad in [
+            "", ".", "..", "a", ".md", "a/b.md", "a\\b.md", "..\\x.md", "C:x.md", "a:b.md", "a*.md", "a?.md", "a\"b.md", "a<b>.md", "a|b.md", "a\nb.md",
+            "a.md ", " a.md", "a.", "a.exe", "a.md.exe", "CON.md", "con.html", "Aux.pdf", "NUL.md", "COM1.md", "lpt9.md", "CON .md",
+        ] {
+            assert!(validate_export_name(bad).is_err(), "{bad:?} aurait dû être refusé");
+        }
+        assert!(validate_export_name(&format!("{}.md", "a".repeat(200))).is_err());
+        assert!(validate_export_name("CONSOLE.md").is_ok(), "seul le nom exact est réservé");
+    }
+
+    #[test]
+    fn export_never_overwrites() {
+        let d = temp_dir("export").join("exports"); // le dossier n'existe pas encore : il est créé
+        let a = write_export_unique(&d, "doc-20261121-170000.md", b"un").unwrap();
+        let b = write_export_unique(&d, "doc-20261121-170000.md", b"deux").unwrap();
+        let c = write_export_unique(&d, "doc-20261121-170000.md", b"trois").unwrap();
+        assert_eq!(a.file_name().unwrap(), "doc-20261121-170000.md");
+        assert_eq!(b.file_name().unwrap(), "doc-20261121-170000-2.md");
+        assert_eq!(c.file_name().unwrap(), "doc-20261121-170000-3.md");
+        assert_eq!(fs::read(&a).unwrap(), b"un");
+        assert_eq!(fs::read(&b).unwrap(), b"deux");
+        assert_eq!(fs::read(&c).unwrap(), b"trois");
+        assert!(write_export_unique(&d, "../evade.md", b"x").is_err());
+        assert!(!d.parent().unwrap().join("evade.md").exists());
+        assert_eq!(fs::read_dir(&d).unwrap().count(), 3, "aucun fichier temporaire ne reste");
+    }
+
+    #[test]
+    fn export_replace_writes_atomically() {
+        let d = temp_dir("exportrep");
+        let f = d.join("choisi.html");
+        write_export_replace(&f, b"v1").unwrap();
+        write_export_replace(&f, b"version deux").unwrap();
+        assert_eq!(fs::read(&f).unwrap(), b"version deux");
+        assert_eq!(fs::read_dir(&d).unwrap().count(), 1, "pas de fichier temporaire résiduel");
     }
 
     #[test]

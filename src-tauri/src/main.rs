@@ -294,6 +294,46 @@ async fn import_pick_file(app: tauri::AppHandle) -> Result<Option<PickedText>, S
     }))
 }
 
+/// Fichier d'export écrit sur le disque.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SavedExport {
+    path: String,
+    name: String,
+    size_bytes: u64,
+}
+
+/// Taille maximale d'un fichier d'export (100 Mo).
+const MAX_EXPORT_BYTES: usize = 100 * 1024 * 1024;
+
+/// Écrit un fichier d'export (lot V2.3a). Par défaut dans BAMentorData/exports/ sans jamais écraser (nom-2, nom-3…) ;
+/// avec `ask_where`, boîte « Enregistrer sous » (None si l'utilisateur annule). Le nom est revalidé ici : le noyau ne fait pas
+/// confiance à l'interface. Les exports ne font pas partie des sauvegardes : ce sont des fichiers dérivés, régénérables.
+#[tauri::command]
+async fn export_save(app: tauri::AppHandle, paths: tauri::State<'_, Paths>, file_name: String, bytes: Vec<u8>, ask_where: bool) -> Result<Option<SavedExport>, String> {
+    if bytes.len() > MAX_EXPORT_BYTES {
+        return Err(format!("Export trop volumineux ({} Mo) : la limite est de {} Mo.", bytes.len() / 1_048_576, MAX_EXPORT_BYTES / 1_048_576));
+    }
+    files::validate_export_name(&file_name)?;
+    let exports_dir = paths.data_dir.join("exports");
+    let written: PathBuf = if ask_where {
+        let _ = fs::create_dir_all(&exports_dir);
+        let ext = file_name.rsplit('.').next().unwrap_or("md").to_string();
+        let picked = app.dialog().file().set_file_name(&file_name).set_directory(&exports_dir).add_filter("Export BA-Mentor", &[ext.as_str()]).blocking_save_file();
+        let Some(p) = picked else { return Ok(None) };
+        let path = p.into_path().map_err(|e| e.to_string())?;
+        files::write_export_replace(&path, &bytes)?;
+        path
+    } else {
+        files::write_export_unique(&exports_dir, &file_name, &bytes)?
+    };
+    Ok(Some(SavedExport {
+        name: written.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default(),
+        path: written.to_string_lossy().to_string(),
+        size_bytes: bytes.len() as u64,
+    }))
+}
+
 /// Fermeture demandée par l'interface une fois la sauvegarde de fermeture faite.
 #[tauri::command]
 fn app_exit(app: tauri::AppHandle) {
@@ -379,6 +419,7 @@ fn main() {
             pick_database_file,
             pick_folder,
             import_pick_file,
+            export_save,
             app_exit
         ])
         .run(tauri::generate_context!())

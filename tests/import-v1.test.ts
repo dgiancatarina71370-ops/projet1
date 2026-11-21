@@ -9,7 +9,7 @@ import { query } from '../src/data/db.ts';
 import { mutate } from '../src/data/mutate.ts';
 import { createProject, deleteProject } from '../src/data/repositories/projects.ts';
 import { parseV1Export, ImportFormatError, ORPHAN_PROJECT_NAME } from '../src/data/import-v1-parse.ts';
-import { buildPlan, previewImport, runImport, ImportRefusedError } from '../src/data/import-v1.ts';
+import { buildPlan, keptSentence, previewImport, runImport, ImportRefusedError } from '../src/data/import-v1.ts';
 import type { ImportInput } from '../src/data/import-v1.ts';
 
 const FIX = path.resolve(import.meta.dirname, 'fixtures');
@@ -268,10 +268,16 @@ test('D5 : contacts, réglages, notes et DoD déjà présents sont conservés', 
     const f = load('v1-export-synthetic-rich.json');
     const preview = await previewImport(f, NOW);
     const kept = Object.fromEntries(preview.plan.kept.map((k) => [k.what, k.count]));
-    assert.equal(kept['contacts déjà présents'], 1);
-    assert.equal(kept['réglages déjà présents'], 1);
+    assert.equal(kept['contact déjà présent'], 1);
+    assert.equal(kept['réglage déjà présent'], 1);
     assert.equal(kept['bloc-notes (la base en a déjà un)'], 1);
     assert.equal(kept['critères de « terminé » (la base en a déjà)'], 3);
+    assert.deepEqual(preview.plan.kept.map(keptSentence), [
+      '1 contact déjà présent : conservé tel quel, non écrasé.',
+      '3 critères de « terminé » (la base en a déjà) : conservés tels quels, non écrasés.',
+      '1 bloc-notes (la base en a déjà un) : conservé tel quel, non écrasé.',
+      '1 réglage déjà présent : conservé tel quel, non écrasé.',
+    ]);
 
     const r = await runImport(f, { now: NOW });
     assert.equal(r.matches, true);

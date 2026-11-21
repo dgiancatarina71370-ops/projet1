@@ -4,3 +4,4 @@
 - `v1-export-synthetic-rich.json` : jeu **synthétique** (inventé, pas un export réel) qui couvre ce que l'export réel ne contient pas : livrable validé, livrable archivé avec ancien dossier, envois, contacts (dont un doublon et un sans adresse), interrupteurs personnalisés, étapes PSPO décochées, livrable sans dossier, statut inconnu, date illisible.
 
 Les fichiers invalides (JSON cassé, format inconnu, boucle d'arborescence…) sont construits dans `tests/import-v1.test.ts`.
+- `v1-export-synthetic-trap.json` : jeu **synthétique** (inventé) pour le lot V2.3a : un livrable dont le contenu essaie d'injecter du code (script, attributs d'événement, liens `javascript:`, image espion) et un livrable nommé « CON » (nom réservé par Windows). Sert aux tests automatiques et au test manuel d'export HTML.

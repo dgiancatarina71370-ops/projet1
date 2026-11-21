@@ -81,7 +81,7 @@ export function checkArchitecture(root) {
       if (layer === 'shared' && tLayer !== 'shared') add('R4-shared-leaf', rel, `src/shared/ ne peut pas importer src/${tLayer}/.`);
       // R6 : l'accès brut au moteur est réservé à data/ (db, mutate, migrate) et au démarrage de l'application.
       if (DATA_INFRA.includes(target)) {
-        const allowedData = ['src/data/db.ts', 'src/data/mutate.ts', 'src/data/migrate.ts', 'src/data/internal.ts', 'src/data/tauri-driver.ts', 'src/data/backup-service.ts', 'src/data/import-v1.ts'];
+        const allowedData = ['src/data/db.ts', 'src/data/mutate.ts', 'src/data/migrate.ts', 'src/data/internal.ts', 'src/data/tauri-driver.ts', 'src/data/backup-service.ts', 'src/data/import-v1.ts', 'src/data/export-files.ts'];
         const inRepo = rel.startsWith('src/data/repositories/');
         const okLayer = layer === 'app' || (layer === 'data' && (allowedData.includes(rel) || rel.startsWith('src/data/migrations/')));
         if (!okLayer || inRepo) {

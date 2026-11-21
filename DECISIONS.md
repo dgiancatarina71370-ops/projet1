@@ -54,6 +54,30 @@ Un export réel de la V1 a été analysé avant d'écrire le moindre code : il e
 - Un flag de la V1 absent de `flags` et de `customFlags` n'est pas créé : la V2 appliquera ses valeurs par défaut.
 - Les dates d'un livrable : la V1 ne stocke que la dernière modification ; `created_at` reçoit cette date.
 
+## Lot V2.3a : export signé (Markdown, HTML) et écran À propos
+
+### Décisions validées par David (D6 à D11)
+- **D6** : V2.3 est découpé en V2.3a (Markdown, HTML, écriture de fichier, À propos) puis V2.3b (Word, PDF).
+- **D7** : le HTML brut d'un livrable n'est jamais interprété (échappé).
+- **D8** : destination par défaut `BAMentorData/exports/`, option « Enregistrer sous… », jamais d'écrasement dans `exports/`.
+- **D9** : PDF avec `pdfmake` au lot V2.3b (non testable ici, vérifié en CI).
+- **D10** : carte d'export technique en attendant l'écran Documents (V2.7).
+- **D11** : le dossier `exports/` n'est pas dans les sauvegardes (fichiers dérivés, régénérables).
+
+### Choix de conception
+1. **Couches** : `src/export/` (pur : modèle, rendus, noms, pipeline, service) au-dessus de `src/data/`. Le service d'export lit le livrable par un dépôt en lecture seule et écrit le fichier par `src/data/export-files.ts` (seul accès au pilote). Un export ne modifie aucune donnée : aucune ligne au journal.
+2. **Modèle de blocs** : `marked` n'est utilisé que pour l'analyse (`lexer`) ; aucun HTML n'est produit par la bibliothèque. Le modèle (titre, paragraphe, liste, tableau, code, citation, règle) servira aux rendus Word et PDF (V2.3b).
+3. **Sécurité du HTML** : tout texte est échappé ; le HTML brut (bloc ou en ligne) est conservé comme texte ; seuls les liens http, https, mailto, ancres et chemins relatifs sont gardés ; une image n'est jamais chargée (son texte alternatif la remplace, cohérent avec le « hors ligne ») ; le fichier porte une politique CSP `default-src 'none'` en défense supplémentaire. Un test casse volontairement le code (mutation) pour vérifier qu'il détecte chaque défaut.
+4. **Signature** : ajoutée une seule fois par le pipeline ; `assertSigned` refuse tout rendu où l'un des quatre éléments manque ; la version vient d'`app_info` (une version inconnue refuse l'export). Markdown : commentaire `<!-- generator: … -->` en tête, bloc final après `---`. HTML : pied de page, `<meta name="generator">` et `<meta name="generated">` (ISO UTC).
+5. **Nom de fichier** : `<titre>-AAAAMMJJ-HHMMSS.<ext>` en heure locale ; titre assaini (caractères interdits, noms réservés Windows préfixés par `_`, vide → `export`, 100 octets au plus, coupe entre deux caractères). Le noyau Rust **revalide** le nom (pas de séparateur, pas de nom réservé, extension connue) et crée le fichier en création exclusive (`nom-2`, `nom-3`… si collision).
+6. **« Enregistrer sous… »** : l'écrasement d'un fichier existant est décidé par l'utilisateur dans la boîte de dialogue de Windows ; l'écriture est alors atomique (fichier voisin puis remplacement).
+7. **Accord en français** (coquille PSPO) : `plural()` (0 et 1 au singulier) et accord en genre (« 1 étape PSPO déjà présente : conservée telle quelle »).
+
+### Limites connues
+- Le noyau Rust (`export_save`, boîte « Enregistrer sous ») n'a pas pu être compilé ici : seules les fonctions de `files.rs` l'ont été (15 tests). À confirmer par `rust-tests` et par le test manuel.
+- Les composants React (`ExportPanel`, `AboutPanel`) sont vérifiés par compilation et un scénario simulé, pas par le vérificateur de types de React.
+- Pas encore de rendu Word ni PDF (V2.3b). La clé de module `export` n'existe pas avant V2.5 : `exportDocument` ne vérifie aucun drapeau pour l'instant.
+
 ## Non vérifié lors de l'écriture (à valider via GitHub Actions)
-- Compilation et tests de `backup.rs` et `main.rs` (dépendent de `rusqlite` et de Tauri, inaccessibles ici), dont la commande `import_pick_file` et la boîte de dialogue Windows. `files.rs` (std seule) a été compilé et testé ici : 12 tests.
+- Compilation et tests de `backup.rs` et `main.rs` (dépendent de `rusqlite` et de Tauri, inaccessibles ici), dont la commande `import_pick_file` et la boîte de dialogue Windows. `files.rs` (std seule) a été compilé et testé ici : 15 tests. Pour V2.3a : la commande `export_save` et l'utilisation de `set_file_name` / `set_directory` / `blocking_save_file` du plugin de dialogue.
 - Build Vite + Tailwind, rendu final, `tauri build`, exécution réelle.

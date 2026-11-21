@@ -7,6 +7,8 @@ import { createProject, deleteProject, listProjects, recentActivity } from '../d
 import type { ActivityEntry, Project } from '../data/repositories/projects.ts';
 import { BackupPanel } from './BackupPanel.tsx';
 import { ImportPanel } from './ImportPanel.tsx';
+import { ExportPanel } from './ExportPanel.tsx';
+import { AboutPanel } from './AboutPanel.tsx';
 import { installCloseHandler, setDatabaseReady, startMaintenance } from './maintenance.ts';
 import type { Notice } from './maintenance.ts';
 import { buildSignature, signatureLines } from '../shared/signature.ts';
@@ -85,7 +87,7 @@ export function App() {
     <div className="flex min-h-full flex-col">
       <header className="border-b border-hub-line px-6 py-4">
         <h1 className="text-lg font-semibold">BA-Mentor — état technique</h1>
-        <p className="text-sm text-hub-muted">Lot V2.2b : import des données de la V1 (après sauvegarde, restauration et protection contre l’ouverture multiple). Les modules arrivent aux lots suivants.</p>
+        <p className="text-sm text-hub-muted">Lot V2.3a : export signé en Markdown et en HTML, écran À propos (après import V1, sauvegarde, restauration et protection contre l’ouverture multiple). Les modules arrivent aux lots suivants.</p>
       </header>
 
       <main className="mx-auto w-full max-w-5xl flex-1 space-y-4 p-6">
@@ -146,6 +148,14 @@ export function App() {
                   setNotices((old) => [...old.slice(-4), { level: 'info', text: 'Import V1 terminé : les données sont dans la base.' }]);
                 }}
               />
+            </Card>
+
+            <Card title="Exporter un livrable (Markdown, HTML)">
+              <ExportPanel version={version} refreshKey={snap ? snap.tables.map((t) => t.rows).join(',') : ''} />
+            </Card>
+
+            <Card title="À propos">
+              <AboutPanel version={version} buildDate={buildDate} dataDir={result.info.dataDir} schema={result.report.to} />
             </Card>
 
             <Card title="Projets de démonstration (écriture par mutate, avec journal)">

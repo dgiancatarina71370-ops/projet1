@@ -24,6 +24,7 @@ export interface TestDb {
   file: string;
   dir: string;
   backupsDir: string;
+  exportsDir: string;
   backups: Array<{ kind: BackupKind; file: string }>;
   /** Fixe l'heure utilisée pour dater les sauvegardes ; null = heure réelle. */
   setNow: (d: Date | null) => void;
@@ -85,6 +86,7 @@ export function openTestDb(dir: string, name = 'ba-mentor.db'): TestDb {
   fs.mkdirSync(dir, { recursive: true });
   const file = path.join(dir, name);
   const backupsDir = path.join(dir, 'backups');
+  const exportsDir = path.join(dir, 'exports');
   const open = (): DatabaseSync => {
     const db = new DatabaseSync(file);
     db.exec('PRAGMA journal_mode = DELETE; PRAGMA synchronous = FULL; PRAGMA foreign_keys = ON;');
@@ -221,6 +223,24 @@ export function openTestDb(dir: string, name = 'ba-mentor.db'): TestDb {
     async pickImportFile() {
       return null;
     },
+    // Reproduit files.rs::validate_export_name et write_export_unique (le noyau a ses propres tests Rust).
+    async exportSave(fileName: string, bytes: Uint8Array, askWhere: boolean) {
+      if (askWhere) return null; // la boîte « Enregistrer sous » n'existe pas dans les tests
+      const bad = !fileName || Buffer.byteLength(fileName) > 150 || /[\u0000-\u001f<>:"/\\|?*]/.test(fileName) || /^[ .]|[ .]$/.test(fileName) || !/\.(md|html|docx|pdf|json)$/i.test(fileName) || /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i.test(fileName.split('.')[0].trim());
+      if (bad) throw new Error(`Nom de fichier d'export refusé : « ${fileName} ».`);
+      fs.mkdirSync(exportsDir, { recursive: true });
+      const dot = fileName.lastIndexOf('.');
+      for (let n = 1; n < 1000; n++) {
+        const target = path.join(exportsDir, n === 1 ? fileName : `${fileName.slice(0, dot)}-${n}${fileName.slice(dot)}`);
+        try {
+          fs.writeFileSync(target, bytes, { flag: 'wx' });
+          return { path: target, name: path.basename(target), sizeBytes: bytes.length };
+        } catch (e) {
+          if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
+        }
+      }
+      throw new Error('Trop de fichiers portant le même nom.');
+    },
   };
 
   return {
@@ -231,6 +251,7 @@ export function openTestDb(dir: string, name = 'ba-mentor.db'): TestDb {
     file,
     dir,
     backupsDir,
+    exportsDir,
     backups,
     setNow: (d: Date | null) => {
       fixedNow = d;

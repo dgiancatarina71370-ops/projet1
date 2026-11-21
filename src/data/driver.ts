@@ -62,6 +62,13 @@ export interface PickedTextFile {
   text: string;
 }
 
+/** Fichier d'export écrit sur le disque. */
+export interface SavedExport {
+  path: string;
+  name: string;
+  sizeBytes: number;
+}
+
 export interface DbDriver {
   select(sql: string, params: SqlValue[]): Promise<Row[]>;
   execute(sql: string, params: SqlValue[]): Promise<WriteResult>;
@@ -82,4 +89,6 @@ export interface DbDriver {
   pickFolder(): Promise<string | null>;
   /** Choisit puis lit un export JSON de la V1 ; null si l'utilisateur annule. */
   pickImportFile(): Promise<PickedTextFile | null>;
+  /** Écrit un fichier d'export : dans exports/ sans jamais écraser, ou après « Enregistrer sous » (null si annulé). */
+  exportSave(fileName: string, bytes: Uint8Array, askWhere: boolean): Promise<SavedExport | null>;
 }

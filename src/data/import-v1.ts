@@ -7,6 +7,7 @@ import { query } from './db.ts';
 import { mutate } from './mutate.ts';
 import type { WriteOp } from './mutate.ts';
 import { createBackup } from './backup-service.ts';
+import { plural } from '../shared/plural.ts';
 import { parseV1Export } from './import-v1-parse.ts';
 import type { ParsedImport } from './import-v1-parse.ts';
 
@@ -55,8 +56,16 @@ export interface ImportPlan {
   ops: PlannedOp[];
   /** Lignes que l'import va créer. Après coup, le nombre de lignes réellement écrites doit être identique. */
   expected: ImportCounts;
-  /** Éléments de l'export laissés de côté parce que la base en contient déjà (jamais d'écrasement). */
-  kept: Array<{ what: string; count: number }>;
+  /** Éléments de l'export laissés de côté parce que la base en contient déjà (jamais d'écrasement). `what` est déjà accordé en nombre. */
+  kept: Array<{ what: string; count: number; feminine: boolean }>;
+}
+
+/** « 1 étape PSPO déjà présente : conservée telle quelle, non écrasée. » (accord en genre et en nombre) */
+export function keptSentence(k: ImportPlan['kept'][number]): string {
+  const done = k.feminine
+    ? plural(k.count, 'conservée telle quelle, non écrasée', 'conservées telles quelles, non écrasées')
+    : plural(k.count, 'conservé tel quel, non écrasé', 'conservés tels quels, non écrasés');
+  return `${k.count} ${k.what} : ${done}.`;
 }
 
 const zero = (): ImportCounts => ({ projects: 0, documents: 0, sends: 0, contacts: 0, dodItems: 0, notes: 0, pspoSteps: 0, settings: 0, flags: 0 });
@@ -68,8 +77,8 @@ export function buildPlan(p: ParsedImport, s: DbState, importedAt: string): Impo
   const ops: PlannedOp[] = [];
   const expected = zero();
   const kept: ImportPlan['kept'] = [];
-  const keep = (what: string, count: number) => {
-    if (count > 0) kept.push({ what, count });
+  const keep = (count: number, one: string, many: string, feminine = false) => {
+    if (count > 0) kept.push({ what: plural(count, one, many), count, feminine });
   };
 
   // Projets : parents avant enfants (garanti par le lecteur). Le projet d'accueil des éléments orphelins est un projet ordinaire.
@@ -129,7 +138,7 @@ export function buildPlan(p: ParsedImport, s: DbState, importedAt: string): Impo
     });
     expected.contacts++;
   }
-  keep('contacts déjà présents', existingContacts);
+  keep(existingContacts, 'contact déjà présent', 'contacts déjà présents');
 
   // Définition de « terminé » : importée seulement si la base n'en a pas encore.
   if (s.dodCount === 0) {
@@ -143,12 +152,12 @@ export function buildPlan(p: ParsedImport, s: DbState, importedAt: string): Impo
       expected.dodItems++;
     });
   } else {
-    keep('critères de « terminé » (la base en a déjà)', p.dod.length);
+    keep(p.dod.length, 'critère de « terminé » (la base en a déjà)', 'critères de « terminé » (la base en a déjà)');
   }
 
   // Bloc-notes : une seule ligne ; celle de la base est conservée si elle existe.
   if (p.notes) {
-    if (s.notesExist) keep('bloc-notes (la base en a déjà un)', 1);
+    if (s.notesExist) keep(1, 'bloc-notes (la base en a déjà un)', 'bloc-notes (la base en a déjà un)');
     else {
       ops.push({
         table: 'notes',
@@ -175,7 +184,7 @@ export function buildPlan(p: ParsedImport, s: DbState, importedAt: string): Impo
     });
     expected.pspoSteps++;
   }
-  keep('étapes PSPO déjà présentes', existingPspo);
+  keep(existingPspo, 'étape PSPO déjà présente', 'étapes PSPO déjà présentes', true);
 
   let existingSettings = 0;
   for (const st of p.settings) {
@@ -191,7 +200,7 @@ export function buildPlan(p: ParsedImport, s: DbState, importedAt: string): Impo
     });
     expected.settings++;
   }
-  keep('réglages déjà présents', existingSettings);
+  keep(existingSettings, 'réglage déjà présent', 'réglages déjà présents');
 
   let existingFlags = 0;
   for (const f of p.flags) {
@@ -207,7 +216,7 @@ export function buildPlan(p: ParsedImport, s: DbState, importedAt: string): Impo
     });
     expected.flags++;
   }
-  keep('interrupteurs déjà présents', existingFlags);
+  keep(existingFlags, 'interrupteur déjà présent', 'interrupteurs déjà présents');
 
   return { ops, expected, kept };
 }
