@@ -14,6 +14,8 @@ import { changeItemStatus, createItem, deleteItem, getItem, getItemByCode, listI
 import { createRequirement } from '../src/data/repositories/requirements.ts';
 import { createDecision } from '../src/data/repositories/decisions.ts';
 import { createRisk } from '../src/data/repositories/risks.ts';
+import { createStory } from '../src/data/repositories/stories.ts';
+import { createTestCase } from '../src/data/repositories/testcases.ts';
 import { createLink, deleteLink, linksOfItem, listLinks } from '../src/data/repositories/links.ts';
 import { checkModelIntegrity } from '../src/data/repositories/integrity.ts';
 import { KINDS, initialStatus, isKind, isValidStatus } from '../src/domain/kinds.ts';
@@ -178,7 +180,7 @@ test('codes : un numéro supprimé n\'est jamais réattribué, les projets ont c
 test('codes : une création en échec dans la transaction ne consomme pas de numéro (atomicité)', async () => {
   const t = await migratedDb();
   const p = await createProject('P');
-  await createItem({ projectId: p, kind: 'story', title: 'S1' });
+  await createStory({ projectId: p, title: 'S1' });
   // Une écriture invalide dans la même transaction annule aussi l'incrément du compteur.
   await assert.rejects(() =>
     mutate([
@@ -187,7 +189,7 @@ test('codes : une création en échec dans la transaction ne consomme pas de num
     ]),
   );
   assert.equal((await query<{ value: number }>('SELECT value FROM sequences WHERE name = ?', [sequenceName(p, 'story')]))[0].value, 1);
-  assert.equal((await createItem({ projectId: p, kind: 'story', title: 'S2' })).code, 'US-002');
+  assert.equal((await createStory({ projectId: p, title: 'S2' })).code, 'US-002');
   t.close();
 });
 
@@ -212,7 +214,7 @@ async function trio() {
   const p = await createProject('Projet');
   const need = await createItem({ projectId: p, kind: 'need', title: 'Besoin' });
   const req = await createRequirement({ projectId: p, title: 'Exigence' });
-  const test_ = await createItem({ projectId: p, kind: 'test', title: 'Test' });
+  const test_ = await createTestCase({ projectId: p, title: 'Test' });
   return { p, need: need.id, req: req.id, test: test_.id };
 }
 
@@ -387,7 +389,7 @@ test('sauvegarde et restauration : éléments, liens et compteurs reviennent exa
 test('E4 : le jeu de test couvre les deux nouvelles tables', async () => {
   const t = await migratedDb();
   seedAllTables(t.raw);
-  assert.equal(snapshot(t.raw).items.count, 5);
+  assert.equal(snapshot(t.raw).items.count, 7);
   assert.equal(snapshot(t.raw).links.count, 1);
   assert.equal(snapshot(t.raw).stakeholder_details.count, 1);
   t.close();

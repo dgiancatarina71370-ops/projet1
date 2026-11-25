@@ -13,7 +13,7 @@ import { createProject } from '../src/data/repositories/projects.ts';
 
 const EXPECTED_TABLES = [
   'activity_log', 'backups_log', 'contacts', 'decision_details', 'document_sends', 'documents', 'dod_items', 'flags', 'items', 'links', 'meta',
-  'projects', 'pspo_progress', 'requirement_details', 'risk_details', 'sequences', 'settings', 'stakeholder_details', 'template_defaults', 'templates', 'workspace_notes',
+  'projects', 'pspo_progress', 'requirement_details', 'risk_details', 'sequences', 'settings', 'stakeholder_details', 'story_details', 'template_defaults', 'templates', 'test_details', 'workspace_notes',
 ];
 
 const tableNames = async () =>
@@ -27,13 +27,13 @@ const v2: Migration = {
   statements: ['CREATE TABLE extra (id INTEGER PRIMARY KEY, label TEXT NOT NULL)', "INSERT INTO extra (label) VALUES ('x')"],
 };
 
-test('base vierge : migre vers le dernier schéma et crée exactement les vingt et une tables', async () => {
+test('base vierge : migre vers le dernier schéma et crée exactement les vingt-trois tables', async () => {
   const t = await emptyDb();
   const report = await migrate(migrations, { backup: t.driver.backup });
   assert.equal(report.from, 0);
   assert.equal(report.to, SCHEMA_VERSION);
   assert.deepEqual(await tableNames(), EXPECTED_TABLES);
-  assert.equal(EXPECTED_TABLES.length, 21);
+  assert.equal(EXPECTED_TABLES.length, 23);
   assert.equal(await getSchemaVersion(), SCHEMA_VERSION);
   assert.equal(t.backups.length, 0, 'une base vierge n\'a rien à sauvegarder');
   t.close();

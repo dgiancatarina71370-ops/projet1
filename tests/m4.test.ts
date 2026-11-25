@@ -16,7 +16,7 @@ import { createDecision, getDecision, listDecisions, updateDecision } from '../s
 import { createRisk, getRisk, listRisks, updateRisk } from '../src/data/repositories/risks.ts';
 import { createLink, deleteLink, linkCandidates, linkedItems } from '../src/data/repositories/links.ts';
 import { checkModelIntegrity } from '../src/data/repositories/integrity.ts';
-import { DEFAULT_DECISION_FIELDS, MAX_DECIDER_LENGTH, MAX_DECISION_TEXT_LENGTH, changedDecisionFields, decisionDateLabel, isCalendarDate, normalizeDecisionFields } from '../src/domain/decisions.ts';
+import { DEFAULT_DECISION_FIELDS, MAX_DECIDER_LENGTH, MAX_DECISION_TEXT_LENGTH, changedDecisionFields, dayLabel, isCalendarDate, normalizeDecisionFields } from '../src/domain/decisions.ts';
 import { DEFAULT_RISK_FIELDS, MAX_MITIGATION_LENGTH, MAX_OWNER_LENGTH, changedRiskFields, normalizeRiskFields } from '../src/domain/risks.ts';
 import { EXPOSED_LINK_TYPES, LINK_RULES, canLoop, linkOptionsFor } from '../src/domain/links.ts';
 import { KINDS_WITH_DETAILS, initialStatus, isValidStatus, kindInfo, statusLabel } from '../src/domain/kinds.ts';
@@ -39,7 +39,7 @@ test('domaine : statuts des décisions (D54) et des risques (D56), libellés acc
   assert.equal(statusLabel('archived'), 'Archivé', 'sans type : forme par défaut');
   assert.equal(statusLabel('archived', 'need'), 'Archivé');
   assert.equal(statusLabel('zzz', 'decision'), 'Inconnu (zzz)');
-  assert.deepEqual([...KINDS_WITH_DETAILS].sort(), ['decision', 'requirement', 'risk', 'stakeholder']);
+  assert.deepEqual([...KINDS_WITH_DETAILS].sort(), ['decision', 'requirement', 'risk', 'stakeholder', 'story', 'test']);
   assert.ok(EXTENSION_TABLES.includes('decision_details') && EXTENSION_TABLES.includes('risk_details'));
 });
 
@@ -47,9 +47,9 @@ test('domaine : dates de décision (jour réel du calendrier, format AAAA-MM-JJ,
   for (const ok of ['2026-11-25', '2024-02-29', '2000-02-29', '1900-01-01', '2026-12-31']) assert.ok(isCalendarDate(ok), ok);
   for (const bad of ['', '2026-02-30', '2025-02-29', '1900-02-29', '2026-13-01', '2026-00-10', '2026-11-00', '2026-11-31', '25/11/2026', '2026-1-5', '2026-11-25T10:00', ' 2026-11-25', 'abc', '1899-12-31']) assert.ok(!isCalendarDate(bad), JSON.stringify(bad));
   assert.ok(!isCalendarDate(20261125 as unknown as string));
-  assert.equal(decisionDateLabel('2026-11-05'), '05/11/2026');
-  assert.equal(decisionDateLabel(''), '—');
-  assert.match(decisionDateLabel('zzz'), /Invalide \(zzz\)/);
+  assert.equal(dayLabel('2026-11-05'), '05/11/2026');
+  assert.equal(dayLabel(''), '—');
+  assert.match(dayLabel('zzz'), /Invalide \(zzz\)/);
 });
 
 test('domaine : champs d\'une décision, valeurs par défaut, limites, journal', () => {
@@ -80,24 +80,23 @@ test('domaine : champs d\'un risque, niveaux, valeurs par défaut, limites, jour
   assert.deepEqual(changedRiskFields(DEFAULT_RISK_FIELDS, { ...DEFAULT_RISK_FIELDS, impact: 'high', owner: 'x' }), ['impact', 'owner']);
 });
 
-test('liens : « remplace » (D58) et sept types exposés (D57), options par type d\'élément', () => {
+test('liens : « remplace » (D58), types exposés (D57, D66), options par type d\'élément', () => {
   assert.equal(LINK_RULES.length, 9);
   const rule = LINK_RULES.find((r) => r.type === 'supersedes');
   assert.deepEqual({ label: rule?.label, inverse: rule?.inverseLabel, from: rule?.from, to: rule?.to }, { label: 'remplace', inverse: 'remplacé par', from: ['decision'], to: ['decision'] });
   assert.ok(canLoop('supersedes'));
-  assert.deepEqual([...EXPOSED_LINK_TYPES], ['expresses', 'derives', 'refines', 'concerns', 'threatens', 'mitigates', 'supersedes']);
-  assert.ok(!EXPOSED_LINK_TYPES.includes('implements') && !EXPOSED_LINK_TYPES.includes('verifies'), 'implémente et vérifie attendent M5');
+  assert.deepEqual([...EXPOSED_LINK_TYPES], ['expresses', 'derives', 'refines', 'implements', 'verifies', 'concerns', 'threatens', 'mitigates', 'supersedes'], 'implémente et vérifie exposés depuis M5');
   assert.deepEqual(linkOptionsFor('decision').map((o) => o.key), ['concerns:out', 'mitigates:out', 'supersedes:out', 'supersedes:in']);
   assert.deepEqual(linkOptionsFor('risk').map((o) => o.key), ['concerns:in', 'threatens:out', 'mitigates:in']);
   assert.deepEqual(linkOptionsFor('risk').map((o) => o.label), ['concerné par', 'menace', 'atténué par']);
   assert.deepEqual(linkOptionsFor('decision').map((o) => o.label), ['concerne', 'atténue', 'remplace', 'remplacé par']);
-  assert.deepEqual(linkOptionsFor('test'), []);
+  assert.deepEqual(linkOptionsFor('test').map((o) => o.key), ['verifies:out']);
 });
 
 // ------------------------------------------------------------------ migration 5
 
 test('migration 5 : deux tables ajoutées, données existantes intactes, sauvegarde pre-migration au schéma 4', async () => {
-  assert.equal(SCHEMA_VERSION, 5);
+  assert.ok(SCHEMA_VERSION >= 5, 'la migration 5 reste livrée ; M5 en ajoute une sixième');
   assert.equal(migrations[4].name, 'decision_risk_details');
   const t = emptyDb();
   await migrate(migrations.slice(0, 4), { backup: t.driver.backup });
@@ -106,7 +105,7 @@ test('migration 5 : deux tables ajoutées, données existantes intactes, sauvega
   t.raw.exec('INSERT INTO requirement_details (item_id) VALUES (1)');
   t.raw.exec("INSERT INTO activity_log (at, object_type, object_id, action) VALUES ('x', 'item', 1, 'created')");
   const before = snapshot(t.raw);
-  const report = await migrate(migrations, { backup: t.driver.backup });
+  const report = await migrate(migrations.slice(0, 5), { backup: t.driver.backup });
   assert.deepEqual(report.applied, [5]);
   assert.equal(await getSchemaVersion(), 5);
   assert.equal(t.backups.filter((b) => b.kind === 'pre-migration').length, 1);

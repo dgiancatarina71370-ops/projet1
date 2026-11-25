@@ -287,7 +287,7 @@ Une table d'extension (`stakeholder_details`) ne peut pas porter de ligne de jou
 
 ## Lot M4 : décisions, risques (schéma 5, version 0.6.0)
 
-**Statut : implémenté, en attente de la recette `TESTS-M4.md` et de la mention « M4 VALIDÉE » de David.** Plan présenté le 25/11/2026 ; D52 à D60 validées le même jour (D58 avec l'ajout du lien « remplace »), « Go M4 » donné.
+**M4 VALIDÉE par David le 25/11/2026.** CI verte sur les trois jobs ; recette `TESTS-M4.md` : tests 1 à 30 OK sur clé USB, dont la migration 4 vers 5 sur la base réelle, le rejeu des parcours Besoins et Exigences, le sélecteur de date et les liens étendus. Réserves maintenues : test 12 de V2.3b et C13 (optionnel). Plan présenté le 25/11/2026 ; D52 à D60 validées le même jour (D58 avec l'ajout du lien « remplace »), « Go M4 » donné.
 
 ### Décisions validées par David (25/11/2026)
 - **D52** : un seul lot M4 (pas de M4a/M4b), car aucun écran validé n'est refondu et les composants communs existent depuis D44.
@@ -313,6 +313,36 @@ Une table d'extension (`stakeholder_details`) ne peut pas porter de ligne de jou
 - **Les clics et saisies ne sont pas testés automatiquement** : seuls la logique pure et le rendu statique le sont. Le champ date (sélecteur du navigateur de l'application) n'est vérifié que par la recette.
 - « Remplacée » n'est pas déduite du lien « remplace » (ni l'inverse) : les deux se renseignent séparément, par choix (transitions libres, D54).
 - Le lien « concerne » vers une user story existe dans la matrice mais ne sera créable qu'avec M5.
+- Non vérifié ici : build Windows (votre CI), comportement sur votre base réelle.
+
+## Lot M5 : user stories, tests (schéma 6, version 0.7.0)
+
+**M5 en attente de recette.** Plan présenté le 25/11/2026 ; D61 à D69 validées le même jour (D63 avec la préférence « Rejetée » plutôt que « Abandonnée »), option B pour D67, « Go M5 » donné. Recette : `TESTS-M5.md`. Réserves maintenues : test 12 de V2.3b et C13 (optionnel).
+
+### Décisions validées par David (25/11/2026)
+Les intitulés ci-dessous décrivent ce qui a été **implémenté** pour chaque numéro ; en cas de différence avec le plan validé, le plan fait foi et l'écart est à signaler.
+- **D61** : un seul lot M5 pour les user stories et les tests (deux types, un schéma 6, une migration).
+- **D62** : une user story a une table d'extension `story_details` : rôle (« En tant que », 200 caractères), « Je veux » et « Afin de » (2 000 caractères chacun), critères d'acceptation (texte libre, 10 000 caractères). La description commune reste disponible. Code `US-001`.
+- **D63** : statuts d'une user story : Brouillon (création), Prête, Réalisée, **Rejetée** (préférence de David), Archivée. Transitions libres. Libellés accordés au féminin.
+- **D64** : un test a une table d'extension `test_details` : type (Unitaire, Intégration, Recette (UAT) ; Recette par défaut), préconditions, étapes et résultat attendu (textes libres, 10 000 caractères), date de dernière exécution (jour seul AAAA-MM-JJ, facultative). Code `TEST-001`.
+- **D65** : statuts d'un test = dernier résultat connu : À exécuter (création), Réussi, Échoué, Bloqué, Archivé. Transitions libres. **Aucun historique d'exécutions** : modifier le statut ou la date écrase l'information précédente (le journal garde seulement les noms de champs modifiés).
+- **D66** : les liens « implémente » (user story vers exigence) et « vérifie » (test vers user story ou exigence) deviennent créables ; les neuf types de la matrice sont désormais tous exposés. « Concerne » vers une user story devient aussi créable depuis une décision.
+- **D67 (option B)** : menu regroupé en sections nommées, sans repli : Projets ; **Analyse** (Parties prenantes, Besoins, Exigences) ; **Pilotage** (Décisions, Risques) ; **Réalisation** (User stories, Tests) ; Technique. Neuf écrans.
+- **D68** : les écrans conteneurs (`StoriesScreen`, `TestsScreen`) sont écrits sur le modèle de `DecisionsScreen` et `RisksScreen`. La duplication entre écrans conteneurs est **une dette documentée** : à traiter par une extraction commune quand un lot la justifiera (et non dans M5, pour ne pas toucher aux écrans validés).
+- **D69** : journal et intégrité comme en M3b et M4 (une ligne `created` ou `updated` par opération, noms des champs sans contenu ; `story_details` et `test_details` ajoutées à `EXTENSION_TABLES` ; `createItem` refuse story et test sans détails) ; le contrôle d'intégrité gagne six anomalies (détails manquants, détails sur un mauvais type, type de test inconnu, date d'exécution illisible).
+
+### Écarts et décisions d'implémentation (à connaître)
+1. **Statuts « commun » supprimés** : la liste de statuts commune à story et test (M1) disparaît ; chaque type a la sienne. Les éléments existants de ces types (aucun en pratique avant M5, aucun écran ne permettait d'en créer) ne seraient pas migrés ; le contrôle d'intégrité les signalerait.
+2. **Libellés** : `statusLabel(statut, type)` gagne les formes de la user story (Rejetée, Archivée).
+3. **Fonction d'affichage de date** : `decisionDateLabel` est renommée `dayLabel` (elle sert maintenant aux décisions et aux tests).
+4. **Liste « Ajouter un lien »** : tous les types ont un écran, la liste annonce donc aussi User story et Test (ex. « concerne (Besoin ou Exigence ou Risque ou User story) »). Les tests qui figeaient ces listes ont été mis à jour ; la recette reteste les fiches déjà validées.
+5. **Navigation** : `NAV_SECTIONS` remplace la liste plate ; `SCREENS` en est déduite. Les intitulés de section ne sont pas cliquables.
+6. Aucun code Rust modifié. Version 0.7.0 (trois manifestes alignés).
+
+### Limites connues
+- **Les clics et saisies ne sont pas testés automatiquement** : seuls la logique pure et le rendu statique le sont. Le sélecteur de date et l'aspect du menu regroupé (retour à la ligne en fenêtre étroite) ne sont vérifiés que par la recette.
+- Pas d'historique des exécutions de test (D65), pas de calcul de couverture ni d'éléments orphelins : prévus au lot suivant (traçabilité calculée).
+- Un test se relie à une user story ou à une exigence ; rien n'oblige à relier quoi que ce soit.
 - Non vérifié ici : build Windows (votre CI), comportement sur votre base réelle.
 
 ## Non vérifié lors de l'écriture (à valider via GitHub Actions)

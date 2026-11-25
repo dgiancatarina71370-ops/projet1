@@ -21,16 +21,16 @@ test('registres : le message de titre est commun, avec la limite passée en para
   assert.equal(emptyListText(3, null, 'Aucun besoin', 'x'), 'Aucun besoin « Tous » : 3 au total dans ce projet.', 'valeur par défaut inchangée pour les besoins');
 });
 
-test('navigation : types annoncés dans les listes de liens = types qui ont un écran', () => {
-  assert.deepEqual([...KINDS_WITH_SCREEN].sort(), ['decision', 'need', 'requirement', 'risk', 'stakeholder']);
-  assert.ok(!KINDS_WITH_SCREEN.includes('story') && !KINDS_WITH_SCREEN.includes('test'));
-  assert.ok(KINDS.every((k) => KINDS_WITH_SCREEN.includes(k.kind) || k.kind === 'story' || k.kind === 'test'));
-  assert.equal(SCREENS.length, 7);
+test('navigation : types annoncés dans les listes de liens = types qui ont un écran (les sept, depuis M5)', () => {
+  assert.deepEqual([...KINDS_WITH_SCREEN].sort(), ['decision', 'need', 'requirement', 'risk', 'stakeholder', 'story', 'test']);
+  assert.ok(KINDS.every((k) => KINDS_WITH_SCREEN.includes(k.kind)), 'depuis M5, chaque type a son écran');
+  assert.equal(SCREENS.length, 9);
 });
 
-test('liste « Ajouter un lien » : seuls les types qui ont un écran sont annoncés', () => {
+test('liste « Ajouter un lien » : seuls les types demandés sont annoncés (ceux qui ont un écran)', () => {
   const text = (kind: Parameters<typeof linkOptionsFor>[0], key: string) => optionText(linkOptionsFor(kind).find((o) => o.key === key) as ReturnType<typeof linkOptionsFor>[number], KINDS_WITH_SCREEN);
-  assert.equal(text('decision', 'concerns:out'), 'concerne (Besoin ou Exigence ou Risque)', 'User story pas encore proposée');
+  assert.equal(text('decision', 'concerns:out'), 'concerne (Besoin ou Exigence ou Risque ou User story)', 'User story proposée depuis M5');
+  assert.equal(optionText(linkOptionsFor('decision')[0], ['need', 'requirement', 'risk']), 'concerne (Besoin ou Exigence ou Risque)', 'un type sans écran n\'est pas annoncé');
   assert.equal(text('decision', 'supersedes:out'), 'remplace (Décision)');
   assert.equal(text('decision', 'supersedes:in'), 'remplacé par (Décision)');
   assert.equal(text('risk', 'mitigates:in'), 'atténué par (Exigence ou Décision)');

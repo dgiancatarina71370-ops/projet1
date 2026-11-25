@@ -8,6 +8,10 @@ import { LinksView } from '../../src/shared/links-ui.tsx';
 import type { LinkCandidateView, LinkOptionView, LinkRowView } from '../../src/shared/links-ui.tsx';
 import { DecisionDetailView, DecisionFormView, DecisionListView } from '../../src/modules/decisions/DecisionsView.tsx';
 import type { DecisionRow } from '../../src/modules/decisions/DecisionsView.tsx';
+import { StoryDetailView, StoryFormView, StoryListView } from '../../src/modules/stories/StoriesView.tsx';
+import type { StoryRow } from '../../src/modules/stories/StoriesView.tsx';
+import { TestDetailView, TestFormView, TestListView } from '../../src/modules/testcases/TestsView.tsx';
+import type { TestRow } from '../../src/modules/testcases/TestsView.tsx';
 import { RiskDetailView, RiskFormView, RiskListView } from '../../src/modules/risks/RisksView.tsx';
 import type { RiskRow } from '../../src/modules/risks/RisksView.tsx';
 import { NeedDetailView, NeedFormView, NeedListView, NoProjectView as AnalysisNoProject, RequirementDetailView, RequirementFormView, RequirementListView } from '../../src/modules/analysis/AnalysisView.tsx';
@@ -55,11 +59,27 @@ export const render = {
     renderToStaticMarkup(
       <RiskFormView heading="Nouveau risque" values={p.values} errors={p.errors} busy={false} error="" onChange={noop} onSubmit={noop} onCancel={noop} askAbandon={p.askAbandon} onConfirmAbandon={noop} onKeepEditing={noop} />,
     ),
+  storyList: (p: { rows: StoryRow[]; total: number; filter: string }): string =>
+    renderToStaticMarkup(<StoryListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} />),
+  storyDetail: (p: { row: StoryRow; confirm: string | null; error: string }): string =>
+    renderToStaticMarkup(<StoryDetailView row={p.row} {...detailProps(p)} />),
+  storyForm: (p: { errors: Record<string, string>; askAbandon: boolean; values: { title: string; description: string; role: string; goal: string; benefit: string; criteria: string } }): string =>
+    renderToStaticMarkup(
+      <StoryFormView heading="Nouvelle user story" values={p.values} errors={p.errors} busy={false} error="" onChange={noop} onSubmit={noop} onCancel={noop} askAbandon={p.askAbandon} onConfirmAbandon={noop} onKeepEditing={noop} />,
+    ),
+  testList: (p: { rows: TestRow[]; total: number; filter: string }): string =>
+    renderToStaticMarkup(<TestListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} />),
+  testDetail: (p: { row: TestRow; confirm: string | null; error: string }): string =>
+    renderToStaticMarkup(<TestDetailView row={p.row} {...detailProps(p)} />),
+  testForm: (p: { errors: Record<string, string>; askAbandon: boolean; values: { title: string; description: string; testType: string; preconditions: string; steps: string; expected: string; lastRunOn: string } }): string =>
+    renderToStaticMarkup(
+      <TestFormView heading="Nouveau test" values={p.values} errors={p.errors} busy={false} error="" onChange={noop} onSubmit={noop} onCancel={noop} askAbandon={p.askAbandon} onConfirmAbandon={noop} onKeepEditing={noop} />,
+    ),
   links: (p: { rows: LinkRowView[]; options: LinkOptionView[]; optionKey: string; candidates: LinkCandidateView[]; candidateId: string; error: string; confirmRemove: { linkId: number; message: string } | null }): string =>
     renderToStaticMarkup(
       <LinksView rows={p.rows} options={p.options} optionKey={p.optionKey} candidates={p.candidates} candidateId={p.candidateId} busy={false} error={p.error} confirmRemove={p.confirmRemove} onOption={noop} onCandidate={noop} onAdd={noop} onAskRemove={noop} onConfirmRemove={noop} onCancelRemove={noop} />,
     ),
-  shell: (p: { navigable: boolean; screen: 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'technical'; projects: Array<{ id: number; name: string }>; activeId: number | null }): string =>
+  shell: (p: { navigable: boolean; screen: 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'stories' | 'tests' | 'technical'; projects: Array<{ id: number; name: string }>; activeId: number | null }): string =>
     renderToStaticMarkup(
       <Shell intro="Introduction" navigable={p.navigable} screen={p.screen} onNavigate={noop} projects={p.projects} activeId={p.activeId} onSelectProject={noop} footer="Signature">
         <p>Contenu</p>
