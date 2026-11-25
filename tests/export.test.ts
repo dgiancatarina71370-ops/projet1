@@ -18,16 +18,24 @@ const NOW = new Date(2026, 10, 21, 17, 5, 9); // heure locale : le test ne dépe
 const CTX = { version: '0.2.4', now: NOW };
 const SIG = signatureLines(buildSignature('0.2.4', NOW));
 
+/** Un export en texte (Markdown, HTML) renvoie toujours du texte : on le vérifie une fois, ici. */
+function textOrFail(r: { text: string | null }): string {
+  assert.ok(r.text !== null, 'export texte attendu');
+  return r.text;
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Signature (E5, E11)
 // ---------------------------------------------------------------------------------------------------------------------
 
 test('E5 Markdown : les quatre éléments de la signature, le commentaire en tête, le bloc après « --- »', async () => {
   const r = await exportDocument({ title: 'CR atelier', markdown: '# Compte rendu\n\nTexte accentué : é à ç.' }, 'markdown', CTX);
+  assert.ok(r.text !== null, 'export texte attendu');
+  const text: string = r.text;
   assert.deepEqual(SIG, ['BA-Mentor Portable Ultimate Edition', 'Développé par David Giancatarina', 'Version : 0.2.4', 'Date de génération : 21/11/2026 17:05']);
-  for (const line of SIG) assert.ok(r.text.includes(line), line);
-  assert.match(r.text, /^<!-- generator: BA-Mentor Portable Ultimate Edition — Développé par David Giancatarina — Version : 0\.2\.4 — generated: \d{4}-\d\d-\d\dT[\d:.]+Z -->\n/);
-  const [body, foot] = r.text.split('\n---\n');
+  for (const line of SIG) assert.ok(text.includes(line), line);
+  assert.match(text, /^<!-- generator: BA-Mentor Portable Ultimate Edition — Développé par David Giancatarina — Version : 0\.2\.4 — generated: \d{4}-\d\d-\d\dT[\d:.]+Z -->\n/);
+  const [body, foot] = text.split('\n---\n');
   assert.ok(body.includes('# Compte rendu') && body.includes('é à ç'), 'le contenu est repris tel quel');
   assert.deepEqual(foot.trim().split('  \n'), SIG, 'le bloc final contient les quatre lignes, dans l\'ordre');
   assert.equal(r.fileName, 'CR atelier-20261121-170509.md');
@@ -35,21 +43,25 @@ test('E5 Markdown : les quatre éléments de la signature, le commentaire en tê
 
 test('E5 HTML : pied de page visible une seule fois, balises meta, aucune ressource externe', async () => {
   const r = await exportDocument({ title: 'SFD <règles> & co', markdown: '# Titre\n\nTexte.' }, 'html', CTX);
-  assert.equal((r.text.match(/<footer>/g) ?? []).length, 1);
-  const footer = r.text.slice(r.text.indexOf('<footer>'), r.text.indexOf('</footer>'));
+  assert.ok(r.text !== null, 'export texte attendu');
+  const text: string = r.text;
+  assert.equal((text.match(/<footer>/g) ?? []).length, 1);
+  const footer = text.slice(text.indexOf('<footer>'), text.indexOf('</footer>'));
   for (const line of SIG) assert.ok(footer.includes(line), `pied de page : ${line}`);
-  assert.match(r.text, /<meta name="generator" content="BA-Mentor Portable Ultimate Edition — Développé par David Giancatarina — Version : 0\.2\.4">/);
-  assert.match(r.text, /<meta name="generated" content="\d{4}-\d\d-\d\dT[\d:.]+Z">/);
-  assert.match(r.text, /<title>SFD &lt;règles&gt; &amp; co<\/title>/);
-  assert.match(r.text, /Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"/);
-  assert.ok(!/\b(src|srcset)=|<link |@import|url\(/i.test(r.text), 'aucune ressource externe');
+  assert.match(text, /<meta name="generator" content="BA-Mentor Portable Ultimate Edition — Développé par David Giancatarina — Version : 0\.2\.4">/);
+  assert.match(text, /<meta name="generated" content="\d{4}-\d\d-\d\dT[\d:.]+Z">/);
+  assert.match(text, /<title>SFD &lt;règles&gt; &amp; co<\/title>/);
+  assert.match(text, /Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"/);
+  assert.ok(!/\b(src|srcset)=|<link |@import|url\(/i.test(text), 'aucune ressource externe');
   assert.equal(r.fileName, 'SFD -règles- & co-20261121-170509.html');
 });
 
 test('la date de génération est celle de l\'instant de l\'export, à la minute', async () => {
   const t0 = new Date(2026, 0, 5, 9, 7, 59);
   const r = await exportDocument({ title: 'x', markdown: 'a' }, 'markdown', { version: '1.2.3', now: t0 });
-  assert.ok(r.text.includes('Date de génération : 05/01/2026 09:07'));
+  assert.ok(r.text !== null, 'export texte attendu');
+  const text: string = r.text;
+  assert.ok(text.includes('Date de génération : 05/01/2026 09:07'));
   assert.equal(localStamp(t0), '20260105-090759');
 });
 
@@ -70,7 +82,7 @@ test('un export sans signature complète est refusé', async () => {
 test('contenu vide : l\'export existe et porte la signature', async () => {
   for (const f of ['markdown', 'html'] as const) {
     const r = await exportDocument({ title: 'Vide', markdown: '' }, f, CTX);
-    for (const line of SIG) assert.ok(r.text.includes(line));
+    for (const line of SIG) assert.ok(r.text !== null && r.text.includes(line));
   }
 });
 
@@ -94,7 +106,7 @@ const TRAP = [
 ].join('\n\n');
 
 test('D7 : un livrable piégé donne un HTML inerte', async () => {
-  const html = (await exportDocument({ title: '<script>alert(0)</script>', markdown: TRAP }, 'html', CTX)).text;
+  const html = textOrFail(await exportDocument({ title: '<script>alert(0)</script>', markdown: TRAP }, 'html', CTX));
   const tags = [...html.matchAll(/<\/?([a-zA-Z][a-zA-Z0-9]*)/g)].map((m) => m[1].toLowerCase());
   const unexpected = [...new Set(tags.filter((t) => !ALLOWED_TAGS.has(t)))];
   assert.deepEqual(unexpected, [], `balises inattendues : ${unexpected.join(', ')}`);
@@ -134,14 +146,14 @@ test('modèle : titres, listes imbriquées et à cocher, tableau aligné, code, 
   const table = b[3] as Extract<(typeof b)[number], { kind: 'table' }>;
   assert.deepEqual(table.align, ['left', 'right']);
   assert.equal(table.rows.length, 1);
-  const html = (await exportDocument({ title: 't', markdown: '3. trois\n4. quatre\n\n| A | B |\n|:--|--:|\n| 1 | **2** |\n\n```js\nlet x = 1 < 2;\n```' }, 'html', CTX)).text;
+  const html = textOrFail(await exportDocument({ title: 't', markdown: '3. trois\n4. quatre\n\n| A | B |\n|:--|--:|\n| 1 | **2** |\n\n```js\nlet x = 1 < 2;\n```' }, 'html', CTX));
   assert.ok(html.includes('<ol start="3">'));
   assert.ok(html.includes('<th style="text-align:left">A</th>') && html.includes('<td style="text-align:right"><strong>2</strong></td>'));
   assert.ok(html.includes('<code class="language-js">let x = 1 &lt; 2;</code>'));
 });
 
 test('cases à cocher : une seule case par item, le texte à côté, jamais « [x] » en clair (livrable réel de la V1)', async () => {
-  const html = (await exportDocument({ title: 't', markdown: '## Décisions\n- [x] Le CRM reste la source\n- [ ] Seuil à confirmer\n- simple\n' }, 'html', CTX)).text;
+  const html = textOrFail(await exportDocument({ title: 't', markdown: '## Décisions\n- [x] Le CRM reste la source\n- [ ] Seuil à confirmer\n- simple\n' }, 'html', CTX));
   assert.ok(html.includes('<li><input type="checkbox" disabled checked> Le CRM reste la source</li>'), html);
   assert.ok(html.includes('<li><input type="checkbox" disabled> Seuil à confirmer</li>'));
   assert.ok(html.includes('<li>simple</li>'));
