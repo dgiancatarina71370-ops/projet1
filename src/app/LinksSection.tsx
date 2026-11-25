@@ -55,11 +55,11 @@ export function LinksSection(props: { itemId: number; kind: ItemKind; onChanged:
     }
   };
 
-  const text = (r: LinkedItem) => `${linkLabel(r.link_type, r.direction)} ${r.other_code}`;
+  const text = (r: LinkedItem) => `${linkLabel(r.link_type, r.direction, props.kind)} ${r.other_code}`;
 
   return (
     <LinksView
-      rows={rows.map((r) => ({ linkId: r.link_id, label: linkLabel(r.link_type, r.direction), otherCode: r.other_code, otherTitle: r.other_title, otherStatus: statusLabel(r.other_status, r.other_kind) }))}
+      rows={rows.map((r) => ({ linkId: r.link_id, label: linkLabel(r.link_type, r.direction, props.kind), otherCode: r.other_code, otherTitle: r.other_title, otherStatus: statusLabel(r.other_status, r.other_kind) }))}
       options={options.map((o) => ({ key: o.key, label: optionText(o, KINDS_WITH_SCREEN) }))}
       optionKey={optionKey}
       candidates={candidates.map((c) => ({ id: c.id, label: `${c.code} · ${c.title} (${statusLabel(c.status, c.kind)})` }))}

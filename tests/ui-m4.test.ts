@@ -32,7 +32,7 @@ test('liste « Ajouter un lien » : seuls les types demandés sont annoncés (ce
   assert.equal(text('decision', 'concerns:out'), 'concerne (Besoin ou Exigence ou Risque ou User story)', 'User story proposée depuis M5');
   assert.equal(optionText(linkOptionsFor('decision')[0], ['need', 'requirement', 'risk']), 'concerne (Besoin ou Exigence ou Risque)', 'un type sans écran n\'est pas annoncé');
   assert.equal(text('decision', 'supersedes:out'), 'remplace (Décision)');
-  assert.equal(text('decision', 'supersedes:in'), 'remplacé par (Décision)');
+  assert.equal(text('decision', 'supersedes:in'), 'remplacée par (Décision)');
   assert.equal(text('risk', 'mitigates:in'), 'atténué par (Exigence ou Décision)');
   assert.equal(text('need', 'derives:out'), 'dérive en (Exigence)');
   assert.equal(optionText(linkOptionsFor('decision')[0], []), 'concerne', 'aucun type annoncé : libellé seul');

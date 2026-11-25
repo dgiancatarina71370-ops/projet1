@@ -89,7 +89,7 @@ test('liens : « remplace » (D58), types exposés (D57, D66), options par type 
   assert.deepEqual(linkOptionsFor('decision').map((o) => o.key), ['concerns:out', 'mitigates:out', 'supersedes:out', 'supersedes:in']);
   assert.deepEqual(linkOptionsFor('risk').map((o) => o.key), ['concerns:in', 'threatens:out', 'mitigates:in']);
   assert.deepEqual(linkOptionsFor('risk').map((o) => o.label), ['concerné par', 'menace', 'atténué par']);
-  assert.deepEqual(linkOptionsFor('decision').map((o) => o.label), ['concerne', 'atténue', 'remplace', 'remplacé par']);
+  assert.deepEqual(linkOptionsFor('decision').map((o) => o.label), ['concerne', 'atténue', 'remplace', 'remplacée par']);
   assert.deepEqual(linkOptionsFor('test').map((o) => o.key), ['verifies:out']);
 });
 

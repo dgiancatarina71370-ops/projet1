@@ -337,7 +337,9 @@ Les intitulés ci-dessous décrivent ce qui a été **implémenté** pour chaque
 3. **Fonction d'affichage de date** : `decisionDateLabel` est renommée `dayLabel` (elle sert maintenant aux décisions et aux tests).
 4. **Liste « Ajouter un lien »** : tous les types ont un écran, la liste annonce donc aussi User story et Test (ex. « concerne (Besoin ou Exigence ou Risque ou User story) »). Les tests qui figeaient ces listes ont été mis à jour ; la recette reteste les fiches déjà validées.
 5. **Navigation** : `NAV_SECTIONS` remplace la liste plate ; `SCREENS` en est déduite. Les intitulés de section ne sont pas cliquables.
-6. Aucun code Rust modifié. Version 0.7.0 (trois manifestes alignés).
+6. **Accord des libellés de liens (écart constaté en recette M5, test 18)** : le libellé inverse s'accorde désormais avec l'élément courant (« concernée par » sur une user story, une exigence ou une décision ; « raffinée par », « remplacée par », « implémentée par », « vérifiée par », « menacée par », « atténuée par » de même). Cela modifie aussi l'affichage de fiches validées en M3b et M4 (ex. « raffiné par » devient « raffinée par » sur une exigence). L'accord est vérifié par les tests sur les listes d'options ; le branchement dans l'écran des liens existants (`LinksSection`) n'a pas de test automatique, il se vérifie à la recette.
+7. La ligne `migrated_6_at` de la table `meta` s'ajoute à chaque migration : attendu, le protocole l'excepte.
+8. Aucun code Rust modifié. Version 0.7.0 (trois manifestes alignés).
 
 ### Limites connues
 - **Les clics et saisies ne sont pas testés automatiquement** : seuls la logique pure et le rendu statique le sont. Le sélecteur de date et l'aspect du menu regroupé (retour à la ligne en fenêtre étroite) ne sont vérifiés que par la recette.

@@ -84,13 +84,21 @@ export interface LinkOption {
   otherKinds: readonly ItemKind[];
 }
 
+// Types d'éléments féminins : le participe du libellé inverse s'accorde avec l'élément courant (« Exigence raffinée par », « User story concernée par »).
+const FEMININE_KINDS: readonly ItemKind[] = ['stakeholder', 'requirement', 'decision', 'story'];
+
+/** Libellé inverse accordé au genre de l'élément courant : « concerné par » devient « concernée par » pour une exigence, une décision, une user story ou une partie prenante. */
+export function inverseLabelFor(rule: LinkRule, kind?: ItemKind): string {
+  return kind !== undefined && FEMININE_KINDS.includes(kind) ? rule.inverseLabel.replace(/é par$/, 'ée par') : rule.inverseLabel;
+}
+
 /** Liens que l'interface propose d'ajouter depuis un élément de ce type, dans les deux sens. Un lien qui boucle sur le même type (« raffine ») donne les deux options. */
 export function linkOptionsFor(kind: ItemKind): LinkOption[] {
   const options: LinkOption[] = [];
   for (const type of EXPOSED_LINK_TYPES) {
     const rule = linkRule(type);
     if (rule.from.includes(kind)) options.push({ key: `${type}:out`, type, direction: 'out', label: rule.label, otherKinds: rule.to });
-    if (rule.to.includes(kind)) options.push({ key: `${type}:in`, type, direction: 'in', label: rule.inverseLabel, otherKinds: rule.from });
+    if (rule.to.includes(kind)) options.push({ key: `${type}:in`, type, direction: 'in', label: inverseLabelFor(rule, kind), otherKinds: rule.from });
   }
   return options;
 }
@@ -105,10 +113,10 @@ export function optionText(option: LinkOption, shown: readonly ItemKind[]): stri
 }
 
 /** Libellé d'un lien existant, lu depuis l'élément courant. */
-export function linkLabel(type: string, direction: Direction): string {
+export function linkLabel(type: string, direction: Direction, kind?: ItemKind): string {
   if (!isLinkType(type)) return `type inconnu (${type})`;
   const rule = linkRule(type);
-  return direction === 'out' ? rule.label : rule.inverseLabel;
+  return direction === 'out' ? rule.label : inverseLabelFor(rule, kind);
 }
 
 /** Vrai si ce type de lien peut relier deux éléments du même type, donc former une boucle (aujourd'hui : « raffine »). */

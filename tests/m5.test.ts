@@ -17,7 +17,7 @@ import { createLink, linkCandidates, linkedItems } from '../src/data/repositorie
 import { checkModelIntegrity } from '../src/data/repositories/integrity.ts';
 import { MAX_STORY_CRITERIA_LENGTH, MAX_STORY_ROLE_LENGTH, MAX_STORY_SENTENCE_LENGTH, changedStoryFields, normalizeStoryFields } from '../src/domain/stories.ts';
 import { MAX_TEST_TEXT_LENGTH, changedTestFields, isTestType, normalizeTestFields, testTypeLabel } from '../src/domain/testcases.ts';
-import { EXPOSED_LINK_TYPES, linkOptionsFor } from '../src/domain/links.ts';
+import { EXPOSED_LINK_TYPES, linkLabel, linkOptionsFor } from '../src/domain/links.ts';
 import { KINDS_WITH_DETAILS, initialStatus, isValidStatus, kindInfo, statusLabel } from '../src/domain/kinds.ts';
 import { EXTENSION_TABLES } from '../src/data/sql-guard.ts';
 
@@ -79,6 +79,19 @@ test('liens : implémente et vérifie exposés (D66), options par type d\'élém
   assert.ok(keys('requirement').includes('implements:in') && keys('requirement').includes('verifies:in'));
   assert.ok(KINDS_WITH_DETAILS.includes('story') && KINDS_WITH_DETAILS.includes('test'));
   assert.ok(EXTENSION_TABLES.includes('story_details') && EXTENSION_TABLES.includes('test_details'));
+});
+
+test('liens : le libellé inverse s\'accorde avec l\'élément courant (écart constaté en recette M5, test 18)', () => {
+  const labels = (k: Parameters<typeof linkOptionsFor>[0]) => linkOptionsFor(k).filter((o) => o.direction === 'in').map((o) => o.label);
+  assert.deepEqual(labels('story'), ['vérifiée par', 'concernée par']);
+  assert.deepEqual(labels('requirement'), ['dérive de', 'raffinée par', 'implémentée par', 'vérifiée par', 'concernée par', 'menacée par']);
+  assert.deepEqual(labels('decision'), ['remplacée par']);
+  assert.deepEqual(labels('need'), ['exprimé par', 'concerné par', 'menacé par'], 'masculin inchangé');
+  assert.deepEqual(labels('risk'), ['concerné par', 'atténué par']);
+  assert.equal(linkLabel('concerns', 'in', 'story'), 'concernée par');
+  assert.equal(linkLabel('concerns', 'in', 'risk'), 'concerné par');
+  assert.equal(linkLabel('concerns', 'in'), 'concerné par', 'sans type : forme par défaut');
+  assert.equal(linkLabel('concerns', 'out', 'story'), 'concerne', 'le sens sortant ne s\'accorde pas');
 });
 
 // ------------------------------------------------------------------ migration 6
