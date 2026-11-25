@@ -3,7 +3,7 @@ import { MAX_TITLE } from '../../domain/stakeholders.ts';
 import { NATURES, PRIORITIES, natureLabel, normalizeRequirementFields, priorityLabel } from '../../domain/requirements.ts';
 import type { Nature, Priority, RequirementFields } from '../../domain/requirements.ts';
 import { KINDS, statusLabel } from '../../domain/kinds.ts';
-import { emptyListText } from '../../shared/register-logic.ts';
+import { emptyListText, titleProblem } from '../../shared/register-logic.ts';
 
 /** Statuts d'un besoin ou d'une exigence, dans l'ordre du cycle de vie (décisions D37 et D47). */
 export const ANALYSIS_STATUSES: readonly string[] = (KINDS.find((k) => k.kind === 'need') as { statuses: readonly string[] }).statuses;
@@ -38,12 +38,7 @@ export type NeedFormErrors = Partial<Record<keyof NeedForm, string>>;
 
 export type NeedFormResult = { ok: true; title: string; description: string } | { ok: false; errors: NeedFormErrors };
 
-function titleError(title: string, noun: string): string | null {
-  const clean = title.trim();
-  if (clean === '') return `Le titre ${noun} est obligatoire.`;
-  if (clean.length > MAX_TITLE) return `Le titre ${noun} est limité à ${MAX_TITLE} caractères.`;
-  return null;
-}
+const titleError = (title: string, noun: string): string | null => titleProblem(title, noun, MAX_TITLE);
 
 export function validateNeedForm(values: NeedForm): NeedFormResult {
   const errors: NeedFormErrors = {};

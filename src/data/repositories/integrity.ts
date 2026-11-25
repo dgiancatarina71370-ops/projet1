@@ -9,6 +9,7 @@ import { canLoop, findAnyCycle, isLinkAllowed, isLinkType } from '../../domain/l
 import type { LinkType } from '../../domain/links.ts';
 import { isLevel } from '../../domain/stakeholders.ts';
 import { isNature, isPriority } from '../../domain/requirements.ts';
+import { isCalendarDate } from '../../domain/decisions.ts';
 
 export type IntegrityProblem =
   | 'unknown-kind'
@@ -25,6 +26,12 @@ export type IntegrityProblem =
   | 'requirement-details-missing'
   | 'requirement-details-wrong-kind'
   | 'requirement-invalid-value'
+  | 'decision-details-missing'
+  | 'decision-details-wrong-kind'
+  | 'decision-invalid-date'
+  | 'risk-details-missing'
+  | 'risk-details-wrong-kind'
+  | 'risk-invalid-level'
   | 'link-cycle';
 
 export interface IntegrityIssue {
@@ -128,6 +135,44 @@ export async function checkModelIntegrity(): Promise<IntegrityIssue[]> {
     }
     if (!isNature(d.nature) || !isPriority(d.priority)) {
       issues.push({ problem: 'requirement-invalid-value', itemId: d.id, message: `L'exigence ${d.code} a une nature ou une priorité invalide.` });
+    }
+  }
+
+  // Décisions (lot M4) : une ligne de détails par décision, et seulement pour elles ; date valide ou vide.
+  const decMissing = await query<{ id: number; code: string }>(
+    `SELECT i.id, i.code FROM items i LEFT JOIN decision_details d ON d.item_id = i.id WHERE i.kind = 'decision' AND d.item_id IS NULL ORDER BY i.id`,
+  );
+  for (const m of decMissing) {
+    issues.push({ problem: 'decision-details-missing', itemId: m.id, message: `La décision ${m.code} n'a pas de ligne de détails.` });
+  }
+  const decDetails = await query<{ id: number; code: string; kind: string; decided_on: string }>(
+    `SELECT i.id, i.code, i.kind, d.decided_on FROM decision_details d JOIN items i ON i.id = d.item_id ORDER BY i.id`,
+  );
+  for (const d of decDetails) {
+    if (d.kind !== 'decision') {
+      issues.push({ problem: 'decision-details-wrong-kind', itemId: d.id, message: `L'élément ${d.code} porte des détails de décision alors que c'est un « ${d.kind} ».` });
+    }
+    if (d.decided_on !== '' && !isCalendarDate(d.decided_on)) {
+      issues.push({ problem: 'decision-invalid-date', itemId: d.id, message: `La décision ${d.code} a une date invalide (« ${d.decided_on} »).` });
+    }
+  }
+
+  // Risques (lot M4) : une ligne de détails par risque, et seulement pour eux ; niveaux valides.
+  const riskMissing = await query<{ id: number; code: string }>(
+    `SELECT i.id, i.code FROM items i LEFT JOIN risk_details d ON d.item_id = i.id WHERE i.kind = 'risk' AND d.item_id IS NULL ORDER BY i.id`,
+  );
+  for (const m of riskMissing) {
+    issues.push({ problem: 'risk-details-missing', itemId: m.id, message: `Le risque ${m.code} n'a pas de ligne de détails.` });
+  }
+  const riskDetails = await query<{ id: number; code: string; kind: string; probability: string; impact: string }>(
+    `SELECT i.id, i.code, i.kind, d.probability, d.impact FROM risk_details d JOIN items i ON i.id = d.item_id ORDER BY i.id`,
+  );
+  for (const d of riskDetails) {
+    if (d.kind !== 'risk') {
+      issues.push({ problem: 'risk-details-wrong-kind', itemId: d.id, message: `L'élément ${d.code} porte des détails de risque alors que c'est un « ${d.kind} ».` });
+    }
+    if (!isLevel(d.probability) || !isLevel(d.impact)) {
+      issues.push({ problem: 'risk-invalid-level', itemId: d.id, message: `Le risque ${d.code} a une probabilité ou un impact invalide.` });
     }
   }
 

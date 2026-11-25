@@ -4,11 +4,12 @@
 import { useEffect, useState } from 'react';
 import { createLink, deleteLink, linkCandidates, linkedItems } from '../data/repositories/links.ts';
 import type { LinkCandidate, LinkedItem } from '../data/repositories/links.ts';
-import { kindInfo, statusLabel } from '../domain/kinds.ts';
+import { statusLabel } from '../domain/kinds.ts';
 import type { ItemKind } from '../domain/kinds.ts';
-import { linkLabel, linkOptionsFor } from '../domain/links.ts';
+import { linkLabel, linkOptionsFor, optionText } from '../domain/links.ts';
 import type { LinkOption } from '../domain/links.ts';
 import { LinksView } from '../shared/links-ui.tsx';
+import { KINDS_WITH_SCREEN } from './navigation.ts';
 
 export function LinksSection(props: { itemId: number; kind: ItemKind; onChanged: () => void }) {
   const options: LinkOption[] = linkOptionsFor(props.kind);
@@ -58,10 +59,10 @@ export function LinksSection(props: { itemId: number; kind: ItemKind; onChanged:
 
   return (
     <LinksView
-      rows={rows.map((r) => ({ linkId: r.link_id, label: linkLabel(r.link_type, r.direction), otherCode: r.other_code, otherTitle: r.other_title, otherStatus: statusLabel(r.other_status) }))}
-      options={options.map((o) => ({ key: o.key, label: `${o.label} (${o.otherKinds.map((k) => kindInfo(k).label).join(' ou ')})` }))}
+      rows={rows.map((r) => ({ linkId: r.link_id, label: linkLabel(r.link_type, r.direction), otherCode: r.other_code, otherTitle: r.other_title, otherStatus: statusLabel(r.other_status, r.other_kind) }))}
+      options={options.map((o) => ({ key: o.key, label: optionText(o, KINDS_WITH_SCREEN) }))}
       optionKey={optionKey}
-      candidates={candidates.map((c) => ({ id: c.id, label: `${c.code} · ${c.title} (${statusLabel(c.status)})` }))}
+      candidates={candidates.map((c) => ({ id: c.id, label: `${c.code} · ${c.title} (${statusLabel(c.status, c.kind)})` }))}
       candidateId={candidateId}
       busy={busy}
       error={error}

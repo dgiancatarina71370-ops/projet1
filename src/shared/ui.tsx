@@ -42,10 +42,10 @@ export function ConfirmBar(props: { message: ReactNode; confirmLabel: string; bu
 
 // ------------------------------------------------------------------ composants communs aux registres (lot M3b, décision D44)
 
-export function TextField(props: { id: string; label: string; value: string; error?: string; hint?: string; onChange: (v: string) => void }) {
+export function TextField(props: { id: string; label: string; value: string; error?: string; hint?: string; type?: 'text' | 'date'; onChange: (v: string) => void }) {
   return (
     <Field label={props.label} htmlFor={props.id} error={props.error} hint={props.hint}>
-      <input id={props.id} className={INPUT_CLASS} value={props.value} onChange={(e) => props.onChange(e.target.value)} />
+      <input id={props.id} type={props.type ?? 'text'} className={INPUT_CLASS} value={props.value} onChange={(e) => props.onChange(e.target.value)} />
     </Field>
   );
 }
@@ -133,6 +133,67 @@ export function StatusSwitcher(props: { statuses: ReadonlyArray<{ value: string;
       {props.statuses.filter((s) => s.value !== props.current).map((s) => (
         <button key={s.value} type="button" className={BUTTON_SECONDARY} disabled={props.busy} onClick={() => props.onChange(s.value)}>{s.label}</button>
       ))}
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------ cadre commun des registres (lot M4, décision D59)
+// Extraits de l'écran Besoins/Exigences, où ils existaient déjà (M3b), pour que Décisions et Risques ne les recopient pas.
+
+/** Écran affiché quand aucun projet n'est actif : `what` est le sujet avec son article (« Les décisions »). */
+export function NoProjectView(props: { what: string; onGoToProjects: () => void }) {
+  return (
+    <div className="space-y-2 text-sm">
+      <p>Aucun projet actif. {props.what} appartiennent à un projet : créez-en un, ou choisissez-en un dans la liste en haut de l'écran.</p>
+      <button type="button" className={BUTTON_PRIMARY} onClick={props.onGoToProjects}>Aller aux projets</button>
+    </div>
+  );
+}
+
+/** En-tête de liste d'un registre : projet, nombre d'éléments (singulier ou pluriel) et bouton de création. */
+export function RegisterHeader(props: { projectName: string; total: number; singular: string; plural: string; newLabel: string; onNew: () => void }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <p className="text-sm text-hub-muted">Projet : <span className="text-hub-fg">{props.projectName}</span> · {props.total} {props.total > 1 ? props.plural : props.singular}</p>
+      <button type="button" className={BUTTON_PRIMARY} onClick={props.onNew}>{props.newLabel}</button>
+    </div>
+  );
+}
+
+/** Actions d'une fiche, communes à tous les registres à statuts libres. */
+export interface DetailActions {
+  busy: boolean;
+  error: string;
+  confirmDelete: string | null;
+  onEdit: () => void;
+  onChangeStatus: (s: string) => void;
+  onAskDelete: () => void;
+  onConfirmDelete: () => void;
+  onCancelDelete: () => void;
+  onBack: () => void;
+}
+
+/**
+ * Fiche commune : retour, en-tête, statut et champs propres (en enfants, des paires <dt>/<dd>), erreur, actions ou confirmation de suppression.
+ * Le contenu de la zone « Liens » est ajouté par l'écran, sous ce cadre.
+ */
+export function DetailFrame(props: DetailActions & { code: string; title: string; statusText: string; statuses: ReadonlyArray<{ value: string; label: string }>; current: string; children: ReactNode }) {
+  return (
+    <div className="space-y-3">
+      <button type="button" className="text-sm text-hub-accent underline" onClick={props.onBack}>← Retour à la liste</button>
+      <h3 className="text-lg font-semibold">{props.code} · {props.title}</h3>
+      <dl className="grid grid-cols-[10rem_1fr] gap-y-1 text-sm">
+        <dt className="text-hub-muted">Statut</dt><dd>{props.statusText}</dd>
+        {props.children}
+      </dl>
+      {props.error && <p role="alert" className="text-sm text-hub-bad">{props.error}</p>}
+      {props.confirmDelete !== null ? (
+        <ConfirmBar message={props.confirmDelete} confirmLabel="Supprimer définitivement" busy={props.busy} onConfirm={props.onConfirmDelete} onCancel={props.onCancelDelete} />
+      ) : (
+        <ItemActionBar busy={props.busy} onEdit={props.onEdit} onAskDelete={props.onAskDelete}>
+          <StatusSwitcher statuses={props.statuses} current={props.current} busy={props.busy} onChange={props.onChangeStatus} />
+        </ItemActionBar>
+      )}
     </div>
   );
 }

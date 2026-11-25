@@ -13,9 +13,9 @@ export function isDirty<T extends object>(initial: T, current: T): boolean {
 }
 
 /** Message d'une liste vide : registre vide, ou filtre qui ne retient rien. `none` est le sujet accordé (« Aucun besoin », « Aucune exigence ») ; `filterLabel` est null pour « Tous ». */
-export function emptyListText(total: number, filterLabel: string | null, none: string, creationHint: string): string {
+export function emptyListText(total: number, filterLabel: string | null, none: string, creationHint: string, allLabel = 'Tous'): string {
   if (total === 0) return `${none} dans ce projet. ${creationHint}`;
-  return `${none} « ${filterLabel ?? 'Tous'} » : ${total} au total dans ce projet.`;
+  return `${none} « ${filterLabel ?? allLabel} » : ${total} au total dans ce projet.`;
 }
 
 /** Message de confirmation d'une suppression : annonce les liens qui seront aussi supprimés. */
@@ -23,4 +23,12 @@ export function deletionMessage(code: string, title: string, linkCount: number):
   const base = `Supprimer définitivement ${code} « ${title} » ?`;
   if (linkCount === 0) return `${base} Cette action est irréversible ; l'archivage est la voie normale pour ne plus la voir.`;
   return `${base} ${linkCount === 1 ? '1 lien sera aussi supprimé' : `${linkCount} liens seront aussi supprimés`}. Cette action est irréversible ; l'archivage est la voie normale.`;
+}
+
+/** Titre d'un élément : message d'erreur à afficher, ou null s'il est valide. `noun` complète « Le titre … » (« de la décision »). */
+export function titleProblem(title: string, noun: string, max: number): string | null {
+  const clean = title.trim();
+  if (clean === '') return `Le titre ${noun} est obligatoire.`;
+  if (clean.length > max) return `Le titre ${noun} est limité à ${max} caractères.`;
+  return null;
 }
