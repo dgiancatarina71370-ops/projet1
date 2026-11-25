@@ -21,6 +21,10 @@ import type { ScreenId } from './navigation.ts';
 import { ProjectsScreen } from '../modules/projects/ProjectsScreen.tsx';
 import { chooseActiveProject, selectableProjects } from '../modules/projects/logic.ts';
 import { StakeholdersScreen } from '../modules/stakeholders/StakeholdersScreen.tsx';
+import { NeedsScreen } from '../modules/analysis/NeedsScreen.tsx';
+import { RequirementsScreen } from '../modules/analysis/RequirementsScreen.tsx';
+import { LinksSection } from './LinksSection.tsx';
+import type { ItemKind } from '../domain/kinds.ts';
 
 interface Snapshot {
   tables: Array<{ name: string; rows: number }>;
@@ -122,10 +126,12 @@ export function App() {
   const projectOptions = snap ? selectableProjects(snap.projects).map((p) => ({ id: p.id, name: p.name })) : [];
   const active = projectOptions.find((p) => p.id === activeId) ?? null;
   const ready = result?.status === 'ready';
+  // Zone « Liens » de chaque fiche : l'application l'assemble (les écrans de registre ne s'importent pas entre eux).
+  const renderLinks = (itemId: number, kind: string) => <LinksSection key={itemId} itemId={itemId} kind={kind as ItemKind} onChanged={() => void refresh()} />;
 
   return (
     <Shell
-      intro="Lot M3a : navigation, projets et premier registre métier (parties prenantes). Le schéma de la base passe à la version 3. Sauvegarde, import V1, export et À propos sont dans l’écran Technique. Besoins et exigences arrivent au lot suivant."
+      intro="Lot M3b : besoins, exigences et liens entre éléments (parties prenantes, besoins, exigences). Le schéma de la base passe à la version 4. Sauvegarde, import V1, export et À propos sont dans l’écran Technique. Décisions et risques arrivent au lot suivant."
       navigable={ready}
       screen={screen}
       onNavigate={setScreen}
@@ -182,6 +188,27 @@ export function App() {
           projectName={active ? active.name : ''}
           onGoToProjects={() => setScreen('projects')}
           onChanged={() => void refresh()}
+          renderLinks={renderLinks}
+        />
+      )}
+
+      {result?.status === 'ready' && screen === 'needs' && (
+        <NeedsScreen
+          projectId={active ? active.id : null}
+          projectName={active ? active.name : ''}
+          onGoToProjects={() => setScreen('projects')}
+          onChanged={() => void refresh()}
+          renderLinks={renderLinks}
+        />
+      )}
+
+      {result?.status === 'ready' && screen === 'requirements' && (
+        <RequirementsScreen
+          projectId={active ? active.id : null}
+          projectName={active ? active.name : ''}
+          onGoToProjects={() => setScreen('projects')}
+          onChanged={() => void refresh()}
+          renderLinks={renderLinks}
         />
       )}
 

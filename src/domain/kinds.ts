@@ -17,18 +17,26 @@ export interface KindInfo {
 // Provisoire (M1) : les types sans lot propre partagent les trois statuts des livrables.
 // Chaque lot métier précise les statuts de son type : cette liste est la seule à modifier, aucune migration n'est nécessaire (décision D17).
 const COMMON_STATUSES: readonly string[] = ['draft', 'validated', 'archived'];
+// Besoin et exigence (lot M3b, décisions D37 et D47) : brouillon à la création ; les transitions sont libres (aucun workflow).
+const ANALYSIS_STATUSES: readonly string[] = ['draft', 'validated', 'rejected', 'archived'];
 // Partie prenante (lot M3a, décision D37) : active tant qu'elle compte pour le projet, archivée ensuite. Le premier statut est celui de création.
 const STAKEHOLDER_STATUSES: readonly string[] = ['active', 'archived'];
 
 export const KINDS: readonly KindInfo[] = [
   { kind: 'stakeholder', label: 'Partie prenante', prefix: 'PP', statuses: STAKEHOLDER_STATUSES },
-  { kind: 'need', label: 'Besoin', prefix: 'BES', statuses: COMMON_STATUSES },
-  { kind: 'requirement', label: 'Exigence', prefix: 'EX', statuses: COMMON_STATUSES },
+  { kind: 'need', label: 'Besoin', prefix: 'BES', statuses: ANALYSIS_STATUSES },
+  { kind: 'requirement', label: 'Exigence', prefix: 'EX', statuses: ANALYSIS_STATUSES },
   { kind: 'decision', label: 'Décision', prefix: 'DEC', statuses: COMMON_STATUSES },
   { kind: 'risk', label: 'Risque', prefix: 'RIS', statuses: COMMON_STATUSES },
   { kind: 'story', label: 'User story', prefix: 'US', statuses: COMMON_STATUSES },
   { kind: 'test', label: 'Test', prefix: 'TEST', statuses: COMMON_STATUSES },
 ];
+
+/**
+ * Types dont les champs propres vivent dans une table d'extension : leur création passe par le dépôt du type (createStakeholder, createRequirement),
+ * qui écrit l'élément et ses détails ensemble. createItem le refuse pour eux : une partie prenante ou une exigence sans détails serait incohérente.
+ */
+export const KINDS_WITH_DETAILS: readonly ItemKind[] = ['stakeholder', 'requirement'];
 
 export function isKind(value: unknown): value is ItemKind {
   return typeof value === 'string' && KINDS.some((k) => k.kind === value);
@@ -46,4 +54,17 @@ export function isValidStatus(kind: ItemKind, status: string): boolean {
 
 export function initialStatus(kind: ItemKind): string {
   return kindInfo(kind).statuses[0];
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  draft: 'Brouillon',
+  validated: 'Validé',
+  rejected: 'Rejeté',
+  archived: 'Archivé',
+  active: 'Actif',
+};
+
+/** Libellé d'un statut, quel que soit le type d'élément. */
+export function statusLabel(status: string): string {
+  return STATUS_LABELS[status] ?? `Inconnu (${status})`;
 }

@@ -2,6 +2,10 @@
 // Couche « domain » : pure, sans accès à la base ni à l'interface (règle R9 de scripts/check-architecture.mjs).
 // Syntaxe volontairement « effaçable » (ni enum ni propriété de paramètre) : ce fichier s'exécute tel quel sous Node pour les tests.
 
+import { statusLabel } from './kinds.ts';
+
+export { statusLabel };
+
 export type Level = 'low' | 'medium' | 'high';
 
 export const LEVELS: readonly Level[] = ['low', 'medium', 'high'];
@@ -12,7 +16,6 @@ export const MAX_FIELD_LENGTH = 200;
 /** Longueur maximale d'un titre d'élément : identique à MAX_TITLE_LENGTH du dépôt des éléments (vérifié par un test). */
 export const MAX_TITLE = 200;
 
-export const STATUS_LABELS: Record<string, string> = { active: 'Actif', archived: 'Archivé' };
 
 export interface StakeholderFields {
   organisation: string;
@@ -31,9 +34,6 @@ export function levelLabel(level: string): string {
   return isLevel(level) ? LEVEL_LABELS[level] : `Inconnu (${level})`;
 }
 
-export function statusLabel(status: string): string {
-  return STATUS_LABELS[status] ?? `Inconnu (${status})`;
-}
 
 /** Complète avec les valeurs par défaut, nettoie les espaces et refuse ce qui n'est pas valide. */
 export function normalizeFields(input: Partial<StakeholderFields>): StakeholderFields {

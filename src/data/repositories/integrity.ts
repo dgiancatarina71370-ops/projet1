@@ -5,9 +5,10 @@ import { query } from '../db.ts';
 import { codeMatches, sequenceName } from '../../domain/codes.ts';
 import { isKind, isValidStatus } from '../../domain/kinds.ts';
 import type { ItemKind } from '../../domain/kinds.ts';
-import { isLinkAllowed, isLinkType } from '../../domain/links.ts';
+import { canLoop, findAnyCycle, isLinkAllowed, isLinkType } from '../../domain/links.ts';
 import type { LinkType } from '../../domain/links.ts';
 import { isLevel } from '../../domain/stakeholders.ts';
+import { isNature, isPriority } from '../../domain/requirements.ts';
 
 export type IntegrityProblem =
   | 'unknown-kind'
@@ -20,7 +21,11 @@ export type IntegrityProblem =
   | 'link-other-project'
   | 'stakeholder-details-missing'
   | 'stakeholder-details-wrong-kind'
-  | 'stakeholder-invalid-level';
+  | 'stakeholder-invalid-level'
+  | 'requirement-details-missing'
+  | 'requirement-details-wrong-kind'
+  | 'requirement-invalid-value'
+  | 'link-cycle';
 
 export interface IntegrityIssue {
   problem: IntegrityProblem;
@@ -105,6 +110,40 @@ export async function checkModelIntegrity(): Promise<IntegrityIssue[]> {
     if (!isLevel(d.influence) || !isLevel(d.interest)) {
       issues.push({ problem: 'stakeholder-invalid-level', itemId: d.id, message: `La partie prenante ${d.code} a un niveau d'influence ou d'intérêt invalide.` });
     }
+  }
+
+  // Exigences (lot M3b) : une ligne de détails par exigence, et seulement pour elles ; valeurs valides.
+  const reqMissing = await query<{ id: number; code: string }>(
+    `SELECT i.id, i.code FROM items i LEFT JOIN requirement_details d ON d.item_id = i.id WHERE i.kind = 'requirement' AND d.item_id IS NULL ORDER BY i.id`,
+  );
+  for (const m of reqMissing) {
+    issues.push({ problem: 'requirement-details-missing', itemId: m.id, message: `L'exigence ${m.code} n'a pas de ligne de détails.` });
+  }
+  const reqDetails = await query<{ id: number; code: string; kind: string; nature: string; priority: string }>(
+    `SELECT i.id, i.code, i.kind, d.nature, d.priority FROM requirement_details d JOIN items i ON i.id = d.item_id ORDER BY i.id`,
+  );
+  for (const d of reqDetails) {
+    if (d.kind !== 'requirement') {
+      issues.push({ problem: 'requirement-details-wrong-kind', itemId: d.id, message: `L'élément ${d.code} porte des détails d'exigence alors que c'est un « ${d.kind} ».` });
+    }
+    if (!isNature(d.nature) || !isPriority(d.priority)) {
+      issues.push({ problem: 'requirement-invalid-value', itemId: d.id, message: `L'exigence ${d.code} a une nature ou une priorité invalide.` });
+    }
+  }
+
+  // Boucles (décision D50) : un type de lien qui peut relier deux éléments du même type ne doit pas former de cycle.
+  const loopable = await query<{ id: number; project_id: number; link_type: string; from_id: number; to_id: number }>(
+    'SELECT id, project_id, link_type, from_id, to_id FROM links ORDER BY id',
+  );
+  const groups = new Map<string, Array<readonly [number, number]>>();
+  for (const l of loopable) {
+    if (!isLinkType(l.link_type) || !canLoop(l.link_type as LinkType)) continue;
+    const key = `${l.project_id}:${l.link_type}`;
+    groups.set(key, [...(groups.get(key) ?? []), [l.from_id, l.to_id] as const]);
+  }
+  for (const [key, edges] of groups) {
+    const cycle = findAnyCycle(edges);
+    if (cycle) issues.push({ problem: 'link-cycle', message: `Les liens « ${key.split(':')[1]} » du projet ${key.split(':')[0]} forment une boucle (éléments ${cycle.join(' → ')}).` });
   }
 
   return issues;

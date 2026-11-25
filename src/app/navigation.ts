@@ -1,7 +1,7 @@
-// Navigation de l'application (lot M3a, décision D33). Logique pure : la liste des écrans et le choix de l'écran affiché.
-// Les entrées « Besoins » et « Exigences » s'ajouteront en M3b, quand leurs écrans existeront : on n'affiche pas d'écran vide.
+// Navigation de l'application (lots M3a et M3b, décision D33). Logique pure : la liste des écrans et le choix de l'écran affiché.
+// Une entrée n'est ajoutée que quand son écran existe : on n'affiche pas d'écran vide.
 
-export type ScreenId = 'projects' | 'stakeholders' | 'technical';
+export type ScreenId = 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'technical';
 
 export interface ScreenInfo {
   id: ScreenId;
@@ -11,6 +11,8 @@ export interface ScreenInfo {
 export const SCREENS: readonly ScreenInfo[] = [
   { id: 'projects', label: 'Projets' },
   { id: 'stakeholders', label: 'Parties prenantes' },
+  { id: 'needs', label: 'Besoins' },
+  { id: 'requirements', label: 'Exigences' },
   { id: 'technical', label: 'Technique' },
 ];
 

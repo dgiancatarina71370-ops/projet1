@@ -4,7 +4,7 @@ import { query, queryOne } from '../db.ts';
 import type { Row } from '../db.ts';
 import { mutate } from '../mutate.ts';
 import type { WriteOp } from '../mutate.ts';
-import { initialStatus, isKind, isValidStatus, kindInfo } from '../../domain/kinds.ts';
+import { KINDS_WITH_DETAILS, initialStatus, isKind, isValidStatus, kindInfo } from '../../domain/kinds.ts';
 import type { ItemKind } from '../../domain/kinds.ts';
 import { sequenceName } from '../../domain/codes.ts';
 
@@ -84,6 +84,9 @@ export async function listItems(projectId: number, kind?: ItemKind): Promise<Ite
  */
 export async function createItem(input: NewItem): Promise<{ id: number; code: string }> {
   if (!isKind(input.kind)) throw new Error(`Type d'élément inconnu : ${String(input.kind)}.`);
+  if (KINDS_WITH_DETAILS.includes(input.kind) && (input.extensionOps ?? []).length === 0) {
+    throw new Error(`Un élément de type « ${kindInfo(input.kind).label} » se crée par le dépôt de son type : ses champs propres s'écrivent avec lui.`);
+  }
   const title = normalizeTitle(input.title);
   const description = normalizeDescription(input.description ?? '');
   const status = input.status ?? initialStatus(input.kind);
@@ -139,6 +142,30 @@ export async function changeItemStatus(id: number, status: string): Promise<void
       activity: { objectType: 'item', action: 'status_changed', objectId: id, projectId: item.project_id, detail: `${item.status}>${status}` },
     },
   ]);
+}
+
+/**
+ * Modifie le titre et la description d'un élément sans champ propre (le besoin, lot M3b). Une seule ligne de journal « updated »,
+ * qui ne nomme que les champs modifiés. Retourne false, sans rien écrire, si rien ne change.
+ * Les types qui ont une table de détails (partie prenante, exigence) passent par le dépôt de leur type.
+ */
+export async function updateItem(id: number, changes: { title?: string; description?: string }): Promise<boolean> {
+  const cur = await getItem(id);
+  if (!cur) throw new Error('L\'élément n\'existe pas.');
+  const title = changes.title !== undefined ? normalizeTitle(changes.title) : cur.title;
+  const description = changes.description !== undefined ? normalizeDescription(changes.description) : cur.description;
+  const names: string[] = [];
+  if (title !== cur.title) names.push('title');
+  if (description !== cur.description) names.push('description');
+  if (names.length === 0) return false;
+  await mutate([
+    {
+      sql: 'UPDATE items SET title = ?, description = ?, updated_at = ? WHERE id = ?',
+      params: [title, description, nowIso(), id],
+      activity: { objectType: 'item', action: 'updated', objectId: id, projectId: cur.project_id, detail: names.join(',') },
+    },
+  ]);
+  return true;
 }
 
 /**

@@ -1,6 +1,6 @@
 // Écrans « Parties prenantes » (lot M3a), versions d'affichage pures : elles reçoivent tout par propriétés et ne touchent ni la base ni l'état.
 // Le conteneur (StakeholdersScreen.tsx) les alimente. Cette séparation permet de tester leur rendu sans interface réelle.
-import { BUTTON_DANGER, BUTTON_PRIMARY, BUTTON_SECONDARY, ConfirmBar, Field, INPUT_CLASS } from '../../shared/ui.tsx';
+import { BUTTON_PRIMARY, BUTTON_SECONDARY, ConfirmBar, FormButtons, ItemActionBar, SelectField, StatusFilterBar, TextAreaField, TextField } from '../../shared/ui.tsx';
 import { levelLabel, statusLabel } from '../../domain/stakeholders.ts';
 import { emptyListMessage, LEVEL_OPTIONS, STATUS_FILTERS } from './logic.ts';
 import type { FormErrors, FormValues, StatusFilter } from './logic.ts';
@@ -41,19 +41,7 @@ export function StakeholderListView(props: {
         <p className="text-sm text-hub-muted">Projet : <span className="text-hub-fg">{props.projectName}</span> · {props.total} partie{props.total > 1 ? 's' : ''} prenante{props.total > 1 ? 's' : ''}</p>
         <button type="button" className={BUTTON_PRIMARY} onClick={props.onNew}>Nouvelle partie prenante</button>
       </div>
-      <div role="group" aria-label="Filtre par statut" className="flex gap-2 text-sm">
-        {STATUS_FILTERS.map((f) => (
-          <button
-            key={f.value}
-            type="button"
-            aria-pressed={props.filter === f.value}
-            className={`rounded border px-2 py-1 ${props.filter === f.value ? 'border-hub-accent text-hub-accent' : 'border-hub-line text-hub-muted'}`}
-            onClick={() => props.onFilter(f.value)}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
+      <StatusFilterBar options={STATUS_FILTERS} value={props.filter} onChange={(v) => props.onFilter(v as StatusFilter)} />
       {props.rows.length === 0 ? (
         <p className="text-sm text-hub-muted">{emptyListMessage(props.total, props.filter)}</p>
       ) : (
@@ -110,11 +98,9 @@ export function StakeholderDetailView(props: {
       {props.confirmDelete !== null ? (
         <ConfirmBar message={props.confirmDelete} confirmLabel="Supprimer définitivement" busy={props.busy} onConfirm={props.onConfirmDelete} onCancel={props.onCancelDelete} />
       ) : (
-        <div className="flex flex-wrap gap-2">
-          <button type="button" className={BUTTON_PRIMARY} disabled={props.busy} onClick={props.onEdit}>Modifier</button>
+        <ItemActionBar busy={props.busy} onEdit={props.onEdit} onAskDelete={props.onAskDelete}>
           <button type="button" className={BUTTON_SECONDARY} disabled={props.busy} onClick={props.onToggleArchive}>{archived ? 'Réactiver' : 'Archiver'}</button>
-          <button type="button" className={BUTTON_DANGER} disabled={props.busy} onClick={props.onAskDelete}>Supprimer…</button>
-        </div>
+        </ItemActionBar>
       )}
     </div>
   );
@@ -135,46 +121,19 @@ export function StakeholderFormView(props: {
   onKeepEditing: () => void;
 }) {
   const v = props.values;
-  const text = (key: keyof FormValues, label: string, hint?: string) => (
-    <Field label={label} htmlFor={`sh-${key}`} error={props.errors[key]} hint={hint}>
-      <input id={`sh-${key}`} className={INPUT_CLASS} value={v[key]} onChange={(e) => props.onChange(key, e.target.value)} />
-    </Field>
-  );
-  const level = (key: 'influence' | 'interest', label: string) => (
-    <Field label={label} htmlFor={`sh-${key}`} error={props.errors[key]}>
-      <select id={`sh-${key}`} className={INPUT_CLASS} value={v[key]} onChange={(e) => props.onChange(key, e.target.value)}>
-        {LEVEL_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-    </Field>
-  );
   return (
     <form className="max-w-xl space-y-3" onSubmit={(e) => { e.preventDefault(); props.onSubmit(); }}>
       <h3 className="text-lg font-semibold">{props.heading}</h3>
-      {text('title', 'Nom', 'Obligatoire, 200 caractères au plus.')}
-      {text('organisation', 'Organisation')}
-      {text('role', 'Rôle dans le projet')}
+      <TextField id="sh-title" label="Nom" hint="Obligatoire, 200 caractères au plus." value={v.title} error={props.errors.title} onChange={(x) => props.onChange('title', x)} />
+      <TextField id="sh-organisation" label="Organisation" value={v.organisation} error={props.errors.organisation} onChange={(x) => props.onChange('organisation', x)} />
+      <TextField id="sh-role" label="Rôle dans le projet" value={v.role} error={props.errors.role} onChange={(x) => props.onChange('role', x)} />
       <div className="grid grid-cols-2 gap-3">
-        {level('influence', 'Influence')}
-        {level('interest', 'Intérêt')}
+        <SelectField id="sh-influence" label="Influence" value={v.influence} options={LEVEL_OPTIONS} error={props.errors.influence} onChange={(x) => props.onChange('influence', x)} />
+        <SelectField id="sh-interest" label="Intérêt" value={v.interest} options={LEVEL_OPTIONS} error={props.errors.interest} onChange={(x) => props.onChange('interest', x)} />
       </div>
-      <Field label="Description" htmlFor="sh-description" error={props.errors.description}>
-        <textarea id="sh-description" rows={4} className={INPUT_CLASS} value={v.description} onChange={(e) => props.onChange('description', e.target.value)} />
-      </Field>
+      <TextAreaField id="sh-description" label="Description" value={v.description} error={props.errors.description} onChange={(x) => props.onChange('description', x)} />
       {props.error && <p role="alert" className="text-sm text-hub-bad">{props.error}</p>}
-      {props.askAbandon ? (
-        <div role="alertdialog" aria-label="Confirmation" className="space-y-2 rounded border border-hub-bad px-3 py-2 text-sm">
-          <div>Abandonner la saisie en cours ? Ce qui n'est pas enregistré sera perdu.</div>
-          <div className="flex gap-2">
-            <button type="button" className={BUTTON_DANGER} onClick={props.onConfirmAbandon}>Abandonner la saisie</button>
-            <button type="button" className={BUTTON_SECONDARY} onClick={props.onKeepEditing}>Continuer à saisir</button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex gap-2">
-          <button type="submit" className={BUTTON_PRIMARY} disabled={props.busy}>Enregistrer</button>
-          <button type="button" className={BUTTON_SECONDARY} disabled={props.busy} onClick={props.onCancel}>Annuler</button>
-        </div>
-      )}
+      <FormButtons busy={props.busy} askAbandon={props.askAbandon} onCancel={props.onCancel} onConfirmAbandon={props.onConfirmAbandon} onKeepEditing={props.onKeepEditing} />
     </form>
   );
 }

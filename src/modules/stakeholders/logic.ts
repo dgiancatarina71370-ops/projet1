@@ -2,6 +2,10 @@
 // elle se teste sans interface (le comportement des écrans eux-mêmes se vérifie à la recette sur clé).
 import { LEVELS, MAX_TITLE, levelLabel, normalizeFields, statusLabel } from '../../domain/stakeholders.ts';
 import type { Level, StakeholderFields } from '../../domain/stakeholders.ts';
+import { deletionMessage, filterByStatus, isDirty } from '../../shared/register-logic.ts';
+
+// Logique commune aux registres (décision D44) : réexportée ici pour que l'écran garde ses points d'entrée.
+export { deletionMessage, filterByStatus, isDirty };
 
 export type StatusFilter = 'all' | 'active' | 'archived';
 
@@ -12,14 +16,6 @@ export const STATUS_FILTERS: ReadonlyArray<{ value: StatusFilter; label: string 
 ];
 
 export const LEVEL_OPTIONS: ReadonlyArray<{ value: Level; label: string }> = LEVELS.map((l) => ({ value: l, label: levelLabel(l) }));
-
-export interface ListedStakeholder {
-  status: string;
-}
-
-export function filterByStatus<T extends ListedStakeholder>(list: readonly T[], filter: StatusFilter): T[] {
-  return filter === 'all' ? [...list] : list.filter((s) => s.status === filter);
-}
 
 export function emptyListMessage(total: number, filter: StatusFilter): string {
   if (total === 0) return 'Aucune partie prenante dans ce projet. Créez la première avec « Nouvelle partie prenante ».';
@@ -63,16 +59,4 @@ export function validateForm(values: FormValues): FormResult {
   }
   if (Object.keys(errors).length > 0) return { ok: false, errors };
   return { ok: true, title, description: values.description, fields: normalizeFields({ organisation: values.organisation, role: values.role, influence: values.influence as Level, interest: values.interest as Level }) };
-}
-
-/** Vrai si le formulaire diffère de son état de départ (pour prévenir avant d'abandonner une saisie). */
-export function isDirty(initial: FormValues, current: FormValues): boolean {
-  return (Object.keys(initial) as Array<keyof FormValues>).some((k) => initial[k] !== current[k]);
-}
-
-/** Message de confirmation d'une suppression : annonce les liens qui seront aussi supprimés. */
-export function deletionMessage(code: string, title: string, linkCount: number): string {
-  const base = `Supprimer définitivement ${code} « ${title} » ?`;
-  if (linkCount === 0) return `${base} Cette action est irréversible ; l'archivage est la voie normale pour ne plus la voir.`;
-  return `${base} ${linkCount === 1 ? '1 lien sera aussi supprimé' : `${linkCount} liens seront aussi supprimés`}. Cette action est irréversible ; l'archivage est la voie normale.`;
 }

@@ -5,6 +5,7 @@ import { changeItemStatus, deleteItem } from '../../data/repositories/items.ts';
 import { linksOfItem } from '../../data/repositories/links.ts';
 import { createStakeholder, listStakeholders, updateStakeholder } from '../../data/repositories/stakeholders.ts';
 import { Card } from '../../shared/ui.tsx';
+import type { LinksSlot } from '../../shared/ui.tsx';
 import { NoProjectView, StakeholderDetailView, StakeholderFormView, StakeholderListView } from './StakeholdersView.tsx';
 import type { StakeholderRow } from './StakeholdersView.tsx';
 import { deletionMessage, EMPTY_FORM, filterByStatus, formFrom, isDirty, validateForm } from './logic.ts';
@@ -12,7 +13,7 @@ import type { FormErrors, FormValues, StatusFilter } from './logic.ts';
 
 type Mode = { kind: 'list' } | { kind: 'detail'; id: number } | { kind: 'form'; id: number | null };
 
-export function StakeholdersScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void }) {
+export function StakeholdersScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void; renderLinks?: LinksSlot }) {
   const { projectId } = props;
   const [rows, setRows] = useState<StakeholderRow[]>([]);
   const [filter, setFilter] = useState<StatusFilter>('all');
@@ -110,6 +111,7 @@ export function StakeholdersScreen(props: { projectId: number | null; projectNam
         />
       )}
       {mode.kind === 'detail' && current && (
+        <div className="space-y-4">
         <StakeholderDetailView
           row={current}
           busy={busy}
@@ -130,6 +132,8 @@ export function StakeholdersScreen(props: { projectId: number | null; projectNam
           onCancelDelete={() => setConfirmDelete(null)}
           onBack={() => { setConfirmDelete(null); setMode({ kind: 'list' }); }}
         />
+        {props.renderLinks?.(current.id, 'stakeholder')}
+        </div>
       )}
       {mode.kind === 'detail' && !current && (
         <div className="space-y-2 text-sm">
