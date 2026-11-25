@@ -15,9 +15,13 @@ export const FIXTURES: Record<string, string[]> = {
     `INSERT INTO items (id, project_id, kind, number, code, title, description, status, source_document_id, source_excerpt, created_at, updated_at) VALUES (1, 1, 'need', 1, 'BES-001', 'Besoin de test', 'Description éé', 'draft', 1, 'Extrait « test »', '${T}', '${T}')`,
     `INSERT INTO items (id, project_id, kind, number, code, title, description, status, created_at, updated_at) VALUES (2, 1, 'requirement', 1, 'EX-001', 'Exigence de test', '', 'draft', '${T}', '${T}')`,
     `INSERT INTO items (id, project_id, kind, number, code, title, description, status, created_at, updated_at) VALUES (3, 1, 'stakeholder', 1, 'PP-001', 'Partie prenante de test', 'Sponsor du projet', 'active', '${T}', '${T}')`,
+    `INSERT INTO items (id, project_id, kind, number, code, title, description, status, created_at, updated_at) VALUES (4, 1, 'decision', 1, 'DEC-001', 'Décision de test', '', 'proposed', '${T}', '${T}')`,
+    `INSERT INTO items (id, project_id, kind, number, code, title, description, status, created_at, updated_at) VALUES (5, 1, 'risk', 1, 'RIS-001', 'Risque de test', '', 'identified', '${T}', '${T}')`,
   ],
   stakeholder_details: ["INSERT INTO stakeholder_details (item_id, organisation, role, influence, interest) VALUES (3, 'Service Test', 'Sponsor', 'high', 'medium')"],
   requirement_details: ["INSERT INTO requirement_details (item_id, nature, priority, criteria) VALUES (2, 'functional', 'must', 'Critère de test')"],
+  decision_details: ["INSERT INTO decision_details (item_id, decided_on, decider, alternatives, rationale) VALUES (4, '2026-11-20', 'Comité', 'Option B', 'Coût')"],
+  risk_details: ["INSERT INTO risk_details (item_id, probability, impact, mitigation, owner) VALUES (5, 'high', 'medium', 'Plan de repli', 'Chef de projet')"],
   links: [`INSERT INTO links (project_id, link_type, from_id, to_id, created_at) VALUES (1, 'derives', 1, 2, '${T}')`],
   document_sends: [`INSERT INTO document_sends (document_id, recipients, sent_at) VALUES (1, 'a@b.fr', '${T}')`],
   contacts: ["INSERT INTO contacts (name, email) VALUES ('Alice', 'alice@example.fr')"],
@@ -32,7 +36,7 @@ export const FIXTURES: Record<string, string[]> = {
 };
 
 // Ordre d'insertion compatible avec les clés étrangères.
-const ORDER = ['settings', 'flags', 'projects', 'documents', 'items', 'stakeholder_details', 'requirement_details', 'links', 'document_sends', 'contacts', 'dod_items', 'workspace_notes', 'pspo_progress', 'templates', 'template_defaults', 'activity_log', 'sequences', 'backups_log'];
+const ORDER = ['settings', 'flags', 'projects', 'documents', 'items', 'stakeholder_details', 'requirement_details', 'decision_details', 'risk_details', 'links', 'document_sends', 'contacts', 'dod_items', 'workspace_notes', 'pspo_progress', 'templates', 'template_defaults', 'activity_log', 'sequences', 'backups_log'];
 
 export function listTables(db: DatabaseSync): string[] {
   return (db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all() as Array<{ name: string }>).map((r) => r.name);

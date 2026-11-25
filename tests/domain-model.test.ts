@@ -12,6 +12,8 @@ import { createBackup, restoreBackup } from '../src/data/backup-service.ts';
 import { createProject, deleteProject } from '../src/data/repositories/projects.ts';
 import { changeItemStatus, createItem, deleteItem, getItem, getItemByCode, listItems } from '../src/data/repositories/items.ts';
 import { createRequirement } from '../src/data/repositories/requirements.ts';
+import { createDecision } from '../src/data/repositories/decisions.ts';
+import { createRisk } from '../src/data/repositories/risks.ts';
 import { createLink, deleteLink, linksOfItem, listLinks } from '../src/data/repositories/links.ts';
 import { checkModelIntegrity } from '../src/data/repositories/integrity.ts';
 import { KINDS, initialStatus, isKind, isValidStatus } from '../src/domain/kinds.ts';
@@ -62,12 +64,12 @@ test('domain : matrice des liens, chaque couple autorisé et chaque couple inter
       }
     }
   }
-  // 1 + 1 + 1 + 1 + 2 + 4 + 2 + 2 couples : la matrice validée (D19).
-  assert.equal(allowed, 14);
-  assert.equal(LINK_RULES.length, 8);
+  // 1 + 1 + 1 + 1 + 2 + 4 + 2 + 2 couples : la matrice validée (D19), plus 1 couple « remplace » (D58).
+  assert.equal(allowed, 15);
+  assert.equal(LINK_RULES.length, 9);
   assert.throws(() => assertLinkAllowed('verifies', 'requirement', 'test'), /Lien refusé : « vérifie » relie Test vers Exigence ou User story, pas Exigence vers Test/);
   assert.ok(!isLinkAllowed('inconnu' as LinkType, 'need', 'requirement'));
-  assert.deepEqual(linksFrom('decision').map((r) => r.type).sort(), ['concerns', 'mitigates']);
+  assert.deepEqual(linksFrom('decision').map((r) => r.type).sort(), ['concerns', 'mitigates', 'supersedes']);
 });
 
 // ------------------------------------------------------------------ migration additive
@@ -116,7 +118,7 @@ test('création : code attribué, statut initial, journal écrit dans la même t
   const p = await createProject('Projet');
   const a = await createRequirement({ projectId: p, title: '  Exporter en Word  ' });
   const b = await createRequirement({ projectId: p, title: 'Exporter en PDF' });
-  const c = await createItem({ projectId: p, kind: 'decision', title: 'Choisir pdfmake' });
+  const c = await createDecision({ projectId: p, title: 'Choisir pdfmake' });
   assert.deepEqual([a.code, b.code, c.code], ['EX-001', 'EX-002', 'DEC-001']);
   const item = await getItem(a.id);
   assert.equal(item?.title, 'Exporter en Word');
@@ -160,15 +162,15 @@ test('codes : un numéro supprimé n\'est jamais réattribué, les projets ont c
   const t = await migratedDb();
   const p1 = await createProject('P1');
   const p2 = await createProject('P2');
-  const a = await createItem({ projectId: p1, kind: 'risk', title: 'R1' });
-  const b = await createItem({ projectId: p1, kind: 'risk', title: 'R2' });
+  const a = await createRisk({ projectId: p1, title: 'R1' });
+  const b = await createRisk({ projectId: p1, title: 'R2' });
   await deleteItem(b.id);
-  const c = await createItem({ projectId: p1, kind: 'risk', title: 'R3' });
+  const c = await createRisk({ projectId: p1, title: 'R3' });
   assert.deepEqual([a.code, b.code, c.code], ['RIS-001', 'RIS-002', 'RIS-003']);
   await deleteItem(c.id);
   await deleteItem(a.id);
-  assert.equal((await createItem({ projectId: p1, kind: 'risk', title: 'R4' })).code, 'RIS-004');
-  assert.equal((await createItem({ projectId: p2, kind: 'risk', title: 'Autre projet' })).code, 'RIS-001');
+  assert.equal((await createRisk({ projectId: p1, title: 'R4' })).code, 'RIS-004');
+  assert.equal((await createRisk({ projectId: p2, title: 'Autre projet' })).code, 'RIS-001');
   assert.deepEqual(await checkModelIntegrity(), []);
   t.close();
 });
@@ -263,11 +265,12 @@ test('liens : deux projets ne se mélangent pas, refusé par le dépôt ET par l
 test('liens : le schéma ne bloque aucune extension future de la matrice ; le contrôle signale ce qui n\'y est pas encore déclaré', async () => {
   const t = await migratedDb();
   const p = await createProject('P');
-  const d1 = await createItem({ projectId: p, kind: 'decision', title: 'D1' });
-  const d2 = await createItem({ projectId: p, kind: 'decision', title: 'D2' });
+  const d1 = await createDecision({ projectId: p, title: 'D1' });
+  const d2 = await createDecision({ projectId: p, title: 'D2' });
   await assert.rejects(() => createLink({ type: 'concerns', fromId: d1.id, toId: d2.id }), /Lien refusé/);
-  // Extension simulée : la base accepte un type de lien que la matrice ne connaît pas encore. Ajouter « Décision vers Décision » = une ligne dans la matrice et un test, jamais une migration.
-  t.raw.exec(`INSERT INTO links (project_id, link_type, from_id, to_id, created_at) VALUES (${p}, 'supersedes', ${d1.id}, ${d2.id}, 'x')`);
+  // Extension simulée : la base accepte un type de lien que la matrice ne connaît pas encore. Ajouter un type de lien = une ligne dans la matrice et un test, jamais une migration
+  // (c'est ainsi que « remplace » a été ajouté en M4, décision D58).
+  t.raw.exec(`INSERT INTO links (project_id, link_type, from_id, to_id, created_at) VALUES (${p}, 'depends_on', ${d1.id}, ${d2.id}, 'x')`);
   const issues = await checkModelIntegrity();
   assert.deepEqual(issues.map((i) => i.problem), ['unknown-link-type'], 'le contrôle d\'intégrité signale ce qui n\'est pas encore déclaré dans la matrice');
   t.close();
@@ -371,20 +374,20 @@ test('sauvegarde et restauration : éléments, liens et compteurs reviennent exa
   await createLink({ type: 'derives', fromId: need, toId: req });
   const { created } = await createBackup('manual');
   const saved = snapshot(t.raw);
-  await createItem({ projectId: p, kind: 'risk', title: 'Ajouté après' });
+  await createRisk({ projectId: p, title: 'Ajouté après' });
   await deleteItem(need);
   await restoreBackup(created.file);
   const back = snapshot(t.raw);
   for (const table of ['items', 'links', 'sequences', 'projects']) assert.deepEqual(back[table], saved[table], `la table ${table} revient telle qu'elle était`);
   assert.deepEqual(await checkModelIntegrity(), []);
-  assert.equal((await createItem({ projectId: p, kind: 'risk', title: 'Après restauration' })).code, 'RIS-001', 'le compteur est revenu avec la sauvegarde');
+  assert.equal((await createRisk({ projectId: p, title: 'Après restauration' })).code, 'RIS-001', 'le compteur est revenu avec la sauvegarde');
   t.close();
 });
 
 test('E4 : le jeu de test couvre les deux nouvelles tables', async () => {
   const t = await migratedDb();
   seedAllTables(t.raw);
-  assert.equal(snapshot(t.raw).items.count, 3);
+  assert.equal(snapshot(t.raw).items.count, 5);
   assert.equal(snapshot(t.raw).links.count, 1);
   assert.equal(snapshot(t.raw).stakeholder_details.count, 1);
   t.close();

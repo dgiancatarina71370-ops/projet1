@@ -29,7 +29,7 @@ test('domaine : statuts, natures et priorités MoSCoW, libellés validés', () =
   assert.equal(initialStatus('requirement'), 'draft');
   for (const s of ['draft', 'validated', 'rejected', 'archived']) assert.ok(isValidStatus('need', s) && isValidStatus('requirement', s));
   assert.ok(!isValidStatus('need', 'active'));
-  assert.deepEqual(['draft', 'validated', 'rejected', 'archived', 'active'].map(statusLabel), ['Brouillon', 'Validé', 'Rejeté', 'Archivé', 'Actif']);
+  assert.deepEqual(['draft', 'validated', 'rejected', 'archived', 'active'].map((s) => statusLabel(s)), ['Brouillon', 'Validé', 'Rejeté', 'Archivé', 'Actif']);
   assert.equal(statusLabel('zzz'), 'Inconnu (zzz)');
   assert.ok(isNature('functional') && isNature('non_functional') && isNature('constraint') && !isNature('autre'));
   assert.ok(isPriority('must') && isPriority('should') && isPriority('could') && isPriority('wont') && !isPriority('never'));
@@ -49,15 +49,15 @@ test('domaine : valeurs par défaut et validation des champs d\'une exigence', (
   assert.deepEqual(changedRequirementFields(DEFAULT_REQUIREMENT_FIELDS, DEFAULT_REQUIREMENT_FIELDS), []);
 });
 
-test('liens : libellé inverse pour chacun des huit types, options proposées par type d\'élément (D48)', () => {
-  assert.equal(LINK_RULES.length, 8);
+test('liens : libellé inverse pour chacun des neuf types (D58), options proposées par type d\'élément (D48, étendues par D57 en M4)', () => {
+  assert.equal(LINK_RULES.length, 9);
   for (const r of LINK_RULES) assert.ok(r.inverseLabel && r.inverseLabel !== r.label, r.type);
-  assert.deepEqual([...EXPOSED_LINK_TYPES], ['expresses', 'derives', 'refines']);
+  assert.deepEqual([...EXPOSED_LINK_TYPES], ['expresses', 'derives', 'refines', 'concerns', 'threatens', 'mitigates', 'supersedes']);
   assert.deepEqual(linkOptionsFor('stakeholder').map((o) => o.key), ['expresses:out']);
-  assert.deepEqual(linkOptionsFor('need').map((o) => o.key), ['expresses:in', 'derives:out']);
-  assert.deepEqual(linkOptionsFor('requirement').map((o) => o.key), ['derives:in', 'refines:out', 'refines:in']);
-  assert.deepEqual(linkOptionsFor('decision'), [], 'aucun lien exposé pour les types sans écran');
-  assert.deepEqual(linkOptionsFor('need').map((o) => o.label), ['exprimé par', 'dérive en']);
+  assert.deepEqual(linkOptionsFor('need').map((o) => o.key), ['expresses:in', 'derives:out', 'concerns:in', 'threatens:in']);
+  assert.deepEqual(linkOptionsFor('requirement').map((o) => o.key), ['derives:in', 'refines:out', 'refines:in', 'concerns:in', 'threatens:in', 'mitigates:out']);
+  assert.deepEqual(linkOptionsFor('test'), [], 'aucun lien exposé pour les types sans écran (M5)');
+  assert.deepEqual(linkOptionsFor('need').map((o) => o.label), ['exprimé par', 'dérive en', 'concerné par', 'menacé par']);
   assert.equal(linkLabel('derives', 'out'), 'dérive en');
   assert.equal(linkLabel('derives', 'in'), 'dérive de');
   assert.match(linkLabel('inconnu', 'out'), /inconnu/);
@@ -79,7 +79,7 @@ test('liens : seuls les types qui relient un type à lui-même peuvent boucler ;
 // ------------------------------------------------------------------ migration 4
 
 test('migration 4 : la table apparaît, les données existantes sont intactes, sauvegarde pre-migration au schéma 3', async () => {
-  assert.equal(SCHEMA_VERSION, 4);
+  assert.ok(SCHEMA_VERSION >= 4, 'la migration 4 reste livrée ; M4 en ajoute une cinquième');
   const t = emptyDb();
   await migrate(migrations.slice(0, 3), { backup: t.driver.backup });
   t.raw.exec("INSERT INTO projects (id, kind, name, created_at, updated_at) VALUES (1, 'project', 'Avant', 'x', 'x')");
@@ -88,7 +88,7 @@ test('migration 4 : la table apparaît, les données existantes sont intactes, s
   t.raw.exec("INSERT INTO stakeholder_details (item_id) VALUES (2)");
   t.raw.exec("INSERT INTO activity_log (at, object_type, object_id, action) VALUES ('x', 'item', 1, 'created')");
   const before = snapshot(t.raw);
-  const report = await migrate(migrations, { backup: t.driver.backup });
+  const report = await migrate(migrations.slice(0, 4), { backup: t.driver.backup });
   assert.deepEqual(report.applied, [4]);
   assert.equal(await getSchemaVersion(), 4);
   assert.equal(t.backups.filter((b) => b.kind === 'pre-migration').length, 1, 'une sauvegarde avant la migration 4 (la création de la base vierge n\'en demande pas)');

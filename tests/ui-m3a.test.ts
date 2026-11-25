@@ -12,12 +12,12 @@ import { MAX_TITLE_LENGTH } from '../src/data/repositories/items.ts';
 
 // ------------------------------------------------------------------ navigation et projets (logique pure)
 
-test('navigation : cinq écrans depuis M3b, projets d\'abord tant qu\'aucun projet n\'est actif', () => {
-  assert.deepEqual(SCREENS.map((s) => s.id), ['projects', 'stakeholders', 'needs', 'requirements', 'technical']);
-  assert.deepEqual(SCREENS.map((s) => s.label), ['Projets', 'Parties prenantes', 'Besoins', 'Exigences', 'Technique']);
+test('navigation : sept écrans depuis M4, projets d\'abord tant qu\'aucun projet n\'est actif', () => {
+  assert.deepEqual(SCREENS.map((s) => s.id), ['projects', 'stakeholders', 'needs', 'requirements', 'decisions', 'risks', 'technical']);
+  assert.deepEqual(SCREENS.map((s) => s.label), ['Projets', 'Parties prenantes', 'Besoins', 'Exigences', 'Décisions', 'Risques', 'Technique']);
   assert.equal(startScreen(null), 'projects');
   assert.equal(startScreen(3), 'stakeholders');
-  assert.ok(isScreenId('technical') && isScreenId('needs') && !isScreenId('decisions'), 'pas d\'entrée Décisions avant M4');
+  assert.ok(isScreenId('technical') && isScreenId('needs') && isScreenId('risks') && !isScreenId('stories'), 'pas d\'entrée User stories avant M5');
 });
 
 test('projet actif : le dernier utilisé s\'il existe encore, sinon le premier projet, sinon aucun ; jamais un dossier', () => {
@@ -109,10 +109,10 @@ ui('écran : le cadre affiche le projet actif et le menu, et rien de tout cela a
   const ready = r.shell({ navigable: true, screen: 'stakeholders', projects: [{ id: 1, name: 'Alpha' }, { id: 2, name: 'Beta' }], activeId: 2 });
   assert.match(ready, /Projet actif/);
   assert.match(ready, /<option value="2" selected="">Beta<\/option>|<option value="2"[^>]*selected/);
-  for (const label of ['Projets', 'Parties prenantes', 'Besoins', 'Exigences', 'Technique']) assert.ok(ready.includes(`>${label}<`), label);
+  for (const label of ['Projets', 'Parties prenantes', 'Besoins', 'Exigences', 'Décisions', 'Risques', 'Technique']) assert.ok(ready.includes(`>${label}<`), label);
   assert.equal((ready.match(/aria-current="page"/g) ?? []).length, 1, 'une seule entrée marquée comme courante');
   assert.match(ready, /aria-current="page"[^>]*>Parties prenantes</);
-  assert.ok(!ready.includes('Décisions') && !ready.includes('Risques'), 'aucune entrée sans écran');
+  assert.ok(!ready.includes('User stories') && !ready.includes('Tests<'), 'aucune entrée sans écran');
   const starting = r.shell({ navigable: false, screen: 'projects', projects: [], activeId: null });
   assert.ok(!starting.includes('Projet actif') && !starting.includes('<nav'));
   assert.match(starting, /Contenu/);

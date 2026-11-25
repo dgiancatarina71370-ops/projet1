@@ -257,7 +257,7 @@ Une table d'extension (`stakeholder_details`) ne peut pas porter de ligne de jou
 
 ## Lot M3b : besoins, exigences, liens (schéma 4, version 0.5.0)
 
-**Statut : implémenté, en attente de la recette `TESTS-M3b.md` et de la mention « M3b VALIDÉE » de David.** Plan validé le 25/11/2026 : D44 à D51 validées, libellés MoSCoW validés, rejeu des tests de M3a validé, « Go M3b » donné le même jour. La chaîne métier Partie prenante → Besoin → Exigence est celle de la vision produit validée en phase de découverte.
+**M3b VALIDÉE par David le 25/11/2026.** CI verte sur les trois jobs ; recette `TESTS-M3b.md` : tests 1 à 28 OK sur clé USB, dont la migration 3 vers 4 sur la base réelle, le rejeu du parcours M3a et les liens. Réserves maintenues : test 12 de V2.3b et C13 (optionnel). Plan validé le 25/11/2026 : D44 à D51 validées, libellés MoSCoW validés, rejeu des tests de M3a validé, « Go M3b » donné le même jour. La chaîne métier Partie prenante → Besoin → Exigence est celle de la vision produit validée en phase de découverte.
 
 ### Décisions validées par David (25/11/2026)
 - **D44** : les composants et la logique communs aux registres (filtre par statut, saisie non enregistrée, barres de confirmation, champs de formulaire, messages) sont extraits dans `src/shared/` et réutilisés par les trois registres. L'écran des parties prenantes de M3a est donc modifié : **tous les tests de M3a sont rejoués** pour couvrir ce risque.
@@ -283,6 +283,36 @@ Une table d'extension (`stakeholder_details`) ne peut pas porter de ligne de jou
 - Les compteurs de numérotation (`sequences`) d'un projet supprimé restent dans la base : les identifiants de projet ne sont jamais réutilisés, ils sont sans effet. Comportement antérieur à M3b, non modifié.
 - Les types de liens non exposés (vérifie, concerne, menace, atténue, implémente) ne peuvent pas être créés depuis l'interface avant les lots qui les concernent.
 - Un lien « raffine » dans les deux sens entre deux exigences est refusé comme boucle, volontairement.
+- Non vérifié ici : build Windows (votre CI), comportement sur votre base réelle.
+
+## Lot M4 : décisions, risques (schéma 5, version 0.6.0)
+
+**Statut : implémenté, en attente de la recette `TESTS-M4.md` et de la mention « M4 VALIDÉE » de David.** Plan présenté le 25/11/2026 ; D52 à D60 validées le même jour (D58 avec l'ajout du lien « remplace »), « Go M4 » donné.
+
+### Décisions validées par David (25/11/2026)
+- **D52** : un seul lot M4 (pas de M4a/M4b), car aucun écran validé n'est refondu et les composants communs existent depuis D44.
+- **D53** : une décision a une table d'extension `decision_details` : date (jour seul AAAA-MM-JJ, facultative, chaîne vide si absente), décideur (texte libre, 200 caractères), alternatives envisagées et justification (textes libres, 10 000 caractères). La description commune sert de contexte. Le décideur n'est pas un lien vers une partie prenante.
+- **D54** : statuts d'une décision : Proposée (création), Prise, Remplacée, Annulée, Archivée. Transitions libres.
+- **D55** : un risque a une table d'extension `risk_details` : probabilité et impact (Faible, Moyen, Élevé), plan de traitement (10 000 caractères), responsable (200 caractères). **Aucun score ni matrice calculés**, par cohérence avec D42.
+- **D56** : statuts d'un risque : Identifié (création), En traitement, Accepté, Clos, Archivé. Transitions libres.
+- **D57** : trois types de liens ajoutés à l'interface : « concerne » (décision vers besoin, exigence ou risque), « menace » (risque vers besoin ou exigence), « atténue » (exigence ou décision vers risque). « Implémente » et « vérifie » attendent M5.
+- **D58** (avec l'ajout demandé par David) : lien « remplace » entre deux décisions, avec son sens inverse « remplacé par ». Une ligne dans la matrice des liens, aucune migration. Les boucles sont refusées par le mécanisme de D50, sans nouveau code de contrôle.
+- **D59** : le cadre de fiche (en-tête, statut, actions, confirmation de suppression), l'en-tête de liste et l'écran « sans projet » sont extraits dans `src/shared/ui.tsx`. L'écran Besoins/Exigences de M3b les utilise désormais : ses tests de rendu, inchangés, passent.
+- **D60** : journal et intégrité comme en M3b (une ligne `created` ou `updated` par opération qui nomme les champs sans contenu ; tables ajoutées à `EXTENSION_TABLES` (D43) ; `createItem` refuse décisions et risques sans détails) ; le contrôle d'intégrité gagne six anomalies et la boucle de « remplace ».
+
+### Écarts et décisions d'implémentation (à connaître)
+1. **Libellés accordés selon le type** : `statusLabel(statut, type)` accepte désormais le type pour l'accord (« Archivée » pour une décision, « Archivé » pour un risque, un besoin ou une exigence). Sans type, le libellé reste celui d'avant. Les listes de liens passent le type de l'élément lié.
+2. **Liste « Ajouter un lien »** : elle n'annonce que les types qui ont un écran (`KINDS_WITH_SCREEN`, `navigation.ts`). Une décision propose donc « concerne (Besoin ou Exigence ou Risque) », sans « User story » avant M5. La liste des candidats, elle, ne change pas.
+3. **Fonctions communes de plus** : le message d'erreur de titre (`titleProblem`) passe dans `register-logic.ts` ; `emptyListText` accepte un libellé de « tout » (« Toutes » pour les décisions, féminin) ; `TextField` accepte `type="date"`.
+4. **Date de décision** : champ de type date du navigateur ; stockée en texte AAAA-MM-JJ. La couche domain refuse les jours inexistants (30 février, 29 février d'une année non bissextile) ; le contrôle d'intégrité signale une date illisible en base.
+5. **Nouvelles options de liens dans des fiches déjà validées** : Besoin (« concerné par », « menacé par »), Exigence (« concerné par », « menacé par », « atténue »). Les tests qui figeaient leurs listes d'options ont été mis à jour ; la recette reteste ces fiches.
+6. **Navigation à sept entrées** : toujours lisible ; à réévaluer avant M5 (D30 de M3).
+7. Aucun code Rust modifié.
+
+### Limites connues
+- **Les clics et saisies ne sont pas testés automatiquement** : seuls la logique pure et le rendu statique le sont. Le champ date (sélecteur du navigateur de l'application) n'est vérifié que par la recette.
+- « Remplacée » n'est pas déduite du lien « remplace » (ni l'inverse) : les deux se renseignent séparément, par choix (transitions libres, D54).
+- Le lien « concerne » vers une user story existe dans la matrice mais ne sera créable qu'avec M5.
 - Non vérifié ici : build Windows (votre CI), comportement sur votre base réelle.
 
 ## Non vérifié lors de l'écriture (à valider via GitHub Actions)
