@@ -213,7 +213,9 @@ Elles gardent leur validité comme **orientation future** du registre ; aucune n
 
 ## Lot M3a : navigation, projets, parties prenantes (schéma 3, version 0.4.0)
 
-Premier lot avec des écrans métier. **À valider par David après sa recette sur clé (`TESTS-M3a.md`).** Plan validé le 25/11/2026, « Go M3a » donné le même jour. M3a est la première moitié de M3 ; M3b (besoins, exigences, liens dans les fiches) aura son propre plan.
+**M3a VALIDÉE par David le 25/11/2026, D43 incluse.** CI verte sur les trois jobs ; recette `TESTS-M3a.md` : tests 1 à 23 OK sur clé USB, dont la migration du journal sur la base réelle (tests 1 à 6) et l'action `updated` acceptée par la base reconstruite (test 8). Réserves maintenues : test 12 de V2.3b (import d'un export V1 enrichi) et C13 (optionnel).
+
+Premier lot avec des écrans métier. Plan validé le 25/11/2026, « Go M3a » donné le même jour. M3a est la première moitié de M3 ; M3b (besoins, exigences, liens dans les fiches) aura son propre plan.
 
 ### Décisions validées par David (25/11/2026)
 - **D32** : M3 est découpé en M3a puis M3b, chacun avec son cycle complet.
@@ -228,7 +230,7 @@ Premier lot avec des écrans métier. **À valider par David après sa recette s
 - **D41** : renommage de projet inclus (action `updated`, détail `name`).
 - **D42** : pas de grille influence/intérêt calculée (trois niveaux ne se rangent pas dans une grille 2×2 sans seuil arbitraire).
 
-### Décision ajoutée à l'implémentation : D43 (à valider par David)
+### Décision ajoutée à l'implémentation : D43 (validée par David le 25/11/2026)
 Une table d'extension (`stakeholder_details`) ne peut pas porter de ligne de journal propre sans produire deux lignes pour une seule création ou modification. `mutate()` accepte donc une écriture marquée `extension: true`, **uniquement** sur les tables listées dans `EXTENSION_TABLES` (`sql-guard.ts`) et **uniquement** dans un lot qui contient au moins une écriture journalisée de l'élément. Écriture seule, sur une autre table, ou combinée à `activity` : refus. Une création ou une modification reste une seule ligne de journal. Contrairement à D24 (table technique, écritable sans journal), l'extension n'est jamais écrite seule. Alternative écartée : ajouter la table à la liste des tables techniques (garde plus faible). Chaque lot qui crée une table d'extension l'ajoute à `EXTENSION_TABLES`.
 
 ### Écarts par rapport au plan présenté (à connaître)
@@ -251,6 +253,36 @@ Une table d'extension (`stakeholder_details`) ne peut pas porter de ligne de jou
 - Le rendu des écrans en test passe par esbuild (présent avec Vite) ; s'il est introuvable, ces tests sont signalés « ignorés » et non « réussis ».
 - Date de modification d'un élément : mise à jour à chaque modification (titre, description ou champs).
 - La migration 3 reconstruit `activity_log` ; la numérotation continue après le plus grand identifiant. Si des lignes de fin de journal avaient été supprimées auparavant, la numérotation pourrait légèrement reculer (aucun code ne supprime de ligne du journal).
+- Non vérifié ici : build Windows (votre CI), comportement sur votre base réelle.
+
+## Lot M3b : besoins, exigences, liens (schéma 4, version 0.5.0)
+
+**Statut : implémenté, en attente de la recette `TESTS-M3b.md` et de la mention « M3b VALIDÉE » de David.** Plan validé le 25/11/2026 : D44 à D51 validées, libellés MoSCoW validés, rejeu des tests de M3a validé, « Go M3b » donné le même jour. La chaîne métier Partie prenante → Besoin → Exigence est celle de la vision produit validée en phase de découverte.
+
+### Décisions validées par David (25/11/2026)
+- **D44** : les composants et la logique communs aux registres (filtre par statut, saisie non enregistrée, barres de confirmation, champs de formulaire, messages) sont extraits dans `src/shared/` et réutilisés par les trois registres. L'écran des parties prenantes de M3a est donc modifié : **tous les tests de M3a sont rejoués** pour couvrir ce risque.
+- **D45** : un besoin n'a pas de table de détails (titre, description, statut suffisent).
+- **D46** : une exigence a une table d'extension `requirement_details` (migration 4) : nature (fonctionnelle, non fonctionnelle, contrainte), priorité MoSCoW (indispensable / Must, important / Should, souhaitable / Could, hors périmètre / Won't), critères d'acceptation (texte libre, 10 000 caractères au plus).
+- **D47** : statuts d'un besoin et d'une exigence : brouillon (création), validé, rejeté, archivé. Les transitions sont libres : aucun workflow imposé. Le statut se change en un clic.
+- **D48** : trois types de liens exposés dans l'interface : exprime (partie prenante → besoin), dérive (besoin → exigence), raffine (exigence → exigence). Les cinq autres types existent dans la matrice mais ne sont pas proposés. En exposer un de plus = l'ajouter à `EXPOSED_LINK_TYPES`, sans migration.
+- **D49** : un lien se crée depuis l'une ou l'autre de ses extrémités, avec le libellé lu dans le bon sens (« dérive en » / « dérive de »). Une section « Liens » figure dans chaque fiche, parties prenantes comprises.
+- **D50** : un type de lien qui peut relier deux éléments du même type (aujourd'hui « raffine ») ne peut pas former de boucle : refus à la création, avec le chemin en cause, et contrôle d'intégrité pour une base modifiée hors de l'application.
+- **D51** : un élément archivé ou rejeté reste liable et lié.
+
+### Écarts et décisions d'implémentation (à connaître)
+1. **La section « Liens » vit dans `src/app/`** (`LinksSection.tsx`), pas dans un module : la règle R1 interdit aux modules de s'importer entre eux, et une fiche de besoin doit proposer des exigences. L'application l'assemble et la transmet aux écrans par la propriété `renderLinks`. L'affichage pur (`LinksView`) est dans `src/shared/`.
+2. **`createItem` refuse désormais les types qui ont une table de détails** (`KINDS_WITH_DETAILS` : partie prenante, exigence) : leur création passe par leur dépôt, qui écrit l'élément et ses détails dans une seule transaction. Un tel élément sans détails ne peut plus être créé par accident. Les tests de M1 qui créaient des exigences par `createItem` ont été adaptés.
+3. **Valeurs par défaut d'une exigence** : fonctionnelle, importante (Should), critères vides. C'est un choix de ma part, non discuté dans le plan ; il se change dans une seule constante.
+4. **Contrôle d'intégrité** : quatre anomalies ajoutées (détails d'exigence manquants, détails sur un autre type, valeur de nature ou de priorité invalide, boucle de liens).
+5. **Journal** : création = une ligne `created` ; modification = une ligne `updated` qui nomme les champs modifiés (`title,description,nature,priority,criteria`), jamais leur contenu ; rien n'est écrit si rien ne change ; un lien créé ou retiré = une ligne `link`.
+6. **D43 réutilisée** : `requirement_details` est ajoutée à `EXTENSION_TABLES`. Aucune modification du garde-fou au-delà.
+7. Aucun code Rust modifié.
+
+### Limites connues
+- **Les clics et saisies ne sont pas testés automatiquement** (comme en M3a) : seuls la logique pure et le rendu statique le sont. L'ajout et le retrait de liens depuis la fiche, le changement de statut en un clic et l'enchaînement des écrans reposent sur la recette sur clé.
+- Les compteurs de numérotation (`sequences`) d'un projet supprimé restent dans la base : les identifiants de projet ne sont jamais réutilisés, ils sont sans effet. Comportement antérieur à M3b, non modifié.
+- Les types de liens non exposés (vérifie, concerne, menace, atténue, implémente) ne peuvent pas être créés depuis l'interface avant les lots qui les concernent.
+- Un lien « raffine » dans les deux sens entre deux exigences est refusé comme boucle, volontairement.
 - Non vérifié ici : build Windows (votre CI), comportement sur votre base réelle.
 
 ## Non vérifié lors de l'écriture (à valider via GitHub Actions)

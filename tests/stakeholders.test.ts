@@ -63,7 +63,7 @@ test('migration 3 : le journal est reconstruit sans perdre une ligne, identifian
   const oldIds = (raw.prepare('SELECT id FROM activity_log ORDER BY id').all() as Array<{ id: number }>).map((r) => r.id);
   const oldRows = JSON.stringify(raw.prepare('SELECT * FROM activity_log ORDER BY id').all());
 
-  const report = await migrate(migrations, { backup: t.driver.backup });
+  const report = await migrate(migrations.slice(0, 3), { backup: t.driver.backup });
   assert.deepEqual(report.applied, [3]);
   assert.equal(t.backups.filter((b) => b.kind === 'pre-migration').length, 1);
   assert.equal(await getSchemaVersion(), 3);
@@ -95,7 +95,7 @@ test('migration 3 : le journal reconstruit sert encore à la sauvegarde automati
   t.raw.exec("INSERT INTO projects (id, kind, name, created_at, updated_at) VALUES (1, 'project', 'P', 'x', 'x')");
   for (let i = 0; i < 5; i++) t.raw.exec("INSERT INTO activity_log (at, object_type, object_id, action) VALUES ('x', 'project', 1, 'created')");
   const idBefore = await currentActivityIdForTests();
-  await migrate(migrations, { backup: t.driver.backup });
+  await migrate(migrations.slice(0, 3), { backup: t.driver.backup });
   assert.equal(await currentActivityIdForTests(), idBefore, 'la migration ne change pas le dernier identifiant : aucune sauvegarde automatique n\'est déclenchée à tort');
   t.close();
 });
@@ -354,8 +354,8 @@ test('sauvegarde et restauration : parties prenantes et détails reviennent exac
   t.close();
 });
 
-test('schéma livré : version 3, et le jeu de test couvre la nouvelle table', async () => {
-  assert.equal(SCHEMA_VERSION, 3);
+test('migration 3 : la troisième migration livrée est celle des parties prenantes, et le jeu de test couvre sa table', async () => {
+  assert.ok(SCHEMA_VERSION >= 3);
   assert.equal(migrations[2].name, 'stakeholders_and_updates');
   const t = await migratedDb();
   seedAllTables(t.raw);

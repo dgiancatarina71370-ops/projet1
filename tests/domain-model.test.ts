@@ -11,6 +11,7 @@ import { migrations, SCHEMA_VERSION } from '../src/data/migrations/index.ts';
 import { createBackup, restoreBackup } from '../src/data/backup-service.ts';
 import { createProject, deleteProject } from '../src/data/repositories/projects.ts';
 import { changeItemStatus, createItem, deleteItem, getItem, getItemByCode, listItems } from '../src/data/repositories/items.ts';
+import { createRequirement } from '../src/data/repositories/requirements.ts';
 import { createLink, deleteLink, linksOfItem, listLinks } from '../src/data/repositories/links.ts';
 import { checkModelIntegrity } from '../src/data/repositories/integrity.ts';
 import { KINDS, initialStatus, isKind, isValidStatus } from '../src/domain/kinds.ts';
@@ -113,8 +114,8 @@ test('migration : la deuxième migration livrée est celle du modèle de domaine
 test('création : code attribué, statut initial, journal écrit dans la même transaction', async () => {
   const t = await migratedDb();
   const p = await createProject('Projet');
-  const a = await createItem({ projectId: p, kind: 'requirement', title: '  Exporter en Word  ' });
-  const b = await createItem({ projectId: p, kind: 'requirement', title: 'Exporter en PDF' });
+  const a = await createRequirement({ projectId: p, title: '  Exporter en Word  ' });
+  const b = await createRequirement({ projectId: p, title: 'Exporter en PDF' });
   const c = await createItem({ projectId: p, kind: 'decision', title: 'Choisir pdfmake' });
   assert.deepEqual([a.code, b.code, c.code], ['EX-001', 'EX-002', 'DEC-001']);
   const item = await getItem(a.id);
@@ -191,7 +192,7 @@ test('codes : une création en échec dans la transaction ne consomme pas de num
 test('statut : changement validé par le type et journalisé ; un statut inconnu est refusé', async () => {
   const t = await migratedDb();
   const p = await createProject('P');
-  const { id } = await createItem({ projectId: p, kind: 'requirement', title: 'E' });
+  const { id } = await createRequirement({ projectId: p, title: 'E' });
   await changeItemStatus(id, 'validated');
   assert.equal((await getItem(id))?.status, 'validated');
   assert.equal(await journal('item', 'status_changed'), 1);
@@ -208,7 +209,7 @@ test('statut : changement validé par le type et journalisé ; un statut inconnu
 async function trio() {
   const p = await createProject('Projet');
   const need = await createItem({ projectId: p, kind: 'need', title: 'Besoin' });
-  const req = await createItem({ projectId: p, kind: 'requirement', title: 'Exigence' });
+  const req = await createRequirement({ projectId: p, title: 'Exigence' });
   const test_ = await createItem({ projectId: p, kind: 'test', title: 'Test' });
   return { p, need: need.id, req: req.id, test: test_.id };
 }

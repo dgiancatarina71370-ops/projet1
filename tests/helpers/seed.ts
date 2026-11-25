@@ -17,6 +17,7 @@ export const FIXTURES: Record<string, string[]> = {
     `INSERT INTO items (id, project_id, kind, number, code, title, description, status, created_at, updated_at) VALUES (3, 1, 'stakeholder', 1, 'PP-001', 'Partie prenante de test', 'Sponsor du projet', 'active', '${T}', '${T}')`,
   ],
   stakeholder_details: ["INSERT INTO stakeholder_details (item_id, organisation, role, influence, interest) VALUES (3, 'Service Test', 'Sponsor', 'high', 'medium')"],
+  requirement_details: ["INSERT INTO requirement_details (item_id, nature, priority, criteria) VALUES (2, 'functional', 'must', 'Critère de test')"],
   links: [`INSERT INTO links (project_id, link_type, from_id, to_id, created_at) VALUES (1, 'derives', 1, 2, '${T}')`],
   document_sends: [`INSERT INTO document_sends (document_id, recipients, sent_at) VALUES (1, 'a@b.fr', '${T}')`],
   contacts: ["INSERT INTO contacts (name, email) VALUES ('Alice', 'alice@example.fr')"],
@@ -31,7 +32,7 @@ export const FIXTURES: Record<string, string[]> = {
 };
 
 // Ordre d'insertion compatible avec les clés étrangères.
-const ORDER = ['settings', 'flags', 'projects', 'documents', 'items', 'stakeholder_details', 'links', 'document_sends', 'contacts', 'dod_items', 'workspace_notes', 'pspo_progress', 'templates', 'template_defaults', 'activity_log', 'sequences', 'backups_log'];
+const ORDER = ['settings', 'flags', 'projects', 'documents', 'items', 'stakeholder_details', 'requirement_details', 'links', 'document_sends', 'contacts', 'dod_items', 'workspace_notes', 'pspo_progress', 'templates', 'template_defaults', 'activity_log', 'sequences', 'backups_log'];
 
 export function listTables(db: DatabaseSync): string[] {
   return (db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all() as Array<{ name: string }>).map((r) => r.name);

@@ -4,12 +4,42 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Shell } from '../../src/app/Shell.tsx';
 import { ProjectsView } from '../../src/modules/projects/ProjectsView.tsx';
+import { LinksView } from '../../src/shared/links-ui.tsx';
+import type { LinkCandidateView, LinkOptionView, LinkRowView } from '../../src/shared/links-ui.tsx';
+import { NeedDetailView, NeedFormView, NeedListView, NoProjectView as AnalysisNoProject, RequirementDetailView, RequirementFormView, RequirementListView } from '../../src/modules/analysis/AnalysisView.tsx';
+import type { NeedRow, RequirementRow } from '../../src/modules/analysis/AnalysisView.tsx';
 import { NoProjectView, StakeholderDetailView, StakeholderFormView, StakeholderListView } from '../../src/modules/stakeholders/StakeholdersView.tsx';
 
 const noop = (): void => undefined;
 
+const detailProps = (p: { confirm: string | null; error: string }) => ({
+  busy: false, error: p.error, confirmDelete: p.confirm,
+  onEdit: noop, onChangeStatus: noop, onAskDelete: noop, onConfirmDelete: noop, onCancelDelete: noop, onBack: noop,
+});
+
 export const render = {
-  shell: (p: { navigable: boolean; screen: 'projects' | 'stakeholders' | 'technical'; projects: Array<{ id: number; name: string }>; activeId: number | null }): string =>
+  analysisNoProject: (what: string): string => renderToStaticMarkup(<AnalysisNoProject what={what} onGoToProjects={noop} />),
+  needList: (p: { rows: NeedRow[]; total: number; filter: string }): string =>
+    renderToStaticMarkup(<NeedListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} />),
+  needDetail: (p: { row: NeedRow; confirm: string | null; error: string }): string =>
+    renderToStaticMarkup(<NeedDetailView row={p.row} {...detailProps(p)} />),
+  needForm: (p: { errors: Record<string, string>; askAbandon: boolean; title: string }): string =>
+    renderToStaticMarkup(
+      <NeedFormView heading="Nouveau besoin" values={{ title: p.title, description: '' }} errors={p.errors} busy={false} error="" onChange={noop} onSubmit={noop} onCancel={noop} askAbandon={p.askAbandon} onConfirmAbandon={noop} onKeepEditing={noop} />,
+    ),
+  reqList: (p: { rows: RequirementRow[]; total: number; filter: string }): string =>
+    renderToStaticMarkup(<RequirementListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} />),
+  reqDetail: (p: { row: RequirementRow; confirm: string | null; error: string }): string =>
+    renderToStaticMarkup(<RequirementDetailView row={p.row} {...detailProps(p)} />),
+  reqForm: (p: { errors: Record<string, string>; askAbandon: boolean; title: string; nature: string; priority: string; criteria: string }): string =>
+    renderToStaticMarkup(
+      <RequirementFormView heading="Nouvelle exigence" values={{ title: p.title, description: '', nature: p.nature, priority: p.priority, criteria: p.criteria }} errors={p.errors} busy={false} error="" onChange={noop} onSubmit={noop} onCancel={noop} askAbandon={p.askAbandon} onConfirmAbandon={noop} onKeepEditing={noop} />,
+    ),
+  links: (p: { rows: LinkRowView[]; options: LinkOptionView[]; optionKey: string; candidates: LinkCandidateView[]; candidateId: string; error: string; confirmRemove: { linkId: number; message: string } | null }): string =>
+    renderToStaticMarkup(
+      <LinksView rows={p.rows} options={p.options} optionKey={p.optionKey} candidates={p.candidates} candidateId={p.candidateId} busy={false} error={p.error} confirmRemove={p.confirmRemove} onOption={noop} onCandidate={noop} onAdd={noop} onAskRemove={noop} onConfirmRemove={noop} onCancelRemove={noop} />,
+    ),
+  shell: (p: { navigable: boolean; screen: 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'technical'; projects: Array<{ id: number; name: string }>; activeId: number | null }): string =>
     renderToStaticMarkup(
       <Shell intro="Introduction" navigable={p.navigable} screen={p.screen} onNavigate={noop} projects={p.projects} activeId={p.activeId} onSelectProject={noop} footer="Signature">
         <p>Contenu</p>

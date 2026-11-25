@@ -2,29 +2,22 @@
 // Le rendu passe par esbuild (déjà présent avec Vite) : si l'outil est introuvable, ces tests sont signalés « ignorés » et non « réussis ».
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { createRequire } from 'node:module';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { loadRender } from './helpers/ui-loader.ts';
 import { SCREENS, isScreenId, startScreen } from '../src/app/navigation.ts';
 import { chooseActiveProject, kindLabel, projectDeletionMessage, selectableProjects, validateName } from '../src/modules/projects/logic.ts';
 import { EMPTY_FORM, deletionMessage, emptyListMessage, filterByStatus, formFrom, isDirty, validateForm } from '../src/modules/stakeholders/logic.ts';
 import { MAX_TITLE } from '../src/domain/stakeholders.ts';
 import { MAX_TITLE_LENGTH } from '../src/data/repositories/items.ts';
 
-const here = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(here, '..');
 
 // ------------------------------------------------------------------ navigation et projets (logique pure)
 
-test('navigation : trois écrans, projets d\'abord tant qu\'aucun projet n\'est actif', () => {
-  assert.deepEqual(SCREENS.map((s) => s.id), ['projects', 'stakeholders', 'technical']);
-  assert.deepEqual(SCREENS.map((s) => s.label), ['Projets', 'Parties prenantes', 'Technique']);
+test('navigation : cinq écrans depuis M3b, projets d\'abord tant qu\'aucun projet n\'est actif', () => {
+  assert.deepEqual(SCREENS.map((s) => s.id), ['projects', 'stakeholders', 'needs', 'requirements', 'technical']);
+  assert.deepEqual(SCREENS.map((s) => s.label), ['Projets', 'Parties prenantes', 'Besoins', 'Exigences', 'Technique']);
   assert.equal(startScreen(null), 'projects');
   assert.equal(startScreen(3), 'stakeholders');
-  assert.ok(isScreenId('technical') && !isScreenId('besoins'), 'pas d\'entrée Besoins avant M3b');
+  assert.ok(isScreenId('technical') && isScreenId('needs') && !isScreenId('decisions'), 'pas d\'entrée Décisions avant M4');
 });
 
 test('projet actif : le dernier utilisé s\'il existe encore, sinon le premier projet, sinon aucun ; jamais un dossier', () => {
@@ -107,22 +100,7 @@ interface Render {
   projects: (p: { rows: Array<{ id: number; parent_id: number | null; kind: string; name: string }>; activeId: number | null; renamingId: number | null; confirm: { id: number; message: string } | null; newError: string }) => string;
 }
 
-function findEsbuild(): string | null {
-  const names = process.platform === 'win32' ? ['esbuild.cmd', 'esbuild.exe', 'esbuild'] : ['esbuild'];
-  const dirs = [path.join(root, 'node_modules', '.bin'), '/opt/npm-tools/node_modules/.bin'];
-  for (const d of dirs) for (const n of names) if (fs.existsSync(path.join(d, n))) return path.join(d, n);
-  return null;
-}
-
-function loadRender(): Render | null {
-  const bin = findEsbuild();
-  if (!bin) return null;
-  const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'bamentor-ui-')), 'ui.cjs');
-  execFileSync(bin, [path.join(here, 'helpers', 'ui-entry.tsx'), '--bundle', '--platform=node', '--format=cjs', '--jsx=automatic', `--outfile=${out}`, '--log-level=error'], { cwd: root, stdio: 'pipe', shell: process.platform === 'win32' });
-  return (createRequire(import.meta.url)(out) as { render: Render }).render;
-}
-
-const render = loadRender();
+const render = loadRender<Render>();
 const ui = (name: string, fn: (r: Render) => void) => test(name, { skip: render === null ? 'esbuild introuvable : rendu des écrans non vérifié' : false }, () => fn(render as Render));
 
 const ROW = { id: 1, code: 'PP-001', title: 'Responsable CRP', description: '', status: 'active', organisation: 'La Poste', role: 'Sponsor', influence: 'high', interest: 'low' };
@@ -131,10 +109,10 @@ ui('écran : le cadre affiche le projet actif et le menu, et rien de tout cela a
   const ready = r.shell({ navigable: true, screen: 'stakeholders', projects: [{ id: 1, name: 'Alpha' }, { id: 2, name: 'Beta' }], activeId: 2 });
   assert.match(ready, /Projet actif/);
   assert.match(ready, /<option value="2" selected="">Beta<\/option>|<option value="2"[^>]*selected/);
-  for (const label of ['Projets', 'Parties prenantes', 'Technique']) assert.ok(ready.includes(`>${label}<`), label);
+  for (const label of ['Projets', 'Parties prenantes', 'Besoins', 'Exigences', 'Technique']) assert.ok(ready.includes(`>${label}<`), label);
   assert.equal((ready.match(/aria-current="page"/g) ?? []).length, 1, 'une seule entrée marquée comme courante');
   assert.match(ready, /aria-current="page"[^>]*>Parties prenantes</);
-  assert.ok(!ready.includes('Besoins') && !ready.includes('Exigences'), 'aucune entrée sans écran');
+  assert.ok(!ready.includes('Décisions') && !ready.includes('Risques'), 'aucune entrée sans écran');
   const starting = r.shell({ navigable: false, screen: 'projects', projects: [], activeId: null });
   assert.ok(!starting.includes('Projet actif') && !starting.includes('<nav'));
   assert.match(starting, /Contenu/);
