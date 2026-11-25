@@ -105,6 +105,8 @@ Un export réel de la V1 a été analysé avant d'écrire le moindre code : il e
 
 ## Lot V2.3b : export Word (.docx) signé
 
+**V2.3b VALIDÉE** par David le 21/11/2026 : tests 1 à 15 OK sur clé USB et dans Microsoft Word (dont le jeu piégé). Propriétés personnalisées : contrôle secondaire.
+
 ### Décisions validées par David
 - **D12** : V2.3 est découpé en V2.3b (Word) puis V2.3c (PDF avec pdfmake), pour isoler le risque lié à pdfmake.
 - **D13** : signature complète dans le document Word, plus les métadonnées du document.
@@ -124,6 +126,69 @@ Un export réel de la V1 a été analysé avant d'écrire le moindre code : il e
 - Vérifié ici : structure, contenu et signature du `.docx` (tests automatiques, python-docx), mise en page par conversion LibreOffice, génération dans un navigateur. **Non vérifié** : l'ouverture dans Microsoft Word lui-même (absence de message de réparation, rendu exact) ; la build Vite/Tauri de Windows (CI).
 - Les polices Calibri, Consolas et Segoe UI Symbol sont référencées, pas embarquées : sur un poste qui ne les a pas, Word choisit une police voisine.
 - Pas de table des matières, d'images ni de commentaires dans le document Word.
+
+## Cadrage produit du 25/11/2026 (phase de découverte)
+
+Document de référence : « BA-Mentor — Vision, backlog et roadmap du Workbench BA » (document Claude Docs du 25/11/2026). Les onze décisions de cadrage de David sont validées ; elles guident tous les lots à venir.
+
+### Décisions de cadrage
+1. **Vision** : BA-Mentor est le Workbench du Business Analyst et du Product Owner (structurer, analyser, tracer, contrôler, valoriser), avec ou sans IA. Ce n'est ni un mini Jira, ni un mini Azure DevOps, ni un clone de Notion, ni un assistant IA.
+2. **IA accélérateur** : fonctionnement complet sans IA ; fournisseur interchangeable (Ollama, Azure OpenAI, Copilot à confirmer techniquement, futurs). Aucune fonction critique ne dépend d'un moteur d'IA.
+3. **Priorité au socle métier** : exigences, décisions, risques, traçabilité, tests, référentiels, avant le confort et la présentation.
+4. **Modèle de domaine commun** : parties prenantes, besoins, exigences, décisions, risques, user stories, tests et traçabilité ne sont pas des modules indépendants ; ils reposent sur un même modèle de données projet (lot M1).
+5. **Quality Framework conservé, sans score unique arbitraire** : critères visibles, explicables, vérifiables (INVEST, SMART, Gherkin). L'IA commente, elle ne calcule pas.
+6. **Scénario de référence** : atelier, analyse, exigences, décisions, user stories, tests, traçabilité, livrables. Il sert aux démonstrations, aux entretiens, aux recettes et au futur projet d'exemple.
+7. **Adoption pragmatique** : à court terme, projet d'exemple, mémo créateur, guide de démonstration. Reportés : centre documentaire complet, parcours d'apprentissage, aide contextuelle exhaustive, onboarding sophistiqué.
+8. **Mode opératoire du créateur** requis : architecture, organisation des données, sauvegarde, restauration, migration, recette, livraison.
+9. **Repoussés** : cartographie graphique AS-IS / TO-BE, portfolio BA automatique, packs entreprise, SAFe, Kanban avancé, multi-utilisateur complexe.
+10. **Différenciants** : gestion des exigences, registre des décisions, registre des risques, référentiel métier, traçabilité, Quality Framework, génération de backlog, centre UAT. Réserve de l'analyse : pris isolément, plusieurs existent ailleurs ; la valeur est dans la combinaison (traçabilité calculée, filiation de la source, sans IA, portable). Aucune étude de marché n'a été faite.
+11. **Public** : utilisateur principal David ; démonstration professionnelle ; utilisateurs externes éventuels dans un second temps.
+
+### Backlog réorganisé (validé le 25/11/2026)
+- **MVP, jalon A (registres)** : M1 modèle de domaine commun, M2 registre de modules minimal (ex V2.5), M3 parties prenantes, besoins, exigences, M4 décisions et risques.
+- **MVP, jalon B (traçabilité)** : M5 user stories et tests, M6 traçabilité calculée (matrice, couverture, orphelins).
+- **MVP, jalon C (démonstration)** : M7 atelier léger, M8 livrables depuis les données avec modèles (ex V2.6), M9 projet d'exemple, guide de démonstration, mémo créateur.
+- **V2** : Q1 Quality Framework, K1 référentiel métier, A2 atelier avancé, V2.7 reprise des vues V1 (une vue par lot), V2.3c export PDF.
+- **V3** : V2.4 fournisseur IA (Ollama puis Azure OpenAI ; test de faisabilité Copilot), IA-1 usages de l'IA, B1 générateur de backlog, U1 centre UAT.
+- **V4** : à reconsidérer, aucun lot ouvert.
+- **Validations de David** : (1) découpage du MVP en trois jalons ; (2) V2.3c (PDF) et V2.7 repoussés après le MVP ; (3) plusieurs projets dans une même base (déjà vrai : table `projects`).
+
+### Hypothèses prises par défaut (non contredites)
+Capacité de recette d'environ un lot toutes les deux semaines ; données de démonstration fictives (aucune donnée de mission réelle dans l'outil) ; référentiels qualité figés au départ, extensibles plus tard ; test de faisabilité Copilot avant V2.4. La réserve du test 12 (import d'un export V1 enrichi) reste ouverte.
+
+## Lot M1 : modèle de domaine commun (schéma 2, version 0.3.0)
+
+Lot d'architecture, sans écran métier. À valider par David après sa recette sur clé (`TESTS-M1.md`).
+
+### Décisions validées par David
+- **D16** : modèle hybride. Table commune `items` (projet, type, numéro, code, titre, description, statut, source, dates) ; les champs propres à un type auront leur table au lot du type.
+- **D17** : types, statuts et types de liens validés par la couche domain, sans contrainte SQLite. **Dette technique assumée**, à réévaluer si le produit devient multi-utilisateur.
+- **D18** : codes lisibles par projet et par type (PP-001, BES-001, EX-001, DEC-001, RIS-001, US-001, TEST-001), jamais réattribués.
+- **D19** : matrice de huit types de liens (exprime, dérive, raffine, implémente, vérifie, concerne, menace, atténue) ; elle reste une donnée extensible (par exemple Décision vers Décision, Risque vers Risque) sans refonte du modèle ni migration.
+- **D20** : filiation de la source (document et extrait) portée par chaque élément dès M1, alimentée par M7.
+- **D21** : migration additive (aucune donnée existante touchée).
+- **D22** : couche `src/domain` pure (règle R9 du vérificateur d'architecture).
+- **D23** : version 0.3.0.
+- **D24** (ajoutée à l'implémentation) : la table `sequences` devient une table technique de `mutate()` (écriture sans ligne de journal), car le compteur d'un code s'incrémente dans la même transaction que l'élément créé, lui journalisé.
+
+### Écarts par rapport au plan présenté (à connaître)
+1. **Pas de déclencheur SQLite** : le garde-fou « un lien relie deux éléments du même projet » est porté par deux clés étrangères composées `(from_id, project_id)` et `(to_id, project_id)` vers `items(id, project_id)`. Même garantie, sans instruction à plusieurs `;` qui aurait exigé d'assouplir le garde SQL.
+2. **Pas de tables d'extension par type dans M1** : leurs champs sont définis par l'écran de chaque type ; elles arrivent par migrations additives (M3 à M5), pour ne pas figer des champs sans usage.
+3. **Pas de ligne ajoutée à l'écran À propos** : il affichait déjà « Schéma de la base » ; il indique désormais 2. Le texte d'introduction de l'écran d'accueil est mis à jour.
+4. **Statut seul modifiable** : le journal d'activité n'accepte que `created`, `deleted`, `status_changed`, `imported`. L'édition du titre et de la description attend le premier lot qui en a besoin (M3), qui tranchera la journalisation.
+
+### Choix de conception
+1. `items` (UNIQUE projet + code, UNIQUE projet + type + numéro, UNIQUE id + projet pour la clé composée) ; `links` (UNIQUE type + origine + cible, origine différente de la cible).
+2. Les compteurs vivent dans `sequences` (`item:<projet>:<type>`), incrémentés dans la transaction de création ; un échec n'en consomme aucun, un numéro attribué n'est jamais rendu.
+3. Suppression : liens d'abord, puis éléments, chacun dans le journal (la cascade de la base n'écrirait aucune trace). La suppression d'un projet fait de même. Supprimer le document source d'un élément efface la référence (`SET NULL`) mais garde l'extrait.
+4. `checkModelIntegrity()` relit tout et signale type inconnu, statut invalide, code incohérent, source d'un autre projet, compteur en retard, type de lien inconnu, lien non autorisé, lien hors projet. Il n'écrit rien. Contrepartie de D17.
+5. Aucun code Rust modifié (le noyau ne connaît pas les tables).
+
+### Limites connues
+- Aucune interface ne crée encore d'élément : le modèle n'est exercé que par les tests automatiques et par la migration sur votre base réelle.
+- Statuts provisoires : tous les types partagent brouillon, validé, archivé jusqu'aux lots de chaque type.
+- Non vérifié ici : build Windows (CI), exécution sur clé. Le Rust est inchangé.
+- Tests de type vérifiés ici sur domain, data et les nouveaux tests ; `tests/export.test.ts` signale des erreurs de typage dans mon environnement, sans lien avec M1 et absentes de votre CI jusqu'ici.
 
 ## Non vérifié lors de l'écriture (à valider via GitHub Actions)
 - Compilation et tests de `backup.rs` et `main.rs` (dépendent de `rusqlite` et de Tauri, inaccessibles ici), dont la commande `import_pick_file` et la boîte de dialogue Windows. `files.rs` (std seule) a été compilé et testé ici : 15 tests. Pour V2.3a : la commande `export_save` et l'utilisation de `set_file_name` / `set_directory` / `blocking_save_file` du plugin de dialogue.

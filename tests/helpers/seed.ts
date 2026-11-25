@@ -11,6 +11,11 @@ export const FIXTURES: Record<string, string[]> = {
   flags: ["INSERT INTO flags (key, enabled, custom, label) VALUES ('stats', 1, 0, 'Statistiques')"],
   projects: [`INSERT INTO projects (id, kind, name, created_at, updated_at) VALUES (1, 'project', 'Projet de test', '${T}', '${T}')`],
   documents: [`INSERT INTO documents (id, project_id, kind, name, status, content, created_at, updated_at) VALUES (1, 1, 'cr', 'Compte-rendu', 'draft', 'Contenu éé « test »', '${T}', '${T}')`],
+  items: [
+    `INSERT INTO items (id, project_id, kind, number, code, title, description, status, source_document_id, source_excerpt, created_at, updated_at) VALUES (1, 1, 'need', 1, 'BES-001', 'Besoin de test', 'Description éé', 'draft', 1, 'Extrait « test »', '${T}', '${T}')`,
+    `INSERT INTO items (id, project_id, kind, number, code, title, description, status, created_at, updated_at) VALUES (2, 1, 'requirement', 1, 'EX-001', 'Exigence de test', '', 'draft', '${T}', '${T}')`,
+  ],
+  links: [`INSERT INTO links (project_id, link_type, from_id, to_id, created_at) VALUES (1, 'derives', 1, 2, '${T}')`],
   document_sends: [`INSERT INTO document_sends (document_id, recipients, sent_at) VALUES (1, 'a@b.fr', '${T}')`],
   contacts: ["INSERT INTO contacts (name, email) VALUES ('Alice', 'alice@example.fr')"],
   dod_items: ["INSERT INTO dod_items (text, enabled, position) VALUES ('Critères validés', 1, 1)"],
@@ -24,7 +29,7 @@ export const FIXTURES: Record<string, string[]> = {
 };
 
 // Ordre d'insertion compatible avec les clés étrangères.
-const ORDER = ['settings', 'flags', 'projects', 'documents', 'document_sends', 'contacts', 'dod_items', 'workspace_notes', 'pspo_progress', 'templates', 'template_defaults', 'activity_log', 'sequences', 'backups_log'];
+const ORDER = ['settings', 'flags', 'projects', 'documents', 'items', 'links', 'document_sends', 'contacts', 'dod_items', 'workspace_notes', 'pspo_progress', 'templates', 'template_defaults', 'activity_log', 'sequences', 'backups_log'];
 
 export function listTables(db: DatabaseSync): string[] {
   return (db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all() as Array<{ name: string }>).map((r) => r.name);

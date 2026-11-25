@@ -94,10 +94,11 @@ export function assertMutation(sql: string): void {
 
 /**
  * Tables techniques : écrites sans ligne de journal d'activité (décision validée au lot V2.2a).
- * Elles décrivent le fonctionnement de l'application (version du schéma, historique des sauvegardes), pas le travail de l'utilisateur.
+ * Elles décrivent le fonctionnement de l'application (version du schéma, historique des sauvegardes, compteurs de numérotation), pas le travail de l'utilisateur.
+ * « sequences » est ajoutée au lot M1 (décision D24) : le compteur des codes EX-001, DEC-001… s'incrémente dans la même transaction que l'élément créé, qui lui est journalisé.
  * Toute autre table exige un champ « activity » dans mutate().
  */
-export const TECHNICAL_TABLES: readonly string[] = ['backups_log', 'meta'];
+export const TECHNICAL_TABLES: readonly string[] = ['backups_log', 'meta', 'sequences'];
 
 /** Nom de la table visée par un INSERT, UPDATE, DELETE ou REPLACE ; null si l'instruction n'a pas la forme attendue. */
 export function writeTarget(sql: string): string | null {

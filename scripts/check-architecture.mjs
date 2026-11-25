@@ -62,6 +62,10 @@ export function checkArchitecture(root) {
 
     for (const spec of importsOf(code)) {
       const target = resolveTarget(rel, spec);
+      // R9 : la couche domain est pure. Elle n'importe que domain/, ni paquet externe, ni base, ni interface (lot M1, décision D22).
+      if (layer === 'domain' && (!target || target.split('/')[1] !== 'domain')) {
+        add('R9-domain-pure', rel, `src/domain/ ne peut importer que src/domain/ (importé : ${spec}).`);
+      }
       if (!target) continue;
       const tp = target.split('/');
       const tLayer = tp[1];

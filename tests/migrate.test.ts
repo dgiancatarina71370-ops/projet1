@@ -12,26 +12,28 @@ import { query } from '../src/data/db.ts';
 import { createProject } from '../src/data/repositories/projects.ts';
 
 const EXPECTED_TABLES = [
-  'activity_log', 'backups_log', 'contacts', 'document_sends', 'documents', 'dod_items', 'flags', 'meta',
+  'activity_log', 'backups_log', 'contacts', 'document_sends', 'documents', 'dod_items', 'flags', 'items', 'links', 'meta',
   'projects', 'pspo_progress', 'sequences', 'settings', 'template_defaults', 'templates', 'workspace_notes',
 ];
 
 const tableNames = async () =>
   (await query<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name")).map((r) => r.name);
 
+// Migration d'essai : toujours la suivante de la liste livrée, pour que ces tests survivent à l'ajout de vraies migrations.
+const NEXT = SCHEMA_VERSION + 1;
 const v2: Migration = {
-  version: 2,
+  version: NEXT,
   name: 'test-extra',
   statements: ['CREATE TABLE extra (id INTEGER PRIMARY KEY, label TEXT NOT NULL)', "INSERT INTO extra (label) VALUES ('x')"],
 };
 
-test('base vierge : migre vers le dernier schéma et crée exactement les quinze tables', async () => {
+test('base vierge : migre vers le dernier schéma et crée exactement les dix-sept tables', async () => {
   const t = await emptyDb();
   const report = await migrate(migrations, { backup: t.driver.backup });
   assert.equal(report.from, 0);
   assert.equal(report.to, SCHEMA_VERSION);
   assert.deepEqual(await tableNames(), EXPECTED_TABLES);
-  assert.equal(EXPECTED_TABLES.length, 15);
+  assert.equal(EXPECTED_TABLES.length, 17);
   assert.equal(await getSchemaVersion(), SCHEMA_VERSION);
   assert.equal(t.backups.length, 0, 'une base vierge n\'a rien à sauvegarder');
   t.close();
@@ -62,17 +64,17 @@ test('une base N s\'ouvre en N+1 après une sauvegarde « pre-migration » prise
     },
   });
 
-  assert.deepEqual(seenAtBackup, [{ version: 1, hasExtra: false }], 'la sauvegarde précède la migration');
-  assert.deepEqual(report.applied, [2]);
-  assert.equal(await getSchemaVersion(), 2);
+  assert.deepEqual(seenAtBackup, [{ version: SCHEMA_VERSION, hasExtra: false }], 'la sauvegarde précède la migration');
+  assert.deepEqual(report.applied, [NEXT]);
+  assert.equal(await getSchemaVersion(), NEXT);
   assert.equal((await query('SELECT * FROM extra')).length, 1);
   assert.equal((await query('SELECT id FROM projects WHERE id = ?', [projectId])).length, 1, 'les données sont conservées');
-  const stamp = await query('SELECT value FROM meta WHERE key = ?', ['migrated_2_at']);
+  const stamp = await query('SELECT value FROM meta WHERE key = ?', [`migrated_${NEXT}_at`]);
   assert.equal(stamp.length, 1);
 
-  // La sauvegarde est un fichier SQLite autonome au schéma 1, avec le projet.
+  // La sauvegarde est un fichier SQLite autonome au schéma d'avant, avec le projet.
   const copy = new DatabaseSync(t.backups[0].file);
-  assert.equal((copy.prepare("SELECT value FROM meta WHERE key = 'schema_version'").get() as { value: string }).value, '1');
+  assert.equal((copy.prepare("SELECT value FROM meta WHERE key = 'schema_version'").get() as { value: string }).value, String(SCHEMA_VERSION));
   assert.equal((copy.prepare('SELECT count(*) AS n FROM projects').get() as { n: number }).n, 1);
   assert.equal(copy.prepare("SELECT name FROM sqlite_master WHERE name = 'extra'").get(), undefined);
   copy.close();
@@ -85,13 +87,13 @@ test('migration en échec : base inchangée (aucune table à moitié créée, do
   const before = await tableNames();
 
   const broken: Migration = {
-    version: 2,
+    version: NEXT,
     name: 'cassée',
     statements: ['CREATE TABLE half (id INTEGER)', 'INSERT INTO half (id) VALUES (1)', 'CECI N\'EST PAS DU SQL'],
   };
   await assert.rejects(() => migrate([...migrations, broken], { backup: t.driver.backup }), MigrationFailedError);
 
-  assert.equal(await getSchemaVersion(), 1, 'le numéro de schéma n\'a pas bougé');
+  assert.equal(await getSchemaVersion(), SCHEMA_VERSION, 'le numéro de schéma n\'a pas bougé');
   assert.deepEqual(await tableNames(), before, 'la table « half » n\'existe pas');
   assert.equal((await query('SELECT * FROM projects')).length, 1);
   assert.equal(t.backups.length, 1, 'la sauvegarde pre-migration a été faite avant la tentative');

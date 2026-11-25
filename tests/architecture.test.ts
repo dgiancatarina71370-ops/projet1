@@ -87,3 +87,21 @@ test('versions : alignées dans le dépôt réel, écart détecté sinon', () =>
   assert.equal(errors.length, 1);
   assert.match(errors[0], /package\.json/);
 });
+
+test('R9 : la couche domain est pure (ni base, ni interface, ni paquet externe)', () => {
+  const ok = fixture({ 'src/domain/a.ts': "import { b } from './b.ts';", 'src/domain/b.ts': 'export const b = 1;' });
+  assert.deepEqual(rulesOf(ok), []);
+  const bad = fixture({
+    'src/domain/a.ts': "import { query } from '../data/db.ts';",
+    'src/domain/b.ts': "import { marked } from 'marked';",
+    'src/domain/c.ts': "import '../shared/plural.ts';",
+    'src/data/db.ts': 'export const query = 1;',
+    'src/shared/plural.ts': 'export {};',
+  });
+  assert.deepEqual(rulesOf(bad), ['R9-domain-pure', 'R9-domain-pure', 'R9-domain-pure']);
+});
+
+test('R9 : la couche data et la couche app peuvent importer domain', () => {
+  const root = fixture({ 'src/domain/k.ts': 'export const k = 1;', 'src/data/r.ts': "import { k } from '../domain/k.ts';", 'src/app/A.tsx': "import { k } from '../domain/k.ts';" });
+  assert.deepEqual(rulesOf(root), []);
+});

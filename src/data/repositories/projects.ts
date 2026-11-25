@@ -57,7 +57,31 @@ export async function deleteProject(id: number): Promise<void> {
   const marks = ids.map(() => '?').join(', ');
   const docs = await query<{ id: number; project_id: number }>(`SELECT id, project_id FROM documents WHERE project_id IN (${marks})`, ids);
 
+  // Éléments du modèle de domaine (lot M1) : liens d'abord, puis éléments, chacun journalisé. La cascade de la base n'écrirait aucune trace.
+  const links = await query<{ id: number; project_id: number; link_type: string }>(
+    `SELECT id, project_id, link_type FROM links WHERE project_id IN (${marks}) ORDER BY id`,
+    ids,
+  );
+  const items = await query<{ id: number; project_id: number; kind: string }>(
+    `SELECT id, project_id, kind FROM items WHERE project_id IN (${marks}) ORDER BY id`,
+    ids,
+  );
+
   const ops: WriteOp[] = [];
+  for (const l of links) {
+    ops.push({
+      sql: 'DELETE FROM links WHERE id = ?',
+      params: [l.id],
+      activity: { objectType: 'link', action: 'deleted', objectId: l.id, projectId: l.project_id, detail: l.link_type },
+    });
+  }
+  for (const it of items) {
+    ops.push({
+      sql: 'DELETE FROM items WHERE id = ?',
+      params: [it.id],
+      activity: { objectType: 'item', action: 'deleted', objectId: it.id, projectId: it.project_id, detail: it.kind },
+    });
+  }
   for (const d of docs) {
     ops.push({
       sql: 'DELETE FROM documents WHERE id = ?',

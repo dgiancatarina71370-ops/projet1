@@ -12,7 +12,7 @@ import { setDriver } from '../src/data/internal.ts';
 import { query } from '../src/data/db.ts';
 import { migrate, SchemaTooNewError } from '../src/data/migrate.ts';
 import type { Migration } from '../src/data/migrate.ts';
-import { migrations } from '../src/data/migrations/index.ts';
+import { migrations, SCHEMA_VERSION } from '../src/data/migrations/index.ts';
 import { createProject } from '../src/data/repositories/projects.ts';
 import {
   autoBackupIfNeeded,
@@ -84,7 +84,7 @@ test('E4 : la sauvegarde est cohérente même après des écritures répétées 
   const { created } = await createBackup('manual');
   const v = await verifyBackup(created.file);
   assert.equal(v.ok, true);
-  assert.equal(v.schemaVersion, 1);
+  assert.equal(v.schemaVersion, SCHEMA_VERSION);
   assert.equal(v.sha256, created.sha256);
   assert.equal(Number(snapshotFile(created.file).projects.count), 25);
   t.close();
@@ -276,25 +276,25 @@ test('restauration depuis un fichier d\'un autre poste (hors dossier de l\'appli
 
 test('schéma plus ancien : accepté puis migré ; échec de migration : la base d\'avant est rétablie', async () => {
   const t = await migratedDb();
-  const m2: Migration = { version: 2, name: 'extra', statements: ['CREATE TABLE extra (a TEXT)'] };
-  const broken: Migration = { version: 2, name: 'cassée', statements: ['CREATE TABLE extra (a TEXT)', 'CECI N\'EST PAS DU SQL'] };
+  const m2: Migration = { version: SCHEMA_VERSION + 1, name: 'extra', statements: ['CREATE TABLE extra (a TEXT)'] };
+  const broken: Migration = { version: SCHEMA_VERSION + 1, name: 'cassée', statements: ['CREATE TABLE extra (a TEXT)', 'CECI N\'EST PAS DU SQL'] };
 
   await createProject('Dans la sauvegarde');
-  const { created } = await createBackup('manual'); // schéma 1, 1 projet
+  const { created } = await createBackup('manual'); // schéma courant, 1 projet
   await createProject('Après la sauvegarde');
   assert.equal(await count('projects'), 2);
 
-  // Échec : la restauration passe le schéma 1 → 2 avec une migration cassée.
+  // Échec : la restauration passe du schéma courant au suivant avec une migration cassée.
   await assert.rejects(() => restoreBackup(created.file, { migrations: [...migrations, broken] }), /rétablie/);
   assert.equal(await count('projects'), 2, 'la base d\'avant (2 projets) est revenue');
   assert.equal((await query('SELECT name FROM sqlite_master WHERE name = \'extra\'')).length, 0);
 
-  // Succès : la base restaurée est migrée jusqu'au schéma 2.
+  // Succès : la base restaurée est migrée jusqu'au schéma suivant.
   const ok = await restoreBackup(created.file, { migrations: [...migrations, m2] });
-  assert.deepEqual([ok.restoredSchema, ok.currentSchema, ok.migrated], [1, 2, true]);
+  assert.deepEqual([ok.restoredSchema, ok.currentSchema, ok.migrated], [SCHEMA_VERSION, SCHEMA_VERSION + 1, true]);
   assert.equal(await count('projects'), 1);
   assert.equal((await query('SELECT name FROM sqlite_master WHERE name = \'extra\'')).length, 1);
-  assert.equal(Number((await query<{ value: string }>("SELECT value FROM meta WHERE key = 'schema_version'"))[0].value), 2);
+  assert.equal(Number((await query<{ value: string }>("SELECT value FROM meta WHERE key = 'schema_version'"))[0].value), SCHEMA_VERSION + 1);
   t.close();
 });
 
@@ -331,7 +331,7 @@ test('base actuelle illisible : la restauration est possible sans pre-restore', 
 
 test('restauration puis migration : la base d\'une version plus ancienne reçoit sa sauvegarde pre-migration', async () => {
   const t = await migratedDb();
-  const m2: Migration = { version: 2, name: 'extra', statements: ['CREATE TABLE extra (a TEXT)'] };
+  const m2: Migration = { version: SCHEMA_VERSION + 1, name: 'extra', statements: ['CREATE TABLE extra (a TEXT)'] };
   const { created } = await createBackup('manual');
   await restoreBackup(created.file, { migrations: [...migrations, m2] });
   const kinds = (await listBackups()).map((e) => e.kind).sort();
