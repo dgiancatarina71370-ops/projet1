@@ -2,7 +2,7 @@
 // Le conteneur (DecisionsScreen.tsx) les alimente. Le cadre de fiche, l'en-tête et l'écran « sans projet » viennent de shared/ui.tsx (décision D59).
 import { DetailFrame, FormButtons, NoProjectView, RegisterHeader, StatusFilterBar, TextAreaField, TextField } from '../../shared/ui.tsx';
 import type { DetailActions } from '../../shared/ui.tsx';
-import { decisionDateLabel } from '../../domain/decisions.ts';
+import { dayLabel } from '../../domain/decisions.ts';
 import { statusLabel } from '../../domain/kinds.ts';
 import { STATUS_FILTER_OPTIONS, STATUS_OPTIONS, emptyDecisionsMessage } from './logic.ts';
 import type { DecisionForm, DecisionFormErrors } from './logic.ts';
@@ -36,7 +36,7 @@ export function DecisionListView(props: { projectName: string; rows: DecisionRow
               <tr key={r.id} className="border-t border-hub-line">
                 <td className="py-1 pr-3 whitespace-nowrap">{r.code}</td>
                 <td className="pr-3"><button type="button" className="text-left text-hub-accent underline" onClick={() => props.onOpen(r.id)}>{r.title}</button></td>
-                <td className="pr-3 whitespace-nowrap">{decisionDateLabel(r.decided_on)}</td>
+                <td className="pr-3 whitespace-nowrap">{dayLabel(r.decided_on)}</td>
                 <td className="pr-3">{r.decider || '—'}</td>
                 <td>{statusLabel(r.status, 'decision')}</td>
               </tr>
@@ -52,7 +52,7 @@ export function DecisionDetailView(props: DetailActions & { row: DecisionRow }) 
   const r = props.row;
   return (
     <DetailFrame {...props} code={r.code} title={r.title} statusText={statusLabel(r.status, 'decision')} statuses={STATUS_OPTIONS} current={r.status}>
-      <dt className="text-hub-muted">Date</dt><dd>{decisionDateLabel(r.decided_on)}</dd>
+      <dt className="text-hub-muted">Date</dt><dd>{dayLabel(r.decided_on)}</dd>
       <dt className="text-hub-muted">Décideur</dt><dd>{r.decider || '—'}</dd>
       <dt className="text-hub-muted">Contexte</dt><dd className="whitespace-pre-wrap">{r.description || '—'}</dd>
       <dt className="text-hub-muted">Alternatives envisagées</dt><dd className="whitespace-pre-wrap">{r.alternatives || '—'}</dd>

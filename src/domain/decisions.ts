@@ -27,8 +27,8 @@ export function isCalendarDate(value: unknown): boolean {
   return d <= days[mo - 1];
 }
 
-/** Date d'affichage « JJ/MM/AAAA » ; « — » si la date n'est pas renseignée ; la valeur telle quelle si elle est illisible. */
-export function decisionDateLabel(value: string): string {
+/** Date d'affichage d'un jour AAAA-MM-JJ (décisions, exécutions de tests) : « JJ/MM/AAAA » ; « — » si la date n'est pas renseignée ; la valeur telle quelle si elle est illisible. */
+export function dayLabel(value: string): string {
   if (value === '') return '—';
   if (!isCalendarDate(value)) return `Invalide (${value})`;
   return `${value.slice(8, 10)}/${value.slice(5, 7)}/${value.slice(0, 4)}`;

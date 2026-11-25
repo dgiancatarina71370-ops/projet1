@@ -1,6 +1,6 @@
 // Cadre de l'application (lot M3a, décision D33) : en-tête, choix du projet actif, menu, pied de page. Affichage pur, tout arrive par propriétés.
 import type { ReactNode } from 'react';
-import { SCREENS } from './navigation.ts';
+import { NAV_SECTIONS } from './navigation.ts';
 import type { ScreenId } from './navigation.ts';
 import { INPUT_CLASS } from '../shared/ui.tsx';
 
@@ -48,17 +48,24 @@ export function Shell(props: {
       <div className="flex flex-1 flex-col md:flex-row">
         {props.navigable && (
           <nav aria-label="Navigation" className="border-b border-hub-line p-3 md:w-52 md:border-b-0 md:border-r">
-            <ul className="flex gap-2 md:flex-col">
-              {SCREENS.map((s) => (
-                <li key={s.id}>
-                  <button
-                    type="button"
-                    aria-current={props.screen === s.id ? 'page' : undefined}
-                    className={`w-full rounded px-3 py-1.5 text-left text-sm ${props.screen === s.id ? 'bg-hub-panel text-hub-accent' : 'text-hub-fg'}`}
-                    onClick={() => props.onNavigate(s.id)}
-                  >
-                    {s.label}
-                  </button>
+            <ul className="flex flex-wrap gap-x-4 gap-y-1 md:flex-col md:gap-y-0">
+              {NAV_SECTIONS.map((section, i) => (
+                <li key={i} className={section.title === null ? '' : 'md:pt-2'}>
+                  {section.title !== null && <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-hub-muted">{section.title}</p>}
+                  <ul className="flex gap-2 md:flex-col">
+                    {section.screens.map((s) => (
+                      <li key={s.id}>
+                        <button
+                          type="button"
+                          aria-current={props.screen === s.id ? 'page' : undefined}
+                          className={`w-full rounded px-3 py-1.5 text-left text-sm ${props.screen === s.id ? 'bg-hub-panel text-hub-accent' : 'text-hub-fg'}`}
+                          onClick={() => props.onNavigate(s.id)}
+                        >
+                          {s.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 </li>
               ))}
             </ul>

@@ -24,6 +24,8 @@ import { StakeholdersScreen } from '../modules/stakeholders/StakeholdersScreen.t
 import { NeedsScreen } from '../modules/analysis/NeedsScreen.tsx';
 import { DecisionsScreen } from '../modules/decisions/DecisionsScreen.tsx';
 import { RisksScreen } from '../modules/risks/RisksScreen.tsx';
+import { StoriesScreen } from '../modules/stories/StoriesScreen.tsx';
+import { TestsScreen } from '../modules/testcases/TestsScreen.tsx';
 import { RequirementsScreen } from '../modules/analysis/RequirementsScreen.tsx';
 import { LinksSection } from './LinksSection.tsx';
 import type { ItemKind } from '../domain/kinds.ts';
@@ -133,7 +135,7 @@ export function App() {
 
   return (
     <Shell
-      intro="Lot M4 : décisions, risques et liens entre éléments (parties prenantes, besoins, exigences, décisions, risques). Le schéma de la base passe à la version 5. Sauvegarde, import V1, export et À propos sont dans l’écran Technique. User stories et tests arrivent au lot suivant."
+      intro="Lot M5 : user stories, tests et liens entre éléments (de la partie prenante au test). Le schéma de la base passe à la version 6. Sauvegarde, import V1, export et À propos sont dans l’écran Technique. La traçabilité calculée (couverture, éléments orphelins) arrive au lot suivant."
       navigable={ready}
       screen={screen}
       onNavigate={setScreen}
@@ -226,6 +228,26 @@ export function App() {
 
       {result?.status === 'ready' && screen === 'risks' && (
         <RisksScreen
+          projectId={active ? active.id : null}
+          projectName={active ? active.name : ''}
+          onGoToProjects={() => setScreen('projects')}
+          onChanged={() => void refresh()}
+          renderLinks={renderLinks}
+        />
+      )}
+
+      {result?.status === 'ready' && screen === 'stories' && (
+        <StoriesScreen
+          projectId={active ? active.id : null}
+          projectName={active ? active.name : ''}
+          onGoToProjects={() => setScreen('projects')}
+          onChanged={() => void refresh()}
+          renderLinks={renderLinks}
+        />
+      )}
+
+      {result?.status === 'ready' && screen === 'tests' && (
+        <TestsScreen
           projectId={active ? active.id : null}
           projectName={active ? active.name : ''}
           onGoToProjects={() => setScreen('projects')}

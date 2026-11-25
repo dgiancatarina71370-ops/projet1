@@ -124,7 +124,7 @@ export function assertTechnicalWrite(sql: string): void {
  * Contrairement aux tables techniques, une écriture sur une table d'extension n'est admise que dans un lot d'écritures qui contient au moins une écriture journalisée.
  * Chaque lot métier qui crée une table d'extension l'ajoute ici.
  */
-export const EXTENSION_TABLES: readonly string[] = ['stakeholder_details', 'requirement_details', 'decision_details', 'risk_details'];
+export const EXTENSION_TABLES: readonly string[] = ['stakeholder_details', 'requirement_details', 'decision_details', 'risk_details', 'story_details', 'test_details'];
 
 export function assertExtensionWrite(sql: string, batchHasJournaledWrite: boolean): void {
   const table = writeTarget(sql);

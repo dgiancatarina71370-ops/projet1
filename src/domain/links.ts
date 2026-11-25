@@ -65,10 +65,10 @@ export function linksFrom(kind: ItemKind): LinkRule[] {
 // ------------------------------------------------------------------ interface des liens (lot M3b, décisions D48 à D50)
 
 /**
- * Types de liens proposés dans l'interface (décisions D48 et D57 ; « implémente » et « vérifie » attendent M5). Exposer un autre type plus tard (Décision vers Décision, Risque vers Risque…)
+ * Types de liens proposés dans l'interface (décisions D48, D57 et D66 : les neuf types de la matrice sont désormais exposés). Exposer un autre type plus tard (Décision vers Décision, Risque vers Risque…)
  * = l'ajouter ici, après l'avoir ajouté à LINK_RULES : ni refonte ni migration.
  */
-export const EXPOSED_LINK_TYPES: readonly LinkType[] = ['expresses', 'derives', 'refines', 'concerns', 'threatens', 'mitigates', 'supersedes'];
+export const EXPOSED_LINK_TYPES: readonly LinkType[] = ['expresses', 'derives', 'refines', 'implements', 'verifies', 'concerns', 'threatens', 'mitigates', 'supersedes'];
 
 /** Sens d'un lien vu depuis un élément : « out » part de lui, « in » arrive sur lui. */
 export type Direction = 'out' | 'in';

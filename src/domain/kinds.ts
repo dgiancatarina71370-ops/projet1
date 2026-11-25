@@ -14,15 +14,17 @@ export interface KindInfo {
   statuses: readonly string[];
 }
 
-// Provisoire (M1) : les types sans lot propre partagent les trois statuts des livrables.
-// Chaque lot métier précise les statuts de son type : cette liste est la seule à modifier, aucune migration n'est nécessaire (décision D17).
-const COMMON_STATUSES: readonly string[] = ['draft', 'validated', 'archived'];
+// Chaque type a ses statuts (liste unique à modifier, aucune migration nécessaire : décision D17). Le premier est celui de création.
 // Besoin et exigence (lot M3b, décisions D37 et D47) : brouillon à la création ; les transitions sont libres (aucun workflow).
 const ANALYSIS_STATUSES: readonly string[] = ['draft', 'validated', 'rejected', 'archived'];
 // Décision (lot M4, décision D54) : proposée à la création ; transitions libres. « Remplacée » se précise par le lien « remplace » (D58).
 const DECISION_STATUSES: readonly string[] = ['proposed', 'decided', 'superseded', 'cancelled', 'archived'];
 // Risque (lot M4, décision D56) : identifié à la création ; transitions libres.
 const RISK_STATUSES: readonly string[] = ['identified', 'mitigating', 'accepted', 'closed', 'archived'];
+// User story (lot M5, décision D63) : brouillon à la création ; transitions libres. « Réalisée » est une simple étiquette, sans suivi de développement.
+const STORY_STATUSES: readonly string[] = ['draft', 'ready', 'done', 'rejected', 'archived'];
+// Test (lot M5, décision D65) : le statut porte le DERNIER résultat, sans historique d'exécutions (le centre UAT est prévu en V3).
+const TEST_STATUSES: readonly string[] = ['to_run', 'passed', 'failed', 'blocked', 'archived'];
 // Partie prenante (lot M3a, décision D37) : active tant qu'elle compte pour le projet, archivée ensuite. Le premier statut est celui de création.
 const STAKEHOLDER_STATUSES: readonly string[] = ['active', 'archived'];
 
@@ -32,15 +34,15 @@ export const KINDS: readonly KindInfo[] = [
   { kind: 'requirement', label: 'Exigence', prefix: 'EX', statuses: ANALYSIS_STATUSES },
   { kind: 'decision', label: 'Décision', prefix: 'DEC', statuses: DECISION_STATUSES },
   { kind: 'risk', label: 'Risque', prefix: 'RIS', statuses: RISK_STATUSES },
-  { kind: 'story', label: 'User story', prefix: 'US', statuses: COMMON_STATUSES },
-  { kind: 'test', label: 'Test', prefix: 'TEST', statuses: COMMON_STATUSES },
+  { kind: 'story', label: 'User story', prefix: 'US', statuses: STORY_STATUSES },
+  { kind: 'test', label: 'Test', prefix: 'TEST', statuses: TEST_STATUSES },
 ];
 
 /**
- * Types dont les champs propres vivent dans une table d'extension : leur création passe par le dépôt du type (createStakeholder, createRequirement, createDecision, createRisk),
+ * Types dont les champs propres vivent dans une table d'extension : leur création passe par le dépôt du type (createStakeholder, createRequirement, createDecision, createRisk, createStory, createTestCase),
  * qui écrit l'élément et ses détails ensemble. createItem le refuse pour eux : une partie prenante ou une exigence sans détails serait incohérente.
  */
-export const KINDS_WITH_DETAILS: readonly ItemKind[] = ['stakeholder', 'requirement', 'decision', 'risk'];
+export const KINDS_WITH_DETAILS: readonly ItemKind[] = ['stakeholder', 'requirement', 'decision', 'risk', 'story', 'test'];
 
 export function isKind(value: unknown): value is ItemKind {
   return typeof value === 'string' && KINDS.some((k) => k.kind === value);
@@ -74,10 +76,19 @@ const STATUS_LABELS: Record<string, string> = {
   mitigating: 'En traitement',
   accepted: 'Accepté',
   closed: 'Clos',
+  ready: 'Prête',
+  done: 'Réalisée',
+  to_run: 'À exécuter',
+  passed: 'Réussi',
+  failed: 'Échoué',
+  blocked: 'Bloqué',
 };
 
-// Accord au féminin pour les décisions : « Archivée » et non « Archivé ». Les autres statuts de décision sont déjà au féminin.
-const KIND_OVERRIDES: Partial<Record<ItemKind, Record<string, string>>> = { decision: { archived: 'Archivée' } };
+// Accord au féminin : une décision ou une user story est « archivée » (et une story « rejetée »). Les autres statuts propres à ces types sont déjà au féminin.
+const KIND_OVERRIDES: Partial<Record<ItemKind, Record<string, string>>> = {
+  decision: { archived: 'Archivée' },
+  story: { rejected: 'Rejetée', archived: 'Archivée' },
+};
 
 /** Libellé d'un statut. Le type, quand on le connaît, sert à l'accord (une décision est « archivée », un risque « archivé »). */
 export function statusLabel(status: string, kind?: ItemKind): string {

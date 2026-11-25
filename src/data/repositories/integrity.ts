@@ -10,6 +10,7 @@ import type { LinkType } from '../../domain/links.ts';
 import { isLevel } from '../../domain/stakeholders.ts';
 import { isNature, isPriority } from '../../domain/requirements.ts';
 import { isCalendarDate } from '../../domain/decisions.ts';
+import { isTestType } from '../../domain/testcases.ts';
 
 export type IntegrityProblem =
   | 'unknown-kind'
@@ -32,6 +33,12 @@ export type IntegrityProblem =
   | 'risk-details-missing'
   | 'risk-details-wrong-kind'
   | 'risk-invalid-level'
+  | 'story-details-missing'
+  | 'story-details-wrong-kind'
+  | 'test-details-missing'
+  | 'test-details-wrong-kind'
+  | 'test-invalid-type'
+  | 'test-invalid-date'
   | 'link-cycle';
 
 export interface IntegrityIssue {
@@ -173,6 +180,44 @@ export async function checkModelIntegrity(): Promise<IntegrityIssue[]> {
     }
     if (!isLevel(d.probability) || !isLevel(d.impact)) {
       issues.push({ problem: 'risk-invalid-level', itemId: d.id, message: `Le risque ${d.code} a une probabilité ou un impact invalide.` });
+    }
+  }
+
+  // User stories (lot M5) : une ligne de détails par story, et seulement pour elles.
+  const storyMissing = await query<{ id: number; code: string }>(
+    `SELECT i.id, i.code FROM items i LEFT JOIN story_details d ON d.item_id = i.id WHERE i.kind = 'story' AND d.item_id IS NULL ORDER BY i.id`,
+  );
+  for (const m of storyMissing) {
+    issues.push({ problem: 'story-details-missing', itemId: m.id, message: `La user story ${m.code} n'a pas de ligne de détails.` });
+  }
+  const storyDetails = await query<{ id: number; code: string; kind: string }>(
+    `SELECT i.id, i.code, i.kind FROM story_details d JOIN items i ON i.id = d.item_id ORDER BY i.id`,
+  );
+  for (const d of storyDetails) {
+    if (d.kind !== 'story') {
+      issues.push({ problem: 'story-details-wrong-kind', itemId: d.id, message: `L'élément ${d.code} porte des détails de user story alors que c'est un « ${d.kind} ».` });
+    }
+  }
+
+  // Tests (lot M5) : une ligne de détails par test, et seulement pour eux ; type et date valides.
+  const testMissing = await query<{ id: number; code: string }>(
+    `SELECT i.id, i.code FROM items i LEFT JOIN test_details d ON d.item_id = i.id WHERE i.kind = 'test' AND d.item_id IS NULL ORDER BY i.id`,
+  );
+  for (const m of testMissing) {
+    issues.push({ problem: 'test-details-missing', itemId: m.id, message: `Le test ${m.code} n'a pas de ligne de détails.` });
+  }
+  const testDetails = await query<{ id: number; code: string; kind: string; test_type: string; last_run_on: string }>(
+    `SELECT i.id, i.code, i.kind, d.test_type, d.last_run_on FROM test_details d JOIN items i ON i.id = d.item_id ORDER BY i.id`,
+  );
+  for (const d of testDetails) {
+    if (d.kind !== 'test') {
+      issues.push({ problem: 'test-details-wrong-kind', itemId: d.id, message: `L'élément ${d.code} porte des détails de test alors que c'est un « ${d.kind} ».` });
+    }
+    if (!isTestType(d.test_type)) {
+      issues.push({ problem: 'test-invalid-type', itemId: d.id, message: `Le test ${d.code} a un type invalide (« ${d.test_type} »).` });
+    }
+    if (d.last_run_on !== '' && !isCalendarDate(d.last_run_on)) {
+      issues.push({ problem: 'test-invalid-date', itemId: d.id, message: `Le test ${d.code} a une date d'exécution invalide (« ${d.last_run_on} »).` });
     }
   }
 
