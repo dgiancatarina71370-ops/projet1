@@ -28,6 +28,7 @@ export async function getProject(id: number): Promise<Project | null> {
 export async function createProject(name: string, kind: ProjectKind = 'project', parentId: number | null = null): Promise<number> {
   const clean = name.trim();
   if (clean === '') throw new Error('Le nom du projet est obligatoire.');
+  if (clean.length > 200) throw new Error('Le nom du projet est limité à 200 caractères.');
   const t = nowIso();
   const [r] = await mutate([
     {
@@ -37,6 +38,50 @@ export async function createProject(name: string, kind: ProjectKind = 'project',
     },
   ]);
   return r.lastInsertRowid;
+}
+
+export interface DeletionImpact {
+  /** Projets, dossiers et archives supprimés, le projet visé compris. */
+  projects: number;
+  documents: number;
+  items: number;
+  links: number;
+}
+
+/** Ce que supprimerait deleteProject(id), pour l'annoncer avant la confirmation. Ne lit que. */
+export async function projectDeletionImpact(id: number): Promise<DeletionImpact> {
+  const tree = await query<{ id: number }>(
+    `WITH RECURSIVE tree(id) AS (
+       SELECT id FROM projects WHERE id = ?
+       UNION ALL
+       SELECT p.id FROM projects p JOIN tree t ON p.parent_id = t.id
+     ) SELECT id FROM tree`,
+    [id],
+  );
+  if (tree.length === 0) return { projects: 0, documents: 0, items: 0, links: 0 };
+  const ids = tree.map((r) => r.id);
+  const marks = ids.map(() => '?').join(', ');
+  const n = async (table: string): Promise<number> =>
+    Number((await query<{ n: number }>(`SELECT count(*) AS n FROM ${table} WHERE project_id IN (${marks})`, ids))[0].n);
+  return { projects: ids.length, documents: await n('documents'), items: await n('items'), links: await n('links') };
+}
+
+/** Renomme un projet ou un dossier (action « updated » du journal, décision D41). Sans effet si le nom ne change pas. */
+export async function renameProject(id: number, name: string): Promise<boolean> {
+  const clean = name.trim();
+  if (clean === '') throw new Error('Le nom du projet est obligatoire.');
+  if (clean.length > 200) throw new Error('Le nom du projet est limité à 200 caractères.');
+  const cur = await getProject(id);
+  if (!cur) throw new Error('Le projet n\'existe pas.');
+  if (cur.name === clean) return false;
+  await mutate([
+    {
+      sql: 'UPDATE projects SET name = ?, updated_at = ? WHERE id = ?',
+      params: [clean, nowIso(), id],
+      activity: { objectType: cur.kind === 'project' ? 'project' : 'folder', action: 'updated', objectId: id, projectId: cur.kind === 'project' ? id : cur.parent_id, detail: 'name' },
+    },
+  ]);
+  return true;
 }
 
 /**

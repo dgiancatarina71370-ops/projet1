@@ -117,3 +117,21 @@ export function assertTechnicalWrite(sql: string): void {
     );
   }
 }
+
+/**
+ * Tables d'extension : champs propres à un type d'élément (décision D16), écrites dans la MÊME transaction qu'une écriture journalisée de l'élément
+ * (décision D43, lot M3a). Elles n'ont pas de ligne de journal propre : celle de l'élément décrit l'opération (une création ou une modification = une ligne).
+ * Contrairement aux tables techniques, une écriture sur une table d'extension n'est admise que dans un lot d'écritures qui contient au moins une écriture journalisée.
+ * Chaque lot métier qui crée une table d'extension l'ajoute ici.
+ */
+export const EXTENSION_TABLES: readonly string[] = ['stakeholder_details'];
+
+export function assertExtensionWrite(sql: string, batchHasJournaledWrite: boolean): void {
+  const table = writeTarget(sql);
+  if (table === null || !EXTENSION_TABLES.includes(table)) {
+    throw new SqlRefusedError(`Écriture sans journal d'activité refusée${table ? ` sur « ${table} »` : ''} : « extension » n'est admis que pour les tables ${EXTENSION_TABLES.join(', ')}.`);
+  }
+  if (!batchHasJournaledWrite) {
+    throw new SqlRefusedError(`Écriture refusée sur « ${table} » : une table d'extension s'écrit avec une écriture journalisée de son élément, dans la même transaction.`);
+  }
+}

@@ -145,7 +145,7 @@ Document de référence : « BA-Mentor — Vision, backlog et roadmap du Workben
 11. **Public** : utilisateur principal David ; démonstration professionnelle ; utilisateurs externes éventuels dans un second temps.
 
 ### Backlog réorganisé (validé le 25/11/2026)
-- **MVP, jalon A (registres)** : M1 modèle de domaine commun, M2 registre de modules minimal (ex V2.5), M3 parties prenantes, besoins, exigences, M4 décisions et risques.
+- **MVP, jalon A (registres)** : M1 modèle de domaine commun, ~~M2 registre de modules minimal (ex V2.5)~~ **différé le 25/11/2026 (voir « Lot M2 » ci-dessous)**, M3 parties prenantes, besoins, exigences, M4 décisions et risques. La numérotation des lots suivants est conservée (pas de M2 avant M3).
 - **MVP, jalon B (traçabilité)** : M5 user stories et tests, M6 traçabilité calculée (matrice, couverture, orphelins).
 - **MVP, jalon C (démonstration)** : M7 atelier léger, M8 livrables depuis les données avec modèles (ex V2.6), M9 projet d'exemple, guide de démonstration, mémo créateur.
 - **V2** : Q1 Quality Framework, K1 référentiel métier, A2 atelier avancé, V2.7 reprise des vues V1 (une vue par lot), V2.3c export PDF.
@@ -158,7 +158,9 @@ Capacité de recette d'environ un lot toutes les deux semaines ; données de dé
 
 ## Lot M1 : modèle de domaine commun (schéma 2, version 0.3.0)
 
-Lot d'architecture, sans écran métier. À valider par David après sa recette sur clé (`TESTS-M1.md`).
+**M1 VALIDÉE par David le 25/11/2026.** CI verte sur les trois jobs (typecheck propre après correction de `tests/export.test.ts`), recette `TESTS-M1.md` : tests 1 à 12 OK sur clé USB, dont le refus d'une base au schéma 2 par l'ancienne version 0.2.6. Réserves maintenues : test 12 de V2.3b (import d'un export V1 enrichi) et C13 (optionnel).
+
+Lot d'architecture, sans écran métier.
 
 ### Décisions validées par David
 - **D16** : modèle hybride. Table commune `items` (projet, type, numéro, code, titre, description, statut, source, dates) ; les champs propres à un type auront leur table au lot du type.
@@ -189,6 +191,67 @@ Lot d'architecture, sans écran métier. À valider par David après sa recette 
 - Statuts provisoires : tous les types partagent brouillon, validé, archivé jusqu'aux lots de chaque type.
 - Non vérifié ici : build Windows (CI), exécution sur clé. Le Rust est inchangé.
 - Tests de type vérifiés ici sur domain, data et les nouveaux tests ; `tests/export.test.ts` signale des erreurs de typage dans mon environnement, sans lien avec M1 et absentes de votre CI jusqu'ici.
+
+## Lot M2 : registre de modules minimal — DIFFÉRÉ (décision du 25/11/2026)
+
+**Aucun développement.** David a retiré M2 du chemin critique avant M3. Raison : M2 n'est pas un prérequis technique de M3 (M3 s'appuie sur le modèle de domaine de M1 ; le registre n'ajoute qu'un confort de masquage), et il n'apporte pas de valeur visible à ce stade (catalogue initial de trois entrées dont une seule, l'export, a un effet). Le registre sera réévalué **lorsqu'il existera suffisamment de modules métier pour justifier son existence** (à partir de M7 à M9, ou dès qu'un module supplémentaire rend l'interrupteur utile).
+
+### Décisions D25 à D31 : validées mais différées
+Elles gardent leur validité comme **orientation future** du registre ; aucune n'est implémentée.
+- **D25** : l'état d'un module est stocké dans la table `flags` existante (clés préfixées `module.`), sans migration.
+- **D26** : catalogue des modules dans le code, une entrée ajoutée par lot.
+- **D27** : dépendances déclarées ; désactivation refusée si un module actif en dépend ; pas de cascade.
+- **D28** : désactivation = interface masquée **et** actions refusées côté code ; les données restent intactes, lisibles et sauvegardées.
+- **D29** : changement d'état journalisé via l'action `status_changed` (type d'objet `module`, clé dans le détail) ; ajustement de `mutate()` pour un objet sans identifiant numérique ; pas de reconstruction de `activity_log`.
+- **D30** : **refusée** pour M2 (pas de navigation dans ce lot). La navigation est réévaluée au plan M3.
+- **D31** : interrupteurs hérités de la V1 conservés en base, ignorés par l'application, jamais modifiés ; test de non-collision de clés à prévoir.
+
+### Engagements pris pour ne pas renchérir le report
+- Chaque registre métier (M3 et suivants) reste derrière **un point d'entrée unique** (un composant d'écran par registre), pour qu'un contrôle d'activation puisse s'y brancher plus tard sans réécrire l'écran.
+- La clé de module `export` annoncée plus haut reste non créée ; `exportDocument` ne vérifie toujours aucun drapeau (sans conséquence).
+- Versionnement : le prochain lot livré est M3 ; la version n'est pas « réservée » pour M2.
+
+## Lot M3a : navigation, projets, parties prenantes (schéma 3, version 0.4.0)
+
+Premier lot avec des écrans métier. **À valider par David après sa recette sur clé (`TESTS-M3a.md`).** Plan validé le 25/11/2026, « Go M3a » donné le même jour. M3a est la première moitié de M3 ; M3b (besoins, exigences, liens dans les fiches) aura son propre plan.
+
+### Décisions validées par David (25/11/2026)
+- **D32** : M3 est découpé en M3a puis M3b, chacun avec son cycle complet.
+- **D33** : navigation à gauche. M3a : Projets, Parties prenantes, Technique ; Besoins et Exigences apparaîtront en M3b (pas d'écran vide).
+- **D34** : le dernier projet actif est mémorisé dans la table technique `meta` (clé `ui_last_project`), sans ligne de journal. Il est revérifié à chaque lecture : projet supprimé, dossier ou valeur illisible conduisent à un repli sur le premier projet, ou sur aucun.
+- **D35** : l'action `updated` est ajoutée au journal. La contrainte CHECK de `activity_log` ne se modifie pas sur place : la table est reconstruite par la migration 3 (copie avec identifiants conservés, suppression, renommage, index recréé). Le détail du journal ne nomme que les champs modifiés, jamais leur contenu.
+- **D36** : champs propres à une partie prenante dans `stakeholder_details` (organisation, rôle, influence, intérêt) ; aucune extension pour les besoins ; exigences (nature, priorité MoSCoW, critères) en M3b.
+- **D37** : statuts. Parties prenantes : actif, archivé (le premier est celui de création). Besoins et exigences : brouillon, validé, rejeté, archivé, mis en œuvre en M3b ; les autres types gardent les trois statuts provisoires de M1.
+- **D38** : seuls trois types de liens seront exposés dans l'interface (exprime, dérive, raffine), en M3b.
+- **D39** : filiation de la source non alimentée dans l'interface avant M7.
+- **D40** : suppression autorisée avec confirmation, y compris d'un élément lié ; l'archivage est présenté comme la voie normale.
+- **D41** : renommage de projet inclus (action `updated`, détail `name`).
+- **D42** : pas de grille influence/intérêt calculée (trois niveaux ne se rangent pas dans une grille 2×2 sans seuil arbitraire).
+
+### Décision ajoutée à l'implémentation : D43 (à valider par David)
+Une table d'extension (`stakeholder_details`) ne peut pas porter de ligne de journal propre sans produire deux lignes pour une seule création ou modification. `mutate()` accepte donc une écriture marquée `extension: true`, **uniquement** sur les tables listées dans `EXTENSION_TABLES` (`sql-guard.ts`) et **uniquement** dans un lot qui contient au moins une écriture journalisée de l'élément. Écriture seule, sur une autre table, ou combinée à `activity` : refus. Une création ou une modification reste une seule ligne de journal. Contrairement à D24 (table technique, écritable sans journal), l'extension n'est jamais écrite seule. Alternative écartée : ajouter la table à la liste des tables techniques (garde plus faible). Chaque lot qui crée une table d'extension l'ajoute à `EXTENSION_TABLES`.
+
+### Écarts par rapport au plan présenté (à connaître)
+1. **D43** (ci-dessus), non prévue dans le plan.
+2. **Limites ajoutées** : nom de projet limité à 200 caractères (création et renommage) ; description d'un élément limitée à 10 000 caractères (création et modification, M1 n'avait pas de limite). Aucune donnée existante n'est concernée (aucun écran ne créait d'élément avant M3a).
+3. **Abandon d'une saisie** : confirmation affichée dans l'écran, pas par une fenêtre du navigateur (elle peut ne pas bloquer dans l'application).
+4. **En-tête** : le titre « BA-Mentor — état technique » devient « BA-Mentor ». La carte « Tables (15 attendues) » devient « Tables (n) », le nombre réel.
+5. **Écran de démarrage** : les projets tant qu'aucun projet n'est actif, sinon les parties prenantes.
+6. **Contacts de la V1** : non convertis en parties prenantes (ils servent aux envois de documents).
+
+### Choix de conception
+1. Journal : création = une ligne `created` (détail `stakeholder`) ; modification = une ligne `updated` (détail : `title,description,organisation,role,influence,interest` selon ce qui change) ; sans changement réel, aucune écriture ni ligne ; statut = `status_changed` ; suppression = `deleted`, liens d'abord.
+2. Création : élément, compteur et détails dans une seule transaction ; le numéro est retrouvé par la valeur courante du compteur.
+3. Écrans : chaque registre a un composant d'entrée unique (`src/modules/<registre>/…Screen.tsx`) ; l'affichage est séparé du conteneur (`…View.tsx`, purement par propriétés) ; la logique (filtres, validation, messages) est dans `logic.ts`, testée sans interface.
+4. Contrôle d'intégrité : trois anomalies ajoutées (détails manquants, détails d'un autre type, niveau invalide).
+5. Aucun code Rust modifié.
+
+### Limites connues
+- **Les clics et saisies ne sont pas testés automatiquement** : seuls le rendu statique des écrans et la logique pure le sont. Le comportement interactif repose sur la recette sur clé.
+- Le rendu des écrans en test passe par esbuild (présent avec Vite) ; s'il est introuvable, ces tests sont signalés « ignorés » et non « réussis ».
+- Date de modification d'un élément : mise à jour à chaque modification (titre, description ou champs).
+- La migration 3 reconstruit `activity_log` ; la numérotation continue après le plus grand identifiant. Si des lignes de fin de journal avaient été supprimées auparavant, la numérotation pourrait légèrement reculer (aucun code ne supprime de ligne du journal).
+- Non vérifié ici : build Windows (votre CI), comportement sur votre base réelle.
 
 ## Non vérifié lors de l'écriture (à valider via GitHub Actions)
 - Compilation et tests de `backup.rs` et `main.rs` (dépendent de `rusqlite` et de Tauri, inaccessibles ici), dont la commande `import_pick_file` et la boîte de dialogue Windows. `files.rs` (std seule) a été compilé et testé ici : 15 tests. Pour V2.3a : la commande `export_save` et l'utilisation de `set_file_name` / `set_directory` / `blocking_save_file` du plugin de dialogue.

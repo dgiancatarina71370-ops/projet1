@@ -2,9 +2,9 @@
 // Chaque écriture passe ici ; l'entrée du journal d'activité est écrite dans la MÊME transaction que l'écriture qu'elle décrit.
 import type { SqlValue, Statement, WriteResult } from './driver.ts';
 import { rawTransaction } from './internal.ts';
-import { assertMutation, assertTechnicalWrite, SqlRefusedError } from './sql-guard.ts';
+import { assertExtensionWrite, assertMutation, assertTechnicalWrite, SqlRefusedError } from './sql-guard.ts';
 
-export type ActivityAction = 'created' | 'deleted' | 'status_changed' | 'imported';
+export type ActivityAction = 'created' | 'deleted' | 'status_changed' | 'imported' | 'updated';
 
 export interface ActivitySpec {
   objectType: string;
@@ -23,6 +23,11 @@ export interface WriteOp {
   sql: string;
   params?: SqlValue[];
   activity?: ActivitySpec;
+  /**
+   * Écriture d'une table d'extension d'un élément (décision D43) : pas de ligne de journal propre, mais le lot doit contenir
+   * au moins une écriture journalisée (celle de l'élément). Exclusif avec « activity ».
+   */
+  extension?: boolean;
 }
 
 export const MAX_DETAIL_LENGTH = 100;
@@ -60,9 +65,12 @@ export async function mutate(ops: WriteOp[]): Promise<WriteResult[]> {
   if (ops.length === 0) return [];
   const statements: Statement[] = [];
   const resultIndex: number[] = [];
+  const hasJournal = ops.some((o) => o.activity !== undefined);
   for (const op of ops) {
     assertMutation(op.sql);
-    if (!op.activity) assertTechnicalWrite(op.sql);
+    if (op.extension && op.activity) throw new SqlRefusedError('« extension » et « activity » sont exclusifs.');
+    if (op.extension) assertExtensionWrite(op.sql, hasJournal);
+    else if (!op.activity) assertTechnicalWrite(op.sql);
     resultIndex.push(statements.length);
     statements.push({ sql: op.sql, params: op.params ?? [] });
     if (op.activity) statements.push(activityStatement(op.activity));

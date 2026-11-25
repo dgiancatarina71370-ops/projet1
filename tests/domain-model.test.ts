@@ -31,7 +31,8 @@ test('domain : sept types, préfixes distincts, premier statut = statut de créa
   for (const k of KINDS) {
     assert.ok(isKind(k.kind));
     assert.equal(initialStatus(k.kind), k.statuses[0]);
-    assert.ok(isValidStatus(k.kind, 'draft'));
+    assert.ok(isValidStatus(k.kind, k.statuses[0]));
+    assert.ok(k.statuses.length >= 2);
     assert.ok(!isValidStatus(k.kind, 'inconnu'));
   }
   assert.ok(!isKind('autre'));
@@ -81,7 +82,7 @@ test('migration : une base du schéma 1 avec des données passe au schéma 2, ri
   raw.exec("INSERT INTO contacts (name, email) VALUES ('A', 'a@b.fr')");
   const before = snapshot(raw);
 
-  const report = await migrate(migrations, { backup: t.driver.backup });
+  const report = await migrate(migrations.slice(0, 2), { backup: t.driver.backup });
   assert.deepEqual(report.applied, [2]);
   assert.equal(report.backup !== null, true, 'une base existante est sauvegardée avant la migration');
   assert.equal(t.backups.filter((b) => b.kind === 'pre-migration').length, 1);
@@ -102,8 +103,8 @@ test('migration : une base du schéma 1 avec des données passe au schéma 2, ri
   t.close();
 });
 
-test('migration : le schéma 2 est celui que livre l\'application', () => {
-  assert.equal(SCHEMA_VERSION, 2);
+test('migration : la deuxième migration livrée est celle du modèle de domaine', () => {
+  assert.ok(SCHEMA_VERSION >= 2);
   assert.equal(migrations[1].name, 'domain_model');
 });
 
@@ -382,7 +383,8 @@ test('sauvegarde et restauration : éléments, liens et compteurs reviennent exa
 test('E4 : le jeu de test couvre les deux nouvelles tables', async () => {
   const t = await migratedDb();
   seedAllTables(t.raw);
-  assert.equal(snapshot(t.raw).items.count, 2);
+  assert.equal(snapshot(t.raw).items.count, 3);
   assert.equal(snapshot(t.raw).links.count, 1);
+  assert.equal(snapshot(t.raw).stakeholder_details.count, 1);
   t.close();
 });

@@ -14,12 +14,14 @@ export interface KindInfo {
   statuses: readonly string[];
 }
 
-// Provisoire (M1) : tous les types partagent les trois statuts des livrables.
-// Chaque lot métier (M3 à M5) précisera les statuts de son type : cette liste est la seule à modifier, aucune migration n'est nécessaire (décision D17).
+// Provisoire (M1) : les types sans lot propre partagent les trois statuts des livrables.
+// Chaque lot métier précise les statuts de son type : cette liste est la seule à modifier, aucune migration n'est nécessaire (décision D17).
 const COMMON_STATUSES: readonly string[] = ['draft', 'validated', 'archived'];
+// Partie prenante (lot M3a, décision D37) : active tant qu'elle compte pour le projet, archivée ensuite. Le premier statut est celui de création.
+const STAKEHOLDER_STATUSES: readonly string[] = ['active', 'archived'];
 
 export const KINDS: readonly KindInfo[] = [
-  { kind: 'stakeholder', label: 'Partie prenante', prefix: 'PP', statuses: COMMON_STATUSES },
+  { kind: 'stakeholder', label: 'Partie prenante', prefix: 'PP', statuses: STAKEHOLDER_STATUSES },
   { kind: 'need', label: 'Besoin', prefix: 'BES', statuses: COMMON_STATUSES },
   { kind: 'requirement', label: 'Exigence', prefix: 'EX', statuses: COMMON_STATUSES },
   { kind: 'decision', label: 'Décision', prefix: 'DEC', statuses: COMMON_STATUSES },

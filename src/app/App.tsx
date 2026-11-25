@@ -3,7 +3,8 @@ import type { ReactNode } from 'react';
 import { boot, continueWithEmptyDatabase } from './boot.ts';
 import type { BootResult } from './boot.ts';
 import { query } from '../data/db.ts';
-import { createProject, deleteProject, listProjects, recentActivity } from '../data/repositories/projects.ts';
+import { listProjects, recentActivity } from '../data/repositories/projects.ts';
+import { getLastProjectId, setLastProjectId } from '../data/repositories/ui-state.ts';
 import type { ActivityEntry, Project } from '../data/repositories/projects.ts';
 import { BackupPanel } from './BackupPanel.tsx';
 import { ImportPanel } from './ImportPanel.tsx';
@@ -13,6 +14,13 @@ import { EmptyDbPanel } from './EmptyDbPanel.tsx';
 import { installCloseHandler, setDatabaseReady, startMaintenance } from './maintenance.ts';
 import type { Notice } from './maintenance.ts';
 import { buildSignature, signatureLines } from '../shared/signature.ts';
+import { Card } from '../shared/ui.tsx';
+import { Shell } from './Shell.tsx';
+import { startScreen } from './navigation.ts';
+import type { ScreenId } from './navigation.ts';
+import { ProjectsScreen } from '../modules/projects/ProjectsScreen.tsx';
+import { chooseActiveProject, selectableProjects } from '../modules/projects/logic.ts';
+import { StakeholdersScreen } from '../modules/stakeholders/StakeholdersScreen.tsx';
 
 interface Snapshot {
   tables: Array<{ name: string; rows: number }>;
@@ -30,23 +38,28 @@ async function takeSnapshot(): Promise<Snapshot> {
   return { tables, projects: await listProjects(), activity: await recentActivity(12) };
 }
 
-function Card(props: { title: string; children: ReactNode }) {
-  return (
-    <section className="rounded-lg border border-hub-line bg-hub-panel p-4">
-      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-hub-muted">{props.title}</h2>
-      {props.children}
-    </section>
-  );
-}
-
 export function App() {
   const [result, setResult] = useState<BootResult | null>(null);
   const [snap, setSnap] = useState<Snapshot | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
   const [notices, setNotices] = useState<Notice[]>([]);
+  const [screen, setScreen] = useState<ScreenId>('projects');
+  const [activeId, setActiveId] = useState<number | null>(null);
 
   const refresh = useCallback(async () => setSnap(await takeSnapshot()), []);
+
+  const report = useCallback((text: string, level: Notice['level'] = 'error') => setNotices((old) => [...old.slice(-4), { level, text }]), []);
+
+  // Mémorise le projet actif (table technique, sans journal) ; un échec de mémorisation ne doit pas empêcher de travailler.
+  const rememberProject = useCallback(
+    async (id: number | null) => {
+      try {
+        await setLastProjectId(id);
+      } catch (e) {
+        report(`Le projet actif n'a pas pu être mémorisé : ${e instanceof Error ? e.message : String(e)}`);
+      }
+    },
+    [report],
+  );
 
   // Entrée dans l'application : seulement quand la base est prête (jamais pendant l'écran « base vide »).
   const enter = useCallback(
@@ -55,6 +68,10 @@ export function App() {
       if (r.status === 'ready') {
         setDatabaseReady(true);
         await refresh();
+        const projects = await listProjects();
+        const id = chooseActiveProject(projects, await getLastProjectId());
+        setActiveId(id);
+        setScreen(startScreen(id));
         startMaintenance((n) => setNotices((old) => [...old.slice(-4), n]));
       }
     },
@@ -75,157 +92,158 @@ export function App() {
   // Fermeture : sauvegarde si des données ont changé, puis sortie (voir maintenance.ts).
   useEffect(() => installCloseHandler(), []);
 
-  const act = async (fn: () => Promise<unknown>) => {
-    setBusy(true);
-    setError('');
-    try {
-      await fn();
+  const selectProject = useCallback(
+    async (id: number) => {
+      setActiveId(id);
+      await rememberProject(id);
+    },
+    [rememberProject],
+  );
+
+  // Après toute écriture des écrans : relit l'état, garde le projet actif s'il existe encore, sinon retombe sur un autre (ou aucun).
+  const afterChange = useCallback(
+    async (activate?: number) => {
       await refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
-  };
+      const projects = await listProjects();
+      const next = chooseActiveProject(projects, activate ?? activeId);
+      if (next !== activeId) {
+        setActiveId(next);
+        await rememberProject(next);
+      } else if (activate !== undefined) {
+        await rememberProject(activate);
+      }
+    },
+    [activeId, refresh, rememberProject],
+  );
 
   const version = result && result.status !== 'browser' && result.info ? result.info.version : '—';
   const sig = buildSignature(version);
   const buildDate = typeof __BUILD_DATE__ === 'string' ? __BUILD_DATE__.slice(0, 16).replace('T', ' ') + ' UTC' : '';
+  const projectOptions = snap ? selectableProjects(snap.projects).map((p) => ({ id: p.id, name: p.name })) : [];
+  const active = projectOptions.find((p) => p.id === activeId) ?? null;
+  const ready = result?.status === 'ready';
 
   return (
-    <div className="flex min-h-full flex-col">
-      <header className="border-b border-hub-line px-6 py-4">
-        <h1 className="text-lg font-semibold">BA-Mentor — état technique</h1>
-        <p className="text-sm text-hub-muted">Lot M1 : modèle de domaine commun (socle sans écran métier : le schéma de la base passe à la version 2). Déjà en place : export Word signé, export Markdown et HTML, écran À propos, import V1, sauvegarde, restauration, protection contre le démarrage sur une base vide et contre l’ouverture multiple. Les registres arrivent aux lots suivants.</p>
-      </header>
+    <Shell
+      intro="Lot M3a : navigation, projets et premier registre métier (parties prenantes). Le schéma de la base passe à la version 3. Sauvegarde, import V1, export et À propos sont dans l’écran Technique. Besoins et exigences arrivent au lot suivant."
+      navigable={ready}
+      screen={screen}
+      onNavigate={setScreen}
+      projects={projectOptions}
+      activeId={activeId}
+      onSelectProject={(id) => void selectProject(id)}
+      footer={signatureLines(sig).join(' · ') + (buildDate ? ` · Compilé le ${buildDate}` : '')}
+    >
+      {!result && <p className="text-hub-muted">Démarrage…</p>}
 
-      <main className="mx-auto w-full max-w-5xl flex-1 space-y-4 p-6">
-        {!result && <p className="text-hub-muted">Démarrage…</p>}
+      {result?.status === 'browser' && (
+        <Card title="Application requise">
+          <p>Cette page doit s’exécuter dans l’application BA-Mentor (Tauri). Lancez l’exécutable plutôt que d’ouvrir la page dans un navigateur.</p>
+        </Card>
+      )}
 
-        {result?.status === 'browser' && (
-          <Card title="Application requise">
-            <p>Cette page doit s’exécuter dans l’application BA-Mentor (Tauri). Lancez l’exécutable plutôt que d’ouvrir la page dans un navigateur.</p>
+      {result?.status === 'empty-db' && (
+        <EmptyDbPanel
+          dataDir={result.info.dataDir}
+          backupCount={result.backupCount}
+          newestStamp={result.newestStamp}
+          onContinue={async () => enter(await continueWithEmptyDatabase(result.info))}
+        />
+      )}
+
+      {result?.status === 'error' && (
+        <>
+          <Card title="Démarrage impossible">
+            <p role="alert" className="text-hub-bad">{result.message}</p>
+            {result.info && <p className="mt-2 text-sm text-hub-muted">Dossier de données : {result.info.dataDir}</p>}
           </Card>
-        )}
-
-        {result?.status === 'empty-db' && (
-          <EmptyDbPanel
-            dataDir={result.info.dataDir}
-            backupCount={result.backupCount}
-            newestStamp={result.newestStamp}
-            onContinue={async () => enter(await continueWithEmptyDatabase(result.info))}
-          />
-        )}
-
-        {result?.status === 'error' && (
-          <>
-            <Card title="Démarrage impossible">
-              <p role="alert" className="text-hub-bad">{result.message}</p>
-              {result.info && <p className="mt-2 text-sm text-hub-muted">Dossier de données : {result.info.dataDir}</p>}
+          {result.info && !result.info.lockedOut && (
+            <Card title="Restaurer une sauvegarde">
+              <BackupPanel mode="recovery" />
             </Card>
-            {result.info && !result.info.lockedOut && (
-              <Card title="Restaurer une sauvegarde">
-                <BackupPanel mode="recovery" />
-              </Card>
-            )}
-          </>
-        )}
+          )}
+        </>
+      )}
 
-        {result?.status === 'ready' && result.info.lockWarning && (
-          <p role="status" className="rounded border border-yellow-500 px-3 py-2 text-sm text-yellow-300">{result.info.lockWarning}</p>
-        )}
-        {notices.map((n, i) => (
-          <p key={i} role={n.level === 'error' ? 'alert' : 'status'} className={`rounded border px-3 py-2 text-sm ${n.level === 'error' ? 'border-hub-bad text-hub-bad' : n.level === 'warning' ? 'border-yellow-500 text-yellow-300' : 'border-hub-line text-hub-muted'}`}>{n.text}</p>
-        ))}
+      {result?.status === 'ready' && result.info.lockWarning && (
+        <p role="status" className="rounded border border-yellow-500 px-3 py-2 text-sm text-yellow-300">{result.info.lockWarning}</p>
+      )}
+      {notices.map((n, i) => (
+        <p key={i} role={n.level === 'error' ? 'alert' : 'status'} className={`rounded border px-3 py-2 text-sm ${n.level === 'error' ? 'border-hub-bad text-hub-bad' : n.level === 'warning' ? 'border-yellow-500 text-yellow-300' : 'border-hub-line text-hub-muted'}`}>{n.text}</p>
+      ))}
 
-        {result?.status === 'ready' && (
-          <>
-            <Card title="Base de données">
-              <dl className="grid grid-cols-[10rem_1fr] gap-y-1 text-sm">
-                <dt className="text-hub-muted">Version de l’application</dt><dd>{result.info.version}</dd>
-                <dt className="text-hub-muted">Dossier de données</dt><dd className="break-all">{result.info.dataDir}</dd>
-                <dt className="text-hub-muted">Fichier de base</dt><dd className="break-all">{result.info.dbFile}</dd>
-                <dt className="text-hub-muted">Schéma</dt>
-                <dd>
-                  version {result.report.to}
-                  {result.report.applied.length > 0 ? ` (migrations appliquées : ${result.report.applied.join(', ')} ; ancienne version ${result.report.from})` : ' (à jour)'}
-                </dd>
-                <dt className="text-hub-muted">Sauvegarde avant migration</dt>
-                <dd className="break-all">{result.report.backup ? result.report.backup.file : 'aucune (non nécessaire)'}</dd>
-              </dl>
-            </Card>
+      {result?.status === 'ready' && screen === 'projects' && snap && (
+        <ProjectsScreen projects={snap.projects} activeId={activeId} onChanged={afterChange} onActivate={selectProject} />
+      )}
 
-            <Card title="Centre de sauvegarde">
-              <BackupPanel mode="normal" refreshKey={notices.length} />
-            </Card>
+      {result?.status === 'ready' && screen === 'stakeholders' && (
+        <StakeholdersScreen
+          projectId={active ? active.id : null}
+          projectName={active ? active.name : ''}
+          onGoToProjects={() => setScreen('projects')}
+          onChanged={() => void refresh()}
+        />
+      )}
 
-            <Card title="Importer les données de la V1">
-              <ImportPanel
-                onImported={() => {
-                  refresh().catch(() => undefined);
-                  setNotices((old) => [...old.slice(-4), { level: 'info', text: 'Import V1 terminé : les données sont dans la base.' }]);
-                }}
-              />
-            </Card>
+      {result?.status === 'ready' && screen === 'technical' && (
+        <>
+          <Card title="Base de données">
+            <dl className="grid grid-cols-[10rem_1fr] gap-y-1 text-sm">
+              <dt className="text-hub-muted">Version de l’application</dt><dd>{result.info.version}</dd>
+              <dt className="text-hub-muted">Dossier de données</dt><dd className="break-all">{result.info.dataDir}</dd>
+              <dt className="text-hub-muted">Fichier de base</dt><dd className="break-all">{result.info.dbFile}</dd>
+              <dt className="text-hub-muted">Schéma</dt>
+              <dd>
+                version {result.report.to}
+                {result.report.applied.length > 0 ? ` (migrations appliquées : ${result.report.applied.join(', ')} ; ancienne version ${result.report.from})` : ' (à jour)'}
+              </dd>
+              <dt className="text-hub-muted">Sauvegarde avant migration</dt>
+              <dd className="break-all">{result.report.backup ? result.report.backup.file : 'aucune (non nécessaire)'}</dd>
+            </dl>
+          </Card>
 
-            <Card title="Exporter un livrable (Markdown, HTML, Word)">
-              <ExportPanel version={version} refreshKey={snap ? snap.tables.map((t) => t.rows).join(',') : ''} />
-            </Card>
+          <Card title="Centre de sauvegarde">
+            <BackupPanel mode="normal" refreshKey={notices.length} />
+          </Card>
 
-            <Card title="À propos">
-              <AboutPanel version={version} buildDate={buildDate} dataDir={result.info.dataDir} schema={result.report.to} />
-            </Card>
+          <Card title="Importer les données de la V1">
+            <ImportPanel
+              onImported={() => {
+                void afterChange();
+                setNotices((old) => [...old.slice(-4), { level: 'info', text: 'Import V1 terminé : les données sont dans la base.' }]);
+              }}
+            />
+          </Card>
 
-            <Card title="Projets de démonstration (écriture par mutate, avec journal)">
-              <button
-                type="button"
-                disabled={busy}
-                className="rounded bg-hub-accent px-3 py-1.5 text-sm font-medium text-hub-bg disabled:opacity-50"
-                onClick={() => act(() => createProject(`Projet de démonstration ${(snap?.projects.length ?? 0) + 1}`))}
-              >
-                Créer un projet
-              </button>
-              {error && <p role="alert" className="mt-2 text-sm text-hub-bad">{error}</p>}
-              <ul className="mt-3 space-y-1 text-sm">
-                {snap?.projects.length === 0 && <li className="text-hub-muted">Aucun projet.</li>}
-                {snap?.projects.map((p) => (
-                  <li key={p.id} className="flex items-center justify-between rounded border border-hub-line px-3 py-1.5">
-                    <span>#{p.id} · {p.name}</span>
-                    <button type="button" disabled={busy} className="text-hub-bad disabled:opacity-50" onClick={() => act(() => deleteProject(p.id))}>
-                      Supprimer
-                    </button>
+          <Card title="Exporter un livrable (Markdown, HTML, Word)">
+            <ExportPanel version={version} refreshKey={snap ? snap.tables.map((t) => t.rows).join(',') : ''} />
+          </Card>
+
+          <Card title="À propos">
+            <AboutPanel version={version} buildDate={buildDate} dataDir={result.info.dataDir} schema={result.report.to} />
+          </Card>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card title="Journal d’activité (12 derniers)">
+              <ul className="space-y-1 text-sm">
+                {snap?.activity.length === 0 && <li className="text-hub-muted">Journal vide.</li>}
+                {snap?.activity.map((a) => (
+                  <li key={a.id} className="text-hub-muted">
+                    <span className="text-hub-fg">{a.action}</span> · {a.object_type} #{a.object_id} · {a.at.slice(0, 19).replace('T', ' ')}
                   </li>
                 ))}
               </ul>
             </Card>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card title="Journal d’activité (12 derniers)">
-                <ul className="space-y-1 text-sm">
-                  {snap?.activity.length === 0 && <li className="text-hub-muted">Journal vide.</li>}
-                  {snap?.activity.map((a) => (
-                    <li key={a.id} className="text-hub-muted">
-                      <span className="text-hub-fg">{a.action}</span> · {a.object_type} #{a.object_id} · {a.at.slice(0, 19).replace('T', ' ')}
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-              <Card title="Tables (15 attendues)">
-                <ul className="grid grid-cols-2 gap-x-4 text-sm">
-                  {snap?.tables.map((t) => (
-                    <li key={t.name} className="flex justify-between"><span>{t.name}</span><span className="text-hub-muted">{t.rows}</span></li>
-                  ))}
-                </ul>
-              </Card>
-            </div>
-          </>
-        )}
-      </main>
-
-      <footer className="border-t border-hub-line px-6 py-3 text-xs text-hub-muted">
-        {signatureLines(sig).join(' · ')}
-        {buildDate && <span> · Compilé le {buildDate}</span>}
-      </footer>
-    </div>
+            <Card title={`Tables (${snap?.tables.length ?? 0})`}>
+              <ul className="grid grid-cols-2 gap-x-4 text-sm">
+                {snap?.tables.map((t) => (
+                  <li key={t.name} className="flex justify-between"><span>{t.name}</span><span className="text-hub-muted">{t.rows}</span></li>
+                ))}
+              </ul>
+            </Card>
+          </div>
+        </>
+      )}
+    </Shell>
   );
 }

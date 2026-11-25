@@ -24,7 +24,21 @@ export interface Item extends Row {
 }
 
 export const MAX_TITLE_LENGTH = 200;
+export const MAX_DESCRIPTION_LENGTH = 10000;
 export const MAX_EXCERPT_LENGTH = 2000;
+
+/** Titre nettoyé ; refuse un titre vide ou trop long. Partagé par la création et par les modifications. */
+export function normalizeTitle(title: string): string {
+  const clean = title.trim();
+  if (clean === '') throw new Error('Le titre est obligatoire.');
+  if (clean.length > MAX_TITLE_LENGTH) throw new Error(`Le titre est limité à ${MAX_TITLE_LENGTH} caractères.`);
+  return clean;
+}
+
+export function normalizeDescription(description: string): string {
+  if (description.length > MAX_DESCRIPTION_LENGTH) throw new Error(`La description est limitée à ${MAX_DESCRIPTION_LENGTH} caractères.`);
+  return description;
+}
 
 const COLUMNS =
   'id, project_id, kind, number, code, title, description, status, source_document_id, source_excerpt, created_at, updated_at';
@@ -42,6 +56,11 @@ export interface NewItem {
   sourceDocumentId?: number | null;
   /** Passage du document qui a fait naître l'élément. */
   sourceExcerpt?: string | null;
+  /**
+   * Écritures des champs propres au type (table d'extension, décision D16), exécutées dans la MÊME transaction, juste après l'élément.
+   * Elles doivent être marquées « extension: true » (décision D43) et retrouver l'élément par sa clé (projet, type, numéro).
+   */
+  extensionOps?: WriteOp[];
 }
 
 export async function getItem(id: number): Promise<Item | null> {
@@ -65,9 +84,8 @@ export async function listItems(projectId: number, kind?: ItemKind): Promise<Ite
  */
 export async function createItem(input: NewItem): Promise<{ id: number; code: string }> {
   if (!isKind(input.kind)) throw new Error(`Type d'élément inconnu : ${String(input.kind)}.`);
-  const title = input.title.trim();
-  if (title === '') throw new Error('Le titre est obligatoire.');
-  if (title.length > MAX_TITLE_LENGTH) throw new Error(`Le titre est limité à ${MAX_TITLE_LENGTH} caractères.`);
+  const title = normalizeTitle(input.title);
+  const description = normalizeDescription(input.description ?? '');
   const status = input.status ?? initialStatus(input.kind);
   if (!isValidStatus(input.kind, status)) throw new Error(`Statut « ${status} » inconnu pour le type « ${kindInfo(input.kind).label} ».`);
   const excerpt = input.sourceExcerpt ?? null;
@@ -94,10 +112,11 @@ export async function createItem(input: NewItem): Promise<{ id: number; code: st
       sql: `INSERT INTO items (project_id, kind, number, code, title, description, status, source_document_id, source_excerpt, created_at, updated_at)
 SELECT ?, ?, value, ? || printf('%03d', value), ?, ?, ?, ?, ?, ?, ? FROM sequences WHERE name = ?`,
       params: [
-        input.projectId, input.kind, `${kindInfo(input.kind).prefix}-`, title, input.description ?? '', status, sourceId, excerpt, t, t, seq,
+        input.projectId, input.kind, `${kindInfo(input.kind).prefix}-`, title, description, status, sourceId, excerpt, t, t, seq,
       ],
       activity: { objectType: 'item', action: 'created', objectId: 'inserted', projectId: input.projectId, detail: input.kind },
     },
+    ...(input.extensionOps ?? []),
   ]);
   const item = await getItem(created.lastInsertRowid);
   if (!item) throw new Error('L\'élément créé est introuvable.');
@@ -105,8 +124,8 @@ SELECT ?, ?, value, ? || printf('%03d', value), ?, ?, ?, ?, ?, ?, ? FROM sequenc
 }
 
 /**
- * Change le statut d'un élément. Seul le statut se modifie dans ce lot : le journal d'activité n'a pas encore d'action « modifié »,
- * l'édition du titre et de la description arrive avec le premier lot qui en a besoin (M3) et tranchera la journalisation.
+ * Change le statut d'un élément. Le titre, la description et les champs propres au type se modifient par le dépôt du type
+ * (action « updated » du journal, décision D35).
  */
 export async function changeItemStatus(id: number, status: string): Promise<void> {
   const item = await getItem(id);

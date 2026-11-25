@@ -7,6 +7,7 @@ import { isKind, isValidStatus } from '../../domain/kinds.ts';
 import type { ItemKind } from '../../domain/kinds.ts';
 import { isLinkAllowed, isLinkType } from '../../domain/links.ts';
 import type { LinkType } from '../../domain/links.ts';
+import { isLevel } from '../../domain/stakeholders.ts';
 
 export type IntegrityProblem =
   | 'unknown-kind'
@@ -16,7 +17,10 @@ export type IntegrityProblem =
   | 'counter-behind'
   | 'unknown-link-type'
   | 'link-not-allowed'
-  | 'link-other-project';
+  | 'link-other-project'
+  | 'stakeholder-details-missing'
+  | 'stakeholder-details-wrong-kind'
+  | 'stakeholder-invalid-level';
 
 export interface IntegrityIssue {
   problem: IntegrityProblem;
@@ -81,6 +85,25 @@ export async function checkModelIntegrity(): Promise<IntegrityIssue[]> {
     }
     if (!isKind(l.from_kind) || !isKind(l.to_kind) || !isLinkAllowed(l.link_type as LinkType, l.from_kind, l.to_kind)) {
       issues.push({ problem: 'link-not-allowed', linkId: l.id, message: `Le lien ${l.id} (« ${l.link_type} ») relie des types d'éléments non autorisés (${l.from_kind} vers ${l.to_kind}).` });
+    }
+  }
+
+  // Parties prenantes (lot M3a) : une ligne de détails par partie prenante, et seulement pour elles ; niveaux valides.
+  const missing = await query<{ id: number; code: string }>(
+    `SELECT i.id, i.code FROM items i LEFT JOIN stakeholder_details d ON d.item_id = i.id WHERE i.kind = 'stakeholder' AND d.item_id IS NULL ORDER BY i.id`,
+  );
+  for (const m of missing) {
+    issues.push({ problem: 'stakeholder-details-missing', itemId: m.id, message: `La partie prenante ${m.code} n'a pas de ligne de détails.` });
+  }
+  const details = await query<{ id: number; code: string; kind: string; influence: string; interest: string }>(
+    `SELECT i.id, i.code, i.kind, d.influence, d.interest FROM stakeholder_details d JOIN items i ON i.id = d.item_id ORDER BY i.id`,
+  );
+  for (const d of details) {
+    if (d.kind !== 'stakeholder') {
+      issues.push({ problem: 'stakeholder-details-wrong-kind', itemId: d.id, message: `L'élément ${d.code} porte des détails de partie prenante alors que c'est un « ${d.kind} ».` });
+    }
+    if (!isLevel(d.influence) || !isLevel(d.interest)) {
+      issues.push({ problem: 'stakeholder-invalid-level', itemId: d.id, message: `La partie prenante ${d.code} a un niveau d'influence ou d'intérêt invalide.` });
     }
   }
 
