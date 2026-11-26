@@ -49,15 +49,15 @@ test('domaine : valeurs par défaut et validation des champs d\'une exigence', (
   assert.deepEqual(changedRequirementFields(DEFAULT_REQUIREMENT_FIELDS, DEFAULT_REQUIREMENT_FIELDS), []);
 });
 
-test('liens : libellé inverse pour chacun des neuf types (D58), options proposées par type d\'élément (D48, étendues par D57 en M4 et D66 en M5)', () => {
-  assert.equal(LINK_RULES.length, 9);
+test('liens : libellé inverse pour chacun des onze types (D58, D82), options proposées par type d\'élément (D48, étendues par D57 en M4 et D66 en M5)', () => {
+  assert.equal(LINK_RULES.length, 11);
   for (const r of LINK_RULES) assert.ok(r.inverseLabel && r.inverseLabel !== r.label, r.type);
-  assert.deepEqual([...EXPOSED_LINK_TYPES], ['expresses', 'derives', 'refines', 'implements', 'verifies', 'concerns', 'threatens', 'mitigates', 'supersedes']);
-  assert.deepEqual(linkOptionsFor('stakeholder').map((o) => o.key), ['expresses:out']);
-  assert.deepEqual(linkOptionsFor('need').map((o) => o.key), ['expresses:in', 'derives:out', 'concerns:in', 'threatens:in']);
-  assert.deepEqual(linkOptionsFor('requirement').map((o) => o.key), ['derives:in', 'refines:out', 'refines:in', 'implements:in', 'verifies:in', 'concerns:in', 'threatens:in', 'mitigates:out']);
+  assert.deepEqual([...EXPOSED_LINK_TYPES], ['expresses', 'derives', 'refines', 'implements', 'verifies', 'concerns', 'threatens', 'mitigates', 'supersedes', 'participates', 'originates']);
+  assert.deepEqual(linkOptionsFor('stakeholder').map((o) => o.key), ['expresses:out', 'participates:out']);
+  assert.deepEqual(linkOptionsFor('need').map((o) => o.key), ['expresses:in', 'derives:out', 'concerns:in', 'threatens:in', 'originates:out']);
+  assert.deepEqual(linkOptionsFor('requirement').map((o) => o.key), ['derives:in', 'refines:out', 'refines:in', 'implements:in', 'verifies:in', 'concerns:in', 'threatens:in', 'mitigates:out', 'originates:out']);
   assert.deepEqual(linkOptionsFor('test').map((o) => o.key), ['verifies:out'], 'depuis M5 chaque type a un écran et des liens exposés');
-  assert.deepEqual(linkOptionsFor('need').map((o) => o.label), ['exprimé par', 'dérive en', 'concerné par', 'menacé par']);
+  assert.deepEqual(linkOptionsFor('need').map((o) => o.label), ['exprimé par', 'dérive en', 'concerné par', 'menacé par', 'provient de']);
   assert.equal(linkLabel('derives', 'out'), 'dérive en');
   assert.equal(linkLabel('derives', 'in'), 'dérive de');
   assert.match(linkLabel('inconnu', 'out'), /inconnu/);

@@ -11,8 +11,8 @@ import { NAV_SECTIONS, SCREENS } from '../src/app/navigation.ts';
 
 test('menu : sections nommées (Analyse, Pilotage, Réalisation, Contrôle), Projets et Technique seuls, ordre figé (D67, D70)', () => {
   assert.deepEqual(NAV_SECTIONS.map((s) => s.title), [null, 'Analyse', 'Pilotage', 'Réalisation', 'Contrôle', null]);
-  assert.deepEqual(NAV_SECTIONS.map((s) => s.screens.map((x) => x.label)), [['Projets'], ['Parties prenantes', 'Besoins', 'Exigences'], ['Décisions', 'Risques'], ['User stories', 'Tests'], ['Traçabilité'], ['Technique']]);
-  assert.deepEqual(SCREENS.map((s) => s.id), ['projects', 'stakeholders', 'needs', 'requirements', 'decisions', 'risks', 'stories', 'tests', 'traceability', 'technical']);
+  assert.deepEqual(NAV_SECTIONS.map((s) => s.screens.map((x) => x.label)), [['Projets'], ['Ateliers', 'Parties prenantes', 'Besoins', 'Exigences'], ['Décisions', 'Risques'], ['User stories', 'Tests'], ['Traçabilité'], ['Technique']]);
+  assert.deepEqual(SCREENS.map((s) => s.id), ['projects', 'workshops', 'stakeholders', 'needs', 'requirements', 'decisions', 'risks', 'stories', 'tests', 'traceability', 'technical']);
   assert.equal(new Set(SCREENS.map((s) => s.id)).size, SCREENS.length);
 });
 
@@ -80,7 +80,7 @@ const TS: TsRow = { id: 2, code: 'TEST-001', title: 'Connexion <i>ok</i>', descr
 
 ui('rendu : le menu est regroupé en sections nommées, avec une seule entrée courante', (r) => {
   const html = r.shell({ navigable: true, screen: 'stories', projects: [{ id: 1, name: 'A' }], activeId: 1 });
-  for (const label of ['Projets', 'Parties prenantes', 'Besoins', 'Exigences', 'Décisions', 'Risques', 'User stories', 'Tests', 'Traçabilité', 'Technique']) assert.ok(html.includes(`>${label}<`), label);
+  for (const label of ['Projets', 'Ateliers', 'Parties prenantes', 'Besoins', 'Exigences', 'Décisions', 'Risques', 'User stories', 'Tests', 'Traçabilité', 'Technique']) assert.ok(html.includes(`>${label}<`), label);
   for (const title of ['Analyse', 'Pilotage', 'Réalisation', 'Contrôle']) assert.ok(html.includes(`>${title}<`), title);
   assert.ok(html.indexOf('>Analyse<') < html.indexOf('>Parties prenantes<') && html.indexOf('>Exigences<') < html.indexOf('>Pilotage<') && html.indexOf('>Risques<') < html.indexOf('>Réalisation<') && html.indexOf('>Tests<') < html.indexOf('>Contrôle<') && html.indexOf('>Traçabilité<') < html.indexOf('>Technique<'), 'ordre des sections');
   assert.equal((html.match(/aria-current="page"/g) ?? []).length, 1);

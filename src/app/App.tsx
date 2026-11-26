@@ -24,6 +24,7 @@ import { StakeholdersScreen } from '../modules/stakeholders/StakeholdersScreen.t
 import { NeedsScreen } from '../modules/analysis/NeedsScreen.tsx';
 import { DecisionsScreen } from '../modules/decisions/DecisionsScreen.tsx';
 import { RisksScreen } from '../modules/risks/RisksScreen.tsx';
+import { WorkshopsScreen } from '../modules/workshops/WorkshopsScreen.tsx';
 import { StoriesScreen } from '../modules/stories/StoriesScreen.tsx';
 import { TestsScreen } from '../modules/testcases/TestsScreen.tsx';
 import { TraceabilityScreen } from '../modules/traceability/TraceabilityScreen.tsx';
@@ -149,7 +150,7 @@ export function App() {
 
   return (
     <Shell
-      intro="Lot M6 : traçabilité calculée (matrice, couverture, éléments orphelins), en lecture seule. Le schéma de la base reste à la version 6. Sauvegarde, import V1, export et À propos sont dans l’écran Technique."
+      intro="Lot M7 : ateliers (date, objectif, notes, points ouverts) reliés aux parties prenantes et aux éléments qui en proviennent. Le schéma de la base passe à la version 7. Sauvegarde, import V1, export et À propos sont dans l’écran Technique."
       navigable={ready}
       screen={screen}
       onNavigate={navigate}
@@ -198,6 +199,17 @@ export function App() {
 
       {result?.status === 'ready' && screen === 'projects' && snap && (
         <ProjectsScreen projects={snap.projects} activeId={activeId} onChanged={afterChange} onActivate={selectProject} />
+      )}
+
+      {result?.status === 'ready' && screen === 'workshops' && (
+        <WorkshopsScreen
+          projectId={active ? active.id : null}
+          projectName={active ? active.name : ''}
+          onGoToProjects={() => navigate('projects')}
+          onChanged={() => void refresh()}
+          renderLinks={renderLinks}
+          {...openProps('workshop')}
+        />
       )}
 
       {result?.status === 'ready' && screen === 'stakeholders' && (

@@ -12,12 +12,12 @@ import { MAX_TITLE_LENGTH } from '../src/data/repositories/items.ts';
 
 // ------------------------------------------------------------------ navigation et projets (logique pure)
 
-test('navigation : dix écrans regroupés en sections depuis M6, projets d\'abord tant qu\'aucun projet n\'est actif', () => {
-  assert.deepEqual(SCREENS.map((s) => s.id), ['projects', 'stakeholders', 'needs', 'requirements', 'decisions', 'risks', 'stories', 'tests', 'traceability', 'technical']);
-  assert.deepEqual(SCREENS.map((s) => s.label), ['Projets', 'Parties prenantes', 'Besoins', 'Exigences', 'Décisions', 'Risques', 'User stories', 'Tests', 'Traçabilité', 'Technique']);
+test('navigation : onze écrans regroupés en sections depuis M7, projets d\'abord tant qu\'aucun projet n\'est actif', () => {
+  assert.deepEqual(SCREENS.map((s) => s.id), ['projects', 'workshops', 'stakeholders', 'needs', 'requirements', 'decisions', 'risks', 'stories', 'tests', 'traceability', 'technical']);
+  assert.deepEqual(SCREENS.map((s) => s.label), ['Projets', 'Ateliers', 'Parties prenantes', 'Besoins', 'Exigences', 'Décisions', 'Risques', 'User stories', 'Tests', 'Traçabilité', 'Technique']);
   assert.equal(startScreen(null), 'projects');
   assert.equal(startScreen(3), 'stakeholders');
-  assert.ok(isScreenId('technical') && isScreenId('needs') && isScreenId('stories') && isScreenId('tests') && isScreenId('traceability') && !isScreenId('matrix'), 'les dix écrans existent ; pas d\'écran fantôme');
+  assert.ok(isScreenId('technical') && isScreenId('needs') && isScreenId('stories') && isScreenId('tests') && isScreenId('traceability') && isScreenId('workshops') && !isScreenId('matrix'), 'les onze écrans existent ; pas d\'écran fantôme');
 });
 
 test('projet actif : le dernier utilisé s\'il existe encore, sinon le premier projet, sinon aucun ; jamais un dossier', () => {
@@ -109,7 +109,7 @@ ui('écran : le cadre affiche le projet actif et le menu, et rien de tout cela a
   const ready = r.shell({ navigable: true, screen: 'stakeholders', projects: [{ id: 1, name: 'Alpha' }, { id: 2, name: 'Beta' }], activeId: 2 });
   assert.match(ready, /Projet actif/);
   assert.match(ready, /<option value="2" selected="">Beta<\/option>|<option value="2"[^>]*selected/);
-  for (const label of ['Projets', 'Parties prenantes', 'Besoins', 'Exigences', 'Décisions', 'Risques', 'User stories', 'Tests', 'Traçabilité', 'Technique']) assert.ok(ready.includes(`>${label}<`), label);
+  for (const label of ['Projets', 'Ateliers', 'Parties prenantes', 'Besoins', 'Exigences', 'Décisions', 'Risques', 'User stories', 'Tests', 'Traçabilité', 'Technique']) assert.ok(ready.includes(`>${label}<`), label);
   assert.equal((ready.match(/aria-current="page"/g) ?? []).length, 1, 'une seule entrée marquée comme courante');
   assert.match(ready, /aria-current="page"[^>]*>Parties prenantes</);
   for (const title of ['Analyse', 'Pilotage', 'Réalisation']) assert.ok(ready.includes(`>${title}<`), `intitulé de section ${title}`);

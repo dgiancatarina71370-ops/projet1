@@ -30,6 +30,9 @@ export type IntegrityProblem =
   | 'decision-details-missing'
   | 'decision-details-wrong-kind'
   | 'decision-invalid-date'
+  | 'workshop-details-missing'
+  | 'workshop-details-wrong-kind'
+  | 'workshop-invalid-date'
   | 'risk-details-missing'
   | 'risk-details-wrong-kind'
   | 'risk-invalid-level'
@@ -161,6 +164,25 @@ export async function checkModelIntegrity(): Promise<IntegrityIssue[]> {
     }
     if (d.decided_on !== '' && !isCalendarDate(d.decided_on)) {
       issues.push({ problem: 'decision-invalid-date', itemId: d.id, message: `La décision ${d.code} a une date invalide (« ${d.decided_on} »).` });
+    }
+  }
+
+  // Ateliers (lot M7) : une ligne de détails par atelier, et seulement pour eux ; date valide ou vide.
+  const wsMissing = await query<{ id: number; code: string }>(
+    `SELECT i.id, i.code FROM items i LEFT JOIN workshop_details d ON d.item_id = i.id WHERE i.kind = 'workshop' AND d.item_id IS NULL ORDER BY i.id`,
+  );
+  for (const m of wsMissing) {
+    issues.push({ problem: 'workshop-details-missing', itemId: m.id, message: `L'atelier ${m.code} n'a pas de ligne de détails.` });
+  }
+  const wsDetails = await query<{ id: number; code: string; kind: string; held_on: string }>(
+    `SELECT i.id, i.code, i.kind, d.held_on FROM workshop_details d JOIN items i ON i.id = d.item_id ORDER BY i.id`,
+  );
+  for (const d of wsDetails) {
+    if (d.kind !== 'workshop') {
+      issues.push({ problem: 'workshop-details-wrong-kind', itemId: d.id, message: `L'élément ${d.code} porte des détails d'atelier alors que c'est un « ${d.kind} ».` });
+    }
+    if (d.held_on !== '' && !isCalendarDate(d.held_on)) {
+      issues.push({ problem: 'workshop-invalid-date', itemId: d.id, message: `L'atelier ${d.code} a une date invalide (« ${d.held_on} »).` });
     }
   }
 

@@ -349,7 +349,7 @@ Les intitulés ci-dessous décrivent ce qui a été **implémenté** pour chaque
 
 ## Lot M6 : traçabilité calculée (schéma 6 inchangé, version 0.8.0)
 
-**M6 en attente de recette.** Plan présenté le 26/11/2026 ; D70 à D78 validées le même jour (D74 avec le tri MoSCoW conseillé, appliqué par défaut ; D76 option B), « Go M6 » donné. Recette : `TESTS-M6.md`. Réserves maintenues : test 12 de V2.3b et C13 (optionnel).
+**M6 VALIDÉE par David le 26/11/2026.** CI verte ; recette `TESTS-M6.md` : tests 1 à 23 OK sur clé USB, dont l'ouverture de fiche sur les sept types, la lecture seule et le retour arrière vers la 0.7.0. Plan présenté le 26/11/2026 ; D70 à D78 validées le même jour (D74 avec le tri MoSCoW conseillé, appliqué par défaut ; D76 option B), « Go M6 » donné. Réserves maintenues : test 12 de V2.3b et C13 (optionnel).
 
 ### Décisions validées par David (26/11/2026)
 - **D70** : un écran « Traçabilité » en lecture seule, dans une nouvelle section « Contrôle » du menu (dix écrans). Un bandeau de couverture toujours visible, puis deux onglets : Matrice et Orphelins.
@@ -376,6 +376,35 @@ Les intitulés ci-dessous décrivent ce qui a été **implémenté** pour chaque
 - **Les clics ne sont pas testés automatiquement** : ouverture de fiche, changement d'onglet et filtre ne se vérifient qu'à la recette. Le branchement de l'ouverture dans les sept écrans est contrôlé par un test qui lit le texte des sources (il vérifie la présence du crochet et du passage de la demande, pas son exécution).
 - Performance sur une très grosse base : non mesurée (le projet est chargé en mémoire).
 - La matrice est parlante seulement avec des données : le projet d'exemple (M9) y remédiera.
+- Non vérifié ici : build Windows (votre CI), comportement sur votre base réelle.
+
+## Lot M7 : ateliers (schéma 7, version 0.9.0)
+
+**M7 en attente de recette.** Plan présenté le 26/11/2026 ; D79 à D87 validées le même jour (D86 option A), « Go M7 » donné. Recette : `TESTS-M7.md`. Réserves maintenues : test 12 de V2.3b et C13 (optionnel).
+
+### Décisions validées par David (26/11/2026)
+- **D79** : un seul lot M7 (schéma 7, version 0.9.0, une migration : `workshop_details`).
+- **D80** : un atelier (code **ATL-001**) a une table d'extension : date (jour seul AAAA-MM-JJ, facultative), lieu ou format (200 caractères), objectif (2 000), notes (10 000), points ouverts et actions (10 000). Les participants sont des liens (D82), pas un champ texte.
+- **D81** : statuts : Planifié (création), Tenu, Archivé. Transitions libres.
+- **D82** : deux types de liens (onze au total) : « participe à » (partie prenante vers atelier, inverse « réunit ») et « provient de » (besoin, exigence, décision ou risque vers atelier, inverse « est à l'origine de »). Libellés neutres en genre.
+- **D83** : « Ateliers » ouvre la section Analyse (onze écrans).
+- **D84** : la traçabilité calculée de M6 ne change pas (la chaîne reste celle de D71). Aucun ratio « avec un atelier source ».
+- **D85** : hors périmètre : canevas d'animation, minuteur, saisie en direct, pièces jointes, export du compte rendu (M8), IA. Les points ouverts et actions sont du texte libre non suivi.
+- **D86 (option A)** : l'écran Ateliers est copié sur le modèle des autres écrans de registre. **La dette de duplication de D68 grandit** : huit écrans de registre sur le même modèle ; à traiter avant ou pendant M8, avec une recette dédiée (aucune extraction dans M7).
+- **D87** : ouverture de fiche (D76) prévue pour le nouveau type ; journal sans contenu ; trois anomalies d'intégrité de plus ; listes « Ajouter un lien » des fiches Partie prenante, Besoin, Exigence, Décision, Risque enrichies.
+
+### Écarts et décisions d'implémentation (à connaître)
+1. **Ouverture de fiche d'un atelier** : le mécanisme est branché (l'écran Ateliers l'accepte, l'application lui passe la demande), mais **aucun écran ne la déclenche encore** pour un atelier : l'écran Traçabilité ne contient pas les ateliers (D84), et les codes des listes de liens ne sont pas cliquables. Elle servira avec M8 ou M9. Un test vérifie le branchement par lecture des sources ; la correspondance type vers écran est testée.
+2. **Date d'atelier** : la fonction d'affichage `dayLabel` et la validation de date restent celles des décisions (`domain/decisions.ts`), partagées par les tests et les ateliers.
+3. **Listes d'options de liens** : de nouvelles options apparaissent à la fin des listes des cinq types concernés (ex. « provient de (Atelier) »). Les tests qui figeaient ces listes ont été mis à jour.
+4. **Aucun changement de calcul pour M6** : un test vérifie qu'ajouter un atelier, ses liens, puis l'archiver ne modifie ni couverture, ni orphelins, ni éléments ignorés.
+5. Aucun code Rust modifié. Version 0.9.0 (trois manifestes alignés).
+
+### Limites connues
+- **Les clics et saisies ne sont pas testés automatiquement** : seuls la logique pure et le rendu statique le sont. Le sélecteur de date ne se vérifie qu'à la recette.
+- La liste des ateliers est triée par code (ordre de création), pas par date.
+- Les colonnes de source du modèle (document source et extrait cité, présentes depuis M1) restent inutilisées : la filiation passe par les liens.
+- Sans M8, un atelier n'est qu'une fiche : rien ne s'exporte encore.
 - Non vérifié ici : build Windows (votre CI), comportement sur votre base réelle.
 
 ## Non vérifié lors de l'écriture (à valider via GitHub Actions)

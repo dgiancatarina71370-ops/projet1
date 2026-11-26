@@ -72,7 +72,7 @@ test('domaine : champs d\'un test, types, dates réelles, limites, journal', () 
 });
 
 test('liens : implémente et vérifie exposés (D66), options par type d\'élément', () => {
-  assert.deepEqual([...EXPOSED_LINK_TYPES], ['expresses', 'derives', 'refines', 'implements', 'verifies', 'concerns', 'threatens', 'mitigates', 'supersedes']);
+  assert.deepEqual([...EXPOSED_LINK_TYPES], ['expresses', 'derives', 'refines', 'implements', 'verifies', 'concerns', 'threatens', 'mitigates', 'supersedes', 'participates', 'originates']);
   const keys = (k: Parameters<typeof linkOptionsFor>[0]) => linkOptionsFor(k).map((o) => `${o.type}:${o.direction}`);
   assert.deepEqual(keys('story'), ['implements:out', 'verifies:in', 'concerns:in']);
   assert.deepEqual(keys('test'), ['verifies:out']);
@@ -97,7 +97,7 @@ test('liens : le libellé inverse s\'accorde avec l\'élément courant (écart c
 // ------------------------------------------------------------------ migration 6
 
 test('migration 6 : deux tables ajoutées, données existantes intactes, sauvegarde pre-migration au schéma 5, 23 tables', async () => {
-  assert.equal(SCHEMA_VERSION, 6);
+  assert.ok(SCHEMA_VERSION >= 6);
   assert.equal(migrations[5].name, 'story_test_details');
   const t = emptyDb();
   await migrate(migrations.slice(0, 5), { backup: t.driver.backup });
@@ -105,7 +105,7 @@ test('migration 6 : deux tables ajoutées, données existantes intactes, sauvega
   t.raw.exec("INSERT INTO items (id, project_id, kind, number, code, title, description, status, created_at, updated_at) VALUES (1, 1, 'decision', 1, 'DEC-001', 'D', '', 'proposed', 'x', 'x')");
   t.raw.exec('INSERT INTO decision_details (item_id) VALUES (1)');
   const before = snapshot(t.raw);
-  const report = await migrate(migrations, { backup: t.driver.backup });
+  const report = await migrate(migrations.slice(0, 6), { backup: t.driver.backup });
   assert.deepEqual(report.applied, [6]);
   assert.equal(await getSchemaVersion(), 6);
   assert.equal(t.backups.filter((b) => b.kind === 'pre-migration').length, 1);
@@ -405,7 +405,7 @@ test('base 0.6.0 (schéma 5) : une base plus ancienne s\'ouvre et passe au sché
   t.raw.exec("INSERT INTO projects (id, kind, name, created_at, updated_at) VALUES (1, 'project', 'P', 'x', 'x')");
   t.raw.exec("INSERT INTO items (id, project_id, kind, number, code, title, description, status, created_at, updated_at) VALUES (1, 1, 'risk', 1, 'RIS-001', 'R', '', 'identified', 'x', 'x')");
   t.raw.exec('INSERT INTO risk_details (item_id) VALUES (1)');
-  await migrate(migrations, { backup: t.driver.backup });
+  await migrate(migrations.slice(0, 6), { backup: t.driver.backup });
   assert.equal(await getSchemaVersion(), 6);
   assert.equal(await count('risk_details'), 1);
   t.close();

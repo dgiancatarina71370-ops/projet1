@@ -12,6 +12,8 @@ import { StoryDetailView, StoryFormView, StoryListView } from '../../src/modules
 import type { StoryRow } from '../../src/modules/stories/StoriesView.tsx';
 import { TestDetailView, TestFormView, TestListView } from '../../src/modules/testcases/TestsView.tsx';
 import type { TestRow } from '../../src/modules/testcases/TestsView.tsx';
+import { WorkshopDetailView, WorkshopFormView, WorkshopListView } from '../../src/modules/workshops/WorkshopsView.tsx';
+import type { WorkshopRow } from '../../src/modules/workshops/WorkshopsView.tsx';
 import { TraceabilityPageView } from '../../src/modules/traceability/TraceabilityView.tsx';
 import type { Traceability } from '../../src/domain/traceability.ts';
 import { RiskDetailView, RiskFormView, RiskListView } from '../../src/modules/risks/RisksView.tsx';
@@ -77,13 +79,21 @@ export const render = {
     renderToStaticMarkup(
       <TestFormView heading="Nouveau test" values={p.values} errors={p.errors} busy={false} error="" onChange={noop} onSubmit={noop} onCancel={noop} askAbandon={p.askAbandon} onConfirmAbandon={noop} onKeepEditing={noop} />,
     ),
+  wsList: (p: { rows: WorkshopRow[]; total: number; filter: string }): string =>
+    renderToStaticMarkup(<WorkshopListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} />),
+  wsDetail: (p: { row: WorkshopRow; confirm: string | null; error: string }): string =>
+    renderToStaticMarkup(<WorkshopDetailView row={p.row} {...detailProps(p)} />),
+  wsForm: (p: { errors: Record<string, string>; askAbandon: boolean; values: { title: string; description: string; heldOn: string; place: string; objective: string; notes: string; followUp: string } }): string =>
+    renderToStaticMarkup(
+      <WorkshopFormView heading="Nouvel atelier" values={p.values} errors={p.errors} busy={false} error="" onChange={noop} onSubmit={noop} onCancel={noop} askAbandon={p.askAbandon} onConfirmAbandon={noop} onKeepEditing={noop} />,
+    ),
   trace: (p: { data: Traceability; tab: string; filter: string; error: string }): string =>
     renderToStaticMarkup(<TraceabilityPageView projectName="Mon projet" summary={p.data.summary} ignored={p.data.ignored} rows={p.data.matrix} orphans={p.data.orphans} tab={p.tab} onTab={noop} filter={p.filter} onFilter={noop} onOpen={noop} error={p.error} />),
   links: (p: { rows: LinkRowView[]; options: LinkOptionView[]; optionKey: string; candidates: LinkCandidateView[]; candidateId: string; error: string; confirmRemove: { linkId: number; message: string } | null }): string =>
     renderToStaticMarkup(
       <LinksView rows={p.rows} options={p.options} optionKey={p.optionKey} candidates={p.candidates} candidateId={p.candidateId} busy={false} error={p.error} confirmRemove={p.confirmRemove} onOption={noop} onCandidate={noop} onAdd={noop} onAskRemove={noop} onConfirmRemove={noop} onCancelRemove={noop} />,
     ),
-  shell: (p: { navigable: boolean; screen: 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'stories' | 'tests' | 'traceability' | 'technical'; projects: Array<{ id: number; name: string }>; activeId: number | null }): string =>
+  shell: (p: { navigable: boolean; screen: 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'workshops' | 'stories' | 'tests' | 'traceability' | 'technical'; projects: Array<{ id: number; name: string }>; activeId: number | null }): string =>
     renderToStaticMarkup(
       <Shell intro="Introduction" navigable={p.navigable} screen={p.screen} onNavigate={noop} projects={p.projects} activeId={p.activeId} onSelectProject={noop} footer="Signature">
         <p>Contenu</p>

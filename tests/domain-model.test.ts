@@ -30,9 +30,9 @@ const journal = async (objectType: string, action: string): Promise<number> =>
 
 // ------------------------------------------------------------------ couche domain (pure)
 
-test('domain : sept types, préfixes distincts, premier statut = statut de création', () => {
-  assert.equal(KINDS.length, 7);
-  assert.equal(new Set(KINDS.map((k) => k.prefix)).size, 7);
+test('domain : huit types, préfixes distincts, premier statut = statut de création', () => {
+  assert.equal(KINDS.length, 8);
+  assert.equal(new Set(KINDS.map((k) => k.prefix)).size, 8);
   for (const k of KINDS) {
     assert.ok(isKind(k.kind));
     assert.equal(initialStatus(k.kind), k.statuses[0]);
@@ -66,12 +66,12 @@ test('domain : matrice des liens, chaque couple autorisé et chaque couple inter
       }
     }
   }
-  // 1 + 1 + 1 + 1 + 2 + 4 + 2 + 2 couples : la matrice validée (D19), plus 1 couple « remplace » (D58).
-  assert.equal(allowed, 15);
-  assert.equal(LINK_RULES.length, 9);
+  // 1 + 1 + 1 + 1 + 2 + 4 + 2 + 2 couples : la matrice validée (D19), plus 1 couple « remplace » (D58), plus 1 couple « participe à » et 4 couples « provient de » (D82).
+  assert.equal(allowed, 20);
+  assert.equal(LINK_RULES.length, 11);
   assert.throws(() => assertLinkAllowed('verifies', 'requirement', 'test'), /Lien refusé : « vérifie » relie Test vers Exigence ou User story, pas Exigence vers Test/);
   assert.ok(!isLinkAllowed('inconnu' as LinkType, 'need', 'requirement'));
-  assert.deepEqual(linksFrom('decision').map((r) => r.type).sort(), ['concerns', 'mitigates', 'supersedes']);
+  assert.deepEqual(linksFrom('decision').map((r) => r.type).sort(), ['concerns', 'mitigates', 'originates', 'supersedes']);
 });
 
 // ------------------------------------------------------------------ migration additive
@@ -389,7 +389,7 @@ test('sauvegarde et restauration : éléments, liens et compteurs reviennent exa
 test('E4 : le jeu de test couvre les deux nouvelles tables', async () => {
   const t = await migratedDb();
   seedAllTables(t.raw);
-  assert.equal(snapshot(t.raw).items.count, 7);
+  assert.equal(snapshot(t.raw).items.count, 8);
   assert.equal(snapshot(t.raw).links.count, 1);
   assert.equal(snapshot(t.raw).stakeholder_details.count, 1);
   t.close();

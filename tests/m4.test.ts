@@ -39,7 +39,7 @@ test('domaine : statuts des décisions (D54) et des risques (D56), libellés acc
   assert.equal(statusLabel('archived'), 'Archivé', 'sans type : forme par défaut');
   assert.equal(statusLabel('archived', 'need'), 'Archivé');
   assert.equal(statusLabel('zzz', 'decision'), 'Inconnu (zzz)');
-  assert.deepEqual([...KINDS_WITH_DETAILS].sort(), ['decision', 'requirement', 'risk', 'stakeholder', 'story', 'test']);
+  assert.deepEqual([...KINDS_WITH_DETAILS].sort(), ['decision', 'requirement', 'risk', 'stakeholder', 'story', 'test', 'workshop']);
   assert.ok(EXTENSION_TABLES.includes('decision_details') && EXTENSION_TABLES.includes('risk_details'));
 });
 
@@ -81,22 +81,22 @@ test('domaine : champs d\'un risque, niveaux, valeurs par défaut, limites, jour
 });
 
 test('liens : « remplace » (D58), types exposés (D57, D66), options par type d\'élément', () => {
-  assert.equal(LINK_RULES.length, 9);
+  assert.equal(LINK_RULES.length, 11);
   const rule = LINK_RULES.find((r) => r.type === 'supersedes');
   assert.deepEqual({ label: rule?.label, inverse: rule?.inverseLabel, from: rule?.from, to: rule?.to }, { label: 'remplace', inverse: 'remplacé par', from: ['decision'], to: ['decision'] });
   assert.ok(canLoop('supersedes'));
-  assert.deepEqual([...EXPOSED_LINK_TYPES], ['expresses', 'derives', 'refines', 'implements', 'verifies', 'concerns', 'threatens', 'mitigates', 'supersedes'], 'implémente et vérifie exposés depuis M5');
-  assert.deepEqual(linkOptionsFor('decision').map((o) => o.key), ['concerns:out', 'mitigates:out', 'supersedes:out', 'supersedes:in']);
-  assert.deepEqual(linkOptionsFor('risk').map((o) => o.key), ['concerns:in', 'threatens:out', 'mitigates:in']);
-  assert.deepEqual(linkOptionsFor('risk').map((o) => o.label), ['concerné par', 'menace', 'atténué par']);
-  assert.deepEqual(linkOptionsFor('decision').map((o) => o.label), ['concerne', 'atténue', 'remplace', 'remplacée par']);
+  assert.deepEqual([...EXPOSED_LINK_TYPES], ['expresses', 'derives', 'refines', 'implements', 'verifies', 'concerns', 'threatens', 'mitigates', 'supersedes', 'participates', 'originates'], 'implémente et vérifie exposés depuis M5, atelier depuis M7');
+  assert.deepEqual(linkOptionsFor('decision').map((o) => o.key), ['concerns:out', 'mitigates:out', 'supersedes:out', 'supersedes:in', 'originates:out']);
+  assert.deepEqual(linkOptionsFor('risk').map((o) => o.key), ['concerns:in', 'threatens:out', 'mitigates:in', 'originates:out']);
+  assert.deepEqual(linkOptionsFor('risk').map((o) => o.label), ['concerné par', 'menace', 'atténué par', 'provient de']);
+  assert.deepEqual(linkOptionsFor('decision').map((o) => o.label), ['concerne', 'atténue', 'remplace', 'remplacée par', 'provient de']);
   assert.deepEqual(linkOptionsFor('test').map((o) => o.key), ['verifies:out']);
 });
 
 // ------------------------------------------------------------------ migration 5
 
 test('migration 5 : deux tables ajoutées, données existantes intactes, sauvegarde pre-migration au schéma 4', async () => {
-  assert.ok(SCHEMA_VERSION >= 5, 'la migration 5 reste livrée ; M5 en ajoute une sixième');
+  assert.ok(SCHEMA_VERSION >= 5, 'la migration 5 reste livrée ; M5 en ajoute une sixième, M7 une septième');
   assert.equal(migrations[4].name, 'decision_risk_details');
   const t = emptyDb();
   await migrate(migrations.slice(0, 4), { backup: t.driver.backup });

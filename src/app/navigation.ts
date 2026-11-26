@@ -1,9 +1,9 @@
-// Navigation de l'application (lots M3a à M6, décisions D33, D67 et D70). Logique pure : la liste des écrans et le choix de l'écran affiché.
+// Navigation de l'application (lots M3a à M7, décisions D33, D67, D70 et D83). Logique pure : la liste des écrans et le choix de l'écran affiché.
 // Une entrée n'est ajoutée que quand son écran existe : on n'affiche pas d'écran vide.
 
 import type { ItemKind } from '../domain/kinds.ts';
 
-export type ScreenId = 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'stories' | 'tests' | 'traceability' | 'technical';
+export type ScreenId = 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'stories' | 'tests' | 'traceability' | 'workshops' | 'technical';
 
 export interface ScreenInfo {
   id: ScreenId;
@@ -19,7 +19,7 @@ export interface NavSection {
 // Menu regroupé (lot M5, décision D67, option B) : l'ordre suit la chaîne de traçabilité ; la section « Contrôle » (lot M6, D70) porte la vue calculée. Projets et Technique restent aux extrémités.
 export const NAV_SECTIONS: readonly NavSection[] = [
   { title: null, screens: [{ id: 'projects', label: 'Projets' }] },
-  { title: 'Analyse', screens: [{ id: 'stakeholders', label: 'Parties prenantes' }, { id: 'needs', label: 'Besoins' }, { id: 'requirements', label: 'Exigences' }] },
+  { title: 'Analyse', screens: [{ id: 'workshops', label: 'Ateliers' }, { id: 'stakeholders', label: 'Parties prenantes' }, { id: 'needs', label: 'Besoins' }, { id: 'requirements', label: 'Exigences' }] },
   { title: 'Pilotage', screens: [{ id: 'decisions', label: 'Décisions' }, { id: 'risks', label: 'Risques' }] },
   { title: 'Réalisation', screens: [{ id: 'stories', label: 'User stories' }, { id: 'tests', label: 'Tests' }] },
   { title: 'Contrôle', screens: [{ id: 'traceability', label: 'Traçabilité' }] },
@@ -33,7 +33,7 @@ export const SCREENS: readonly ScreenInfo[] = NAV_SECTIONS.flatMap((section) => 
  * Types d'éléments qui ont un écran. Sert à ne pas annoncer, dans les listes de liens, des types que l'on ne peut pas encore créer
  * (« User story » avant M5, par exemple). À compléter avec chaque nouveau registre.
  */
-export const KINDS_WITH_SCREEN: readonly ItemKind[] = ['stakeholder', 'need', 'requirement', 'decision', 'risk', 'story', 'test'];
+export const KINDS_WITH_SCREEN: readonly ItemKind[] = ['stakeholder', 'need', 'requirement', 'decision', 'risk', 'story', 'test', 'workshop'];
 
 /** Écran de registre qui montre les éléments d'un type : sert à ouvrir une fiche depuis un autre écran (lot M6, D76). */
 export function screenForKind(kind: ItemKind): ScreenId {
@@ -45,6 +45,7 @@ export function screenForKind(kind: ItemKind): ScreenId {
     case 'risk': return 'risks';
     case 'story': return 'stories';
     case 'test': return 'tests';
+    case 'workshop': return 'workshops';
   }
 }
 

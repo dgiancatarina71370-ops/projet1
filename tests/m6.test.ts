@@ -245,7 +245,7 @@ test('ouverture de fiche : la demande n\'est traitée que si l\'élément est da
 
 test('ouverture de fiche : chaque type d\'élément mène à son propre écran de registre', () => {
   const targets = KINDS.map((k) => screenForKind(k.kind));
-  assert.deepEqual(targets, ['stakeholders', 'needs', 'requirements', 'decisions', 'risks', 'stories', 'tests']);
+  assert.deepEqual(targets, ['stakeholders', 'needs', 'requirements', 'decisions', 'risks', 'stories', 'tests', 'workshops']);
   assert.equal(new Set(targets).size, KINDS.length, 'un écran par type');
   for (const s of targets) assert.ok(SCREENS.some((x) => x.id === s), `${s} est un écran du menu`);
 });

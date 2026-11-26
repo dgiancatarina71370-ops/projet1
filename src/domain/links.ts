@@ -1,10 +1,10 @@
-// Liens entre éléments (décision D19, « remplace » ajouté par D58) : neuf types, avec les seuls couples de types autorisés.
+// Liens entre éléments (décision D19, « remplace » ajouté par D58) : onze types, avec les seuls couples de types autorisés.
 // La matrice est une DONNÉE : ajouter un lien (par exemple Décision vers Décision, ou Risque vers Risque) = ajouter une ligne ici
 // et un test. Aucune migration : le type de lien est un simple texte en base (décision D17).
 import { isKind, kindInfo } from './kinds.ts';
 import type { ItemKind } from './kinds.ts';
 
-export type LinkType = 'expresses' | 'derives' | 'refines' | 'implements' | 'verifies' | 'concerns' | 'threatens' | 'mitigates' | 'supersedes';
+export type LinkType = 'expresses' | 'derives' | 'refines' | 'implements' | 'verifies' | 'concerns' | 'threatens' | 'mitigates' | 'supersedes' | 'participates' | 'originates';
 
 export interface LinkRule {
   type: LinkType;
@@ -27,6 +27,10 @@ export const LINK_RULES: readonly LinkRule[] = [
   { type: 'mitigates', label: 'atténue', inverseLabel: 'atténué par', from: ['requirement', 'decision'], to: ['risk'] },
   // Lot M4, décision D58 : une décision en remplace une autre. Peut former une boucle : refusée comme « raffine » (D50).
   { type: 'supersedes', label: 'remplace', inverseLabel: 'remplacé par', from: ['decision'], to: ['decision'] },
+  // Lot M7, décisions D82 : filiation d'un élément vers l'atelier dont il provient, et participation des parties prenantes.
+  // « provient de » est neutre en genre (besoin, exigence, décision, risque) : aucun accord à gérer sur le libellé sortant.
+  { type: 'participates', label: 'participe à', inverseLabel: 'réunit', from: ['stakeholder'], to: ['workshop'] },
+  { type: 'originates', label: 'provient de', inverseLabel: "est à l'origine de", from: ['need', 'requirement', 'decision', 'risk'], to: ['workshop'] },
 ];
 
 export function isLinkType(value: unknown): value is LinkType {
@@ -65,10 +69,10 @@ export function linksFrom(kind: ItemKind): LinkRule[] {
 // ------------------------------------------------------------------ interface des liens (lot M3b, décisions D48 à D50)
 
 /**
- * Types de liens proposés dans l'interface (décisions D48, D57 et D66 : les neuf types de la matrice sont désormais exposés). Exposer un autre type plus tard (Décision vers Décision, Risque vers Risque…)
+ * Types de liens proposés dans l'interface (décisions D48, D57 et D66 : les types de la matrice sont exposés ; M7 ajoute « participe à » et « provient de », D82). Exposer un autre type plus tard (Décision vers Décision, Risque vers Risque…)
  * = l'ajouter ici, après l'avoir ajouté à LINK_RULES : ni refonte ni migration.
  */
-export const EXPOSED_LINK_TYPES: readonly LinkType[] = ['expresses', 'derives', 'refines', 'implements', 'verifies', 'concerns', 'threatens', 'mitigates', 'supersedes'];
+export const EXPOSED_LINK_TYPES: readonly LinkType[] = ['expresses', 'derives', 'refines', 'implements', 'verifies', 'concerns', 'threatens', 'mitigates', 'supersedes', 'participates', 'originates'];
 
 /** Sens d'un lien vu depuis un élément : « out » part de lui, « in » arrive sur lui. */
 export type Direction = 'out' | 'in';

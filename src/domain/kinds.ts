@@ -2,7 +2,7 @@
 // Couche « domain » : pure, sans accès à la base ni à l'interface (règle R9 de scripts/check-architecture.mjs).
 // Syntaxe volontairement « effaçable » (ni enum ni propriété de paramètre) : ce fichier s'exécute tel quel sous Node pour les tests.
 
-export type ItemKind = 'stakeholder' | 'need' | 'requirement' | 'decision' | 'risk' | 'story' | 'test';
+export type ItemKind = 'stakeholder' | 'need' | 'requirement' | 'decision' | 'risk' | 'story' | 'test' | 'workshop';
 
 export interface KindInfo {
   kind: ItemKind;
@@ -25,6 +25,8 @@ const RISK_STATUSES: readonly string[] = ['identified', 'mitigating', 'accepted'
 const STORY_STATUSES: readonly string[] = ['draft', 'ready', 'done', 'rejected', 'archived'];
 // Test (lot M5, décision D65) : le statut porte le DERNIER résultat, sans historique d'exécutions (le centre UAT est prévu en V3).
 const TEST_STATUSES: readonly string[] = ['to_run', 'passed', 'failed', 'blocked', 'archived'];
+// Atelier (lot M7, décision D81) : planifié à la création ; transitions libres. Pas de statut « compte rendu » avant M8.
+const WORKSHOP_STATUSES: readonly string[] = ['planned', 'held', 'archived'];
 // Partie prenante (lot M3a, décision D37) : active tant qu'elle compte pour le projet, archivée ensuite. Le premier statut est celui de création.
 const STAKEHOLDER_STATUSES: readonly string[] = ['active', 'archived'];
 
@@ -36,13 +38,14 @@ export const KINDS: readonly KindInfo[] = [
   { kind: 'risk', label: 'Risque', prefix: 'RIS', statuses: RISK_STATUSES },
   { kind: 'story', label: 'User story', prefix: 'US', statuses: STORY_STATUSES },
   { kind: 'test', label: 'Test', prefix: 'TEST', statuses: TEST_STATUSES },
+  { kind: 'workshop', label: 'Atelier', prefix: 'ATL', statuses: WORKSHOP_STATUSES },
 ];
 
 /**
- * Types dont les champs propres vivent dans une table d'extension : leur création passe par le dépôt du type (createStakeholder, createRequirement, createDecision, createRisk, createStory, createTestCase),
+ * Types dont les champs propres vivent dans une table d'extension : leur création passe par le dépôt du type (createStakeholder, createRequirement, createDecision, createRisk, createStory, createTestCase, createWorkshop),
  * qui écrit l'élément et ses détails ensemble. createItem le refuse pour eux : une partie prenante ou une exigence sans détails serait incohérente.
  */
-export const KINDS_WITH_DETAILS: readonly ItemKind[] = ['stakeholder', 'requirement', 'decision', 'risk', 'story', 'test'];
+export const KINDS_WITH_DETAILS: readonly ItemKind[] = ['stakeholder', 'requirement', 'decision', 'risk', 'story', 'test', 'workshop'];
 
 export function isKind(value: unknown): value is ItemKind {
   return typeof value === 'string' && KINDS.some((k) => k.kind === value);
@@ -82,6 +85,8 @@ const STATUS_LABELS: Record<string, string> = {
   passed: 'Réussi',
   failed: 'Échoué',
   blocked: 'Bloqué',
+  planned: 'Planifié',
+  held: 'Tenu',
 };
 
 // Accord au féminin : une décision ou une user story est « archivée » (et une story « rejetée »). Les autres statuts propres à ces types sont déjà au féminin.

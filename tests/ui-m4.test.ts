@@ -21,10 +21,10 @@ test('registres : le message de titre est commun, avec la limite passée en para
   assert.equal(emptyListText(3, null, 'Aucun besoin', 'x'), 'Aucun besoin « Tous » : 3 au total dans ce projet.', 'valeur par défaut inchangée pour les besoins');
 });
 
-test('navigation : types annoncés dans les listes de liens = types qui ont un écran (les sept, depuis M5)', () => {
-  assert.deepEqual([...KINDS_WITH_SCREEN].sort(), ['decision', 'need', 'requirement', 'risk', 'stakeholder', 'story', 'test']);
+test('navigation : types annoncés dans les listes de liens = types qui ont un écran (les huit, depuis M7)', () => {
+  assert.deepEqual([...KINDS_WITH_SCREEN].sort(), ['decision', 'need', 'requirement', 'risk', 'stakeholder', 'story', 'test', 'workshop']);
   assert.ok(KINDS.every((k) => KINDS_WITH_SCREEN.includes(k.kind)), 'depuis M5, chaque type a son écran');
-  assert.equal(SCREENS.length, 10);
+  assert.equal(SCREENS.length, 11);
 });
 
 test('liste « Ajouter un lien » : seuls les types demandés sont annoncés (ceux qui ont un écran)', () => {
