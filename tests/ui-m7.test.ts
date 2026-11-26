@@ -42,8 +42,10 @@ test('formulaire atelier : défauts, une erreur par champ fautif, date réelle, 
 
 test('branchement : l\'écran Ateliers appelle le crochet d\'ouverture, l\'application lui passe la demande et le rend', () => {
   const src = fs.readFileSync(new URL('../src/modules/workshops/WorkshopsScreen.tsx', import.meta.url), 'utf8');
-  assert.match(src, /useOpenRequest\(props\.openId, rows\.map\(\(r\) => r\.id\)/);
-  assert.match(src, /props\.onOpenHandled/);
+  assert.match(src, /<RegisterScreen config=\{CONFIG\} \{\.\.\.common\}/, 'l\'écran délègue au composant générique (M8b)');
+  const generic = fs.readFileSync(new URL('../src/shared/register-screen.tsx', import.meta.url), 'utf8');
+  assert.match(generic, /useOpenRequest\(props\.openId, rows\.map\(\(r\) => r\.id\)/);
+  assert.match(generic, /props\.onOpenHandled/);
   assert.match(src, /createWorkshop/);
   assert.match(src, /updateWorkshop/);
   const app = fs.readFileSync(new URL('../src/app/App.tsx', import.meta.url), 'utf8');

@@ -409,7 +409,7 @@ Les intitulés ci-dessous décrivent ce qui a été **implémenté** pour chaque
 
 ## Lot M8 : livrables générés depuis les données (schéma 7 inchangé, version 0.10.0)
 
-**M8 en attente de recette (deuxième livraison).** Plan présenté le 26/11/2026 ; D88 à D97 validées le même jour, « Go M8 » donné. Retour de recette partiel du 26/11/2026 : matrice Word lisible et sans message de réparation ; barres verticales du compte rendu refusées (option A) et pluriel de la phrase de périmètre de la matrice, corrigés dans cette livraison. Recette : `TESTS-M8.md`. Réserves maintenues : test 12 de V2.3b et C13 (optionnel).
+**M8 VALIDÉE par David le 26/11/2026** (recette `TESTS-M8.md` OK après le correctif : barres verticales supprimées, pluriel de la matrice corrigé). Plan présenté le 26/11/2026 ; D88 à D97 validées le même jour, « Go M8 » donné. Retour de recette partiel du 26/11/2026 : matrice Word lisible et sans message de réparation ; barres verticales du compte rendu refusées (option A) et pluriel de la phrase de périmètre de la matrice, corrigés dans cette livraison. Recette : `TESTS-M8.md`. Réserves maintenues : test 12 de V2.3b et C13 (optionnel).
 
 ### Décisions validées par David (26/11/2026)
 - **D88** : un seul lot, sans migration (schéma 7, version 0.10.0, aucun code Rust modifié). La 0.9.0 peut rouvrir une base utilisée par la 0.10.0.
@@ -445,6 +445,54 @@ Les intitulés ci-dessous décrivent ce qui a été **implémenté** pour chaque
 - Pas de PDF (V2.3c), pas de table des matières ni de page de garde, pas de modèle modifiable.
 - Le contenu d'un document dépend uniquement de l'état de la base au moment de l'export ; rien n'est figé ni versionné.
 - Les sections de détail reprennent le texte libre en paragraphes ordinaires ; la mise en forme saisie par l'utilisateur (gras, listes) est volontairement perdue.
+
+## Lot M8b : dette de duplication des écrans de registre (D68), pilote Ateliers et Risques (version 0.10.1)
+
+**M8b en cours (pilote).** Plan présenté le 26/11/2026 ; D98 à D104 validées, « Go M8b » donné avec sept conditions de recette : (1) inventaire préalable des écarts dans ce fichier, (2) respect strict de R4, (3) aucun changement visible, (4) pilote limité à Ateliers et Risques, (5) `TESTS-M8b.md` livré, (6) toute divergence découverte documentée et non corrigée par défaut, (7) un écran qui ne rentre pas proprement dans le modèle générique reste hors refactoring et est signalé. Séquencement validé : M8 (livrables), M8b (dette D68), M9 (projet d'exemple, guide, mémo), puis « UX+ ».
+
+### Décisions validées par David (26/11/2026)
+- **D98** : seuls les huit conteneurs « Screen » sont concernés ; vues, `logic.ts`, dépôts et domaine ne changent pas ; aucun changement visible.
+- **D99 (option A)** : composant générique `RegisterScreen` piloté par une configuration ; les accès aux données sont **injectés** par chaque écran (règle R4 : `shared/` n'importe pas `data/`).
+- **D100 (oui)** : les transitions d'état des écrans deviennent des fonctions pures testées (première couverture automatique de ce comportement).
+- **D101 (option B)** : pilote sur **Ateliers et Risques** (version 0.10.1), puis les six autres écrans après recette.
+- **D102** : recette par rejeu d'un script unique, complet sur le pilote, réduit ensuite.
+- **D103** : hors périmètre : vues et `logic.ts`, changements ergonomiques (UX+), nouvelles fonctions, écrans Projets, Traçabilité et Livrables.
+- **D104** : toute incohérence entre écrans est **conservée** par configuration et listée ; tout défaut existant est signalé et corrigé seulement sur demande.
+
+### Inventaire des écarts entre les huit écrans (condition 1)
+Méthode : comparaison des huit fichiers `*Screen.tsx` après remplacement des mots propres à chaque type, puis lecture des écarts restants. Les écrans lus intégralement : Ateliers, Parties prenantes ; les six autres comparés par différence avec Ateliers.
+
+**Identique dans les huit écrans** (donc candidat à l'extraction) : les trois modes liste, fiche et formulaire ; le rechargement de la liste et l'affichage d'une erreur de chargement ; le retour à la liste au changement de projet (sans réinitialiser le filtre ni la confirmation d'abandon) ; l'ouverture de fiche demandée par la traçabilité (D76) ; l'exécution d'une action (occupé, erreur, rechargement, signal de changement à l'application) ; la confirmation de suppression avec le nombre de liens ; l'abandon d'un formulaire modifié ; la création puis l'ouverture de la fiche créée ; le message « n'existe plus » avec retour à la liste ; le cadre de la fiche et l'emplacement des liens sous la fiche.
+
+**Ce qui change d'un écran à l'autre** (à porter par la configuration) :
+| Écran | Titre, sujet « sans projet » | Message « n'existe plus » | Titre du formulaire (création / modification) | Source des données |
+|---|---|---|---|---|
+| Parties prenantes | « Parties prenantes », aucun sujet (voir écart 1) | Cette partie prenante | Nouvelle / Modifier la partie prenante | dépôt `stakeholders` |
+| Besoins | « Besoins », « Les besoins » | Ce besoin | Nouveau / Modifier le besoin | dépôt générique `items` (pas de table d'extension) |
+| Exigences | « Exigences », « Les exigences » | Cette exigence | Nouvelle / Modifier l'exigence | dépôt `requirements` |
+| Décisions | « Décisions », « Les décisions » | Cette décision | Nouvelle / Modifier la décision | dépôt `decisions` |
+| Risques | « Risques », « Les risques » | Ce risque | Nouveau / Modifier le risque | dépôt `risks` |
+| User stories | « User stories », « Les user stories » | Cette user story | Nouvelle / Modifier la user story | dépôt `stories` |
+| Tests | « Tests », « Les tests » | Ce test | Nouveau / Modifier le test | dépôt `testcases` |
+| Ateliers | « Ateliers », « Les ateliers » | Cet atelier | Nouvel / Modifier l'atelier | dépôt `workshops` |
+
+Écarts propres à certains écrans :
+1. **Parties prenantes** (écran le plus ancien, M3a) : son « sans projet » est un composant local sans sujet (le texte n'est pas construit comme les autres) ; sa fiche reçoit `onToggleArchive` (archiver ou réactiver, seulement deux statuts actifs ou archivé) et non `onChangeStatus` ; son filtre et sa logique (`StatusFilter`, `formFrom`, `validateForm`, `emptyListMessage`) sont dans son propre `logic.ts`. **Il entre dans le modèle seulement avec un adaptateur de fiche ; il est traité à la généralisation, pas dans le pilote, et reste hors refactoring si l'adaptateur n'est pas propre (condition 7).**
+2. **Besoins** : pas de table d'extension : création et mise à jour par le dépôt générique `items` ; formulaire réduit au titre et à la description.
+3. **Ateliers** : la fiche porte un bouton supplémentaire « Exporter le compte rendu » (D92), alimenté par une propriété de l'écran.
+4. **Élisions** : Exigences et Ateliers écrivent « Modifier l'exigence » et « Modifier l'atelier » (article élidé) ; les autres écrans écrivent « le » ou « la » ; Ateliers écrit aussi « Nouvel atelier ». Simple différence de texte, reprise telle quelle.
+5. **Accents et pluriels** : aucun écart de comportement, seulement de texte (accords au genre) : tous les libellés ci-dessus sont repris à l'identique dans la configuration.
+
+**Divergences découvertes** (documentées, non corrigées, condition 6) :
+- Parties prenantes : « sans projet » sans sujet (écart 1) ; archivage par bascule au lieu du changement de statut libre des autres écrans (choix d'origine de M3a, antérieur à D47).
+- La confirmation d'abandon (`askAbandon`) n'est pas remise à zéro quand on change de projet ; elle l'est à l'ouverture suivante d'un formulaire (comportement identique dans les huit écrans, conservé).
+
+### M8b, pilote Ateliers + Risques (version 0.10.1) : état de livraison
+
+- Fichiers : `src/shared/register-state.ts` (transitions pures), `src/shared/register-screen.tsx` (composant générique, aucune importation de `data/` : R4), `src/data/repositories/register-ops.ts` (statut, suppression, comptage de liens, partagés), `WorkshopsScreen.tsx` et `RisksScreen.tsx` réduits à une configuration. Vues, `logic.ts`, dépôts et domaine inchangés.
+- Écart relevé et conservé (D104) : l'état du formulaire et la question d'abandon ne sont pas remis à zéro au changement de projet (identique dans les huit écrans d'origine).
+- Tests : `tests/m8b.test.ts` (transitions et structure). Trois tests de lecture de code source (ui-m6, ui-m7, ui-m8) ont été adaptés : ils vérifient désormais le crochet d'ouverture dans le composant générique et la délégation des écrans pilotes.
+- Non vérifié ici : rendu et comportement réels à l'écran (recette `TESTS-M8b.md`), compilation Rust et build Tauri (GitHub Actions). Le contrôle de types local s'appuie sur des déclarations React simplifiées : le `tsc` du dépôt (types React réels) reste à confirmer par `verify` dans Actions.
 
 ## Non vérifié lors de l'écriture (à valider via GitHub Actions)
 - Compilation et tests de `backup.rs` et `main.rs` (dépendent de `rusqlite` et de Tauri, inaccessibles ici), dont la commande `import_pick_file` et la boîte de dialogue Windows. `files.rs` (std seule) a été compilé et testé ici : 15 tests. Pour V2.3a : la commande `export_save` et l'utilisation de `set_file_name` / `set_directory` / `blocking_save_file` du plugin de dialogue.

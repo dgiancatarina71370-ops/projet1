@@ -57,9 +57,13 @@ test('branchement : les sept écrans de registre appellent le crochet d\'ouvertu
   const screens = ['stakeholders/StakeholdersScreen', 'analysis/NeedsScreen', 'analysis/RequirementsScreen', 'decisions/DecisionsScreen', 'risks/RisksScreen', 'stories/StoriesScreen', 'testcases/TestsScreen'];
   for (const f of screens) {
     const src = fs.readFileSync(new URL(`../src/modules/${f}.tsx`, import.meta.url), 'utf8');
+    if (/<RegisterScreen config=\{CONFIG\} \{\.\.\.(props|common)\}/.test(src)) continue; // écran converti (M8b) : le crochet est dans le composant générique, vérifié plus bas
     assert.match(src, /useOpenRequest\(props\.openId, rows\.map\(\(r\) => r\.id\)/, `${f} appelle le crochet avec sa liste`);
     assert.match(src, /props\.onOpenHandled/, `${f} signale la demande traitée`);
   }
+  const generic = fs.readFileSync(new URL('../src/shared/register-screen.tsx', import.meta.url), 'utf8');
+  assert.match(generic, /useOpenRequest\(props\.openId, rows\.map\(\(r\) => r\.id\)/, 'le composant générique appelle le crochet avec sa liste');
+  assert.match(generic, /props\.onOpenHandled/, 'le composant générique signale la demande traitée');
   const app = fs.readFileSync(new URL('../src/app/App.tsx', import.meta.url), 'utf8');
   for (const kind of ['stakeholder', 'need', 'requirement', 'decision', 'risk', 'story', 'test']) assert.ok(app.includes(`{...openProps('${kind}')}`), `App passe la demande du type ${kind}`);
   assert.match(app, /onOpenItem=\{openItem\}/);

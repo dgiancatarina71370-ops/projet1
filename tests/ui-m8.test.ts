@@ -65,7 +65,7 @@ test('branchement : l\'écran appelle la lecture et l\'export, l\'application re
   assert.match(app, /setDeliverablePreset\(\{ modelId: 'workshop-report', workshopId \}\)/);
   assert.match(app, /setDeliverablePreset\(null\);\n/, 'une navigation par le menu efface la demande');
   const ws = fs.readFileSync(new URL('../src/modules/workshops/WorkshopsScreen.tsx', import.meta.url), 'utf8');
-  assert.match(ws, /props\.onExportReport\?\.\(current\.id\)/);
+  assert.match(ws, /onExportReport \? \(\) => onExportReport\(row\.id\) : undefined/, 'le bouton n\'existe que si l\'application fournit l\'action');
 });
 
 // ------------------------------------------------------------------ rendu statique
