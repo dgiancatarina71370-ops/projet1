@@ -9,10 +9,10 @@ import { NAV_SECTIONS, SCREENS } from '../src/app/navigation.ts';
 
 // ------------------------------------------------------------------ logique pure
 
-test('menu : trois sections nommées (Analyse, Pilotage, Réalisation), Projets et Technique seuls, ordre figé (D67)', () => {
-  assert.deepEqual(NAV_SECTIONS.map((s) => s.title), [null, 'Analyse', 'Pilotage', 'Réalisation', null]);
-  assert.deepEqual(NAV_SECTIONS.map((s) => s.screens.map((x) => x.label)), [['Projets'], ['Parties prenantes', 'Besoins', 'Exigences'], ['Décisions', 'Risques'], ['User stories', 'Tests'], ['Technique']]);
-  assert.deepEqual(SCREENS.map((s) => s.id), ['projects', 'stakeholders', 'needs', 'requirements', 'decisions', 'risks', 'stories', 'tests', 'technical']);
+test('menu : sections nommées (Analyse, Pilotage, Réalisation, Contrôle), Projets et Technique seuls, ordre figé (D67, D70)', () => {
+  assert.deepEqual(NAV_SECTIONS.map((s) => s.title), [null, 'Analyse', 'Pilotage', 'Réalisation', 'Contrôle', null]);
+  assert.deepEqual(NAV_SECTIONS.map((s) => s.screens.map((x) => x.label)), [['Projets'], ['Parties prenantes', 'Besoins', 'Exigences'], ['Décisions', 'Risques'], ['User stories', 'Tests'], ['Traçabilité'], ['Technique']]);
+  assert.deepEqual(SCREENS.map((s) => s.id), ['projects', 'stakeholders', 'needs', 'requirements', 'decisions', 'risks', 'stories', 'tests', 'traceability', 'technical']);
   assert.equal(new Set(SCREENS.map((s) => s.id)).size, SCREENS.length);
 });
 
@@ -80,13 +80,13 @@ const TS: TsRow = { id: 2, code: 'TEST-001', title: 'Connexion <i>ok</i>', descr
 
 ui('rendu : le menu est regroupé en sections nommées, avec une seule entrée courante', (r) => {
   const html = r.shell({ navigable: true, screen: 'stories', projects: [{ id: 1, name: 'A' }], activeId: 1 });
-  for (const label of ['Projets', 'Parties prenantes', 'Besoins', 'Exigences', 'Décisions', 'Risques', 'User stories', 'Tests', 'Technique']) assert.ok(html.includes(`>${label}<`), label);
-  for (const title of ['Analyse', 'Pilotage', 'Réalisation']) assert.ok(html.includes(`>${title}<`), title);
-  assert.ok(html.indexOf('>Analyse<') < html.indexOf('>Parties prenantes<') && html.indexOf('>Exigences<') < html.indexOf('>Pilotage<') && html.indexOf('>Risques<') < html.indexOf('>Réalisation<') && html.indexOf('>Tests<') < html.indexOf('>Technique<'), 'ordre des sections');
+  for (const label of ['Projets', 'Parties prenantes', 'Besoins', 'Exigences', 'Décisions', 'Risques', 'User stories', 'Tests', 'Traçabilité', 'Technique']) assert.ok(html.includes(`>${label}<`), label);
+  for (const title of ['Analyse', 'Pilotage', 'Réalisation', 'Contrôle']) assert.ok(html.includes(`>${title}<`), title);
+  assert.ok(html.indexOf('>Analyse<') < html.indexOf('>Parties prenantes<') && html.indexOf('>Exigences<') < html.indexOf('>Pilotage<') && html.indexOf('>Risques<') < html.indexOf('>Réalisation<') && html.indexOf('>Tests<') < html.indexOf('>Contrôle<') && html.indexOf('>Traçabilité<') < html.indexOf('>Technique<'), 'ordre des sections');
   assert.equal((html.match(/aria-current="page"/g) ?? []).length, 1);
   assert.match(html, /aria-current="page"[^>]*>User stories</);
   assert.match(r.shell({ navigable: true, screen: 'tests', projects: [{ id: 1, name: 'A' }], activeId: 1 }), /aria-current="page"[^>]*>Tests</);
-  assert.ok(!/<button[^>]*>(Analyse|Pilotage|Réalisation)</.test(html), 'les intitulés de section ne sont pas cliquables');
+  assert.ok(!/<button[^>]*>(Analyse|Pilotage|Réalisation|Contrôle)</.test(html), 'les intitulés de section ne sont pas cliquables');
 });
 
 ui('rendu : liste des user stories (rôle, statut au féminin, filtre « Toutes », singulier et pluriel, échappement, états vides)', (r) => {

@@ -24,7 +24,7 @@ test('registres : le message de titre est commun, avec la limite passée en para
 test('navigation : types annoncés dans les listes de liens = types qui ont un écran (les sept, depuis M5)', () => {
   assert.deepEqual([...KINDS_WITH_SCREEN].sort(), ['decision', 'need', 'requirement', 'risk', 'stakeholder', 'story', 'test']);
   assert.ok(KINDS.every((k) => KINDS_WITH_SCREEN.includes(k.kind)), 'depuis M5, chaque type a son écran');
-  assert.equal(SCREENS.length, 9);
+  assert.equal(SCREENS.length, 10);
 });
 
 test('liste « Ajouter un lien » : seuls les types demandés sont annoncés (ceux qui ont un écran)', () => {

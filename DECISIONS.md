@@ -317,7 +317,7 @@ Une table d'extension (`stakeholder_details`) ne peut pas porter de ligne de jou
 
 ## Lot M5 : user stories, tests (schéma 6, version 0.7.0)
 
-**M5 en attente de recette.** Plan présenté le 25/11/2026 ; D61 à D69 validées le même jour (D63 avec la préférence « Rejetée » plutôt que « Abandonnée »), option B pour D67, « Go M5 » donné. Recette : `TESTS-M5.md`. Réserves maintenues : test 12 de V2.3b et C13 (optionnel).
+**M5 VALIDÉE par David le 25/11/2026.** CI verte sur les trois jobs ; recette `TESTS-M5.md` : tests 1 à 29 OK sur clé USB, avec deux constats traités pendant la recette (ligne `migrated_6_at` de `meta`, attendue ; accord des libellés de liens, voir écart 6). La revérification explicite de l'accord après correctif n'a pas été rapportée séparément : la validation globale la couvre. Plan présenté le 25/11/2026 ; D61 à D69 validées le même jour (D63 avec la préférence « Rejetée » plutôt que « Abandonnée »), option B pour D67, « Go M5 » donné. Réserves maintenues : test 12 de V2.3b et C13 (optionnel).
 
 ### Décisions validées par David (25/11/2026)
 Les intitulés ci-dessous décrivent ce qui a été **implémenté** pour chaque numéro ; en cas de différence avec le plan validé, le plan fait foi et l'écart est à signaler.
@@ -345,6 +345,37 @@ Les intitulés ci-dessous décrivent ce qui a été **implémenté** pour chaque
 - **Les clics et saisies ne sont pas testés automatiquement** : seuls la logique pure et le rendu statique le sont. Le sélecteur de date et l'aspect du menu regroupé (retour à la ligne en fenêtre étroite) ne sont vérifiés que par la recette.
 - Pas d'historique des exécutions de test (D65), pas de calcul de couverture ni d'éléments orphelins : prévus au lot suivant (traçabilité calculée).
 - Un test se relie à une user story ou à une exigence ; rien n'oblige à relier quoi que ce soit.
+- Non vérifié ici : build Windows (votre CI), comportement sur votre base réelle.
+
+## Lot M6 : traçabilité calculée (schéma 6 inchangé, version 0.8.0)
+
+**M6 en attente de recette.** Plan présenté le 26/11/2026 ; D70 à D78 validées le même jour (D74 avec le tri MoSCoW conseillé, appliqué par défaut ; D76 option B), « Go M6 » donné. Recette : `TESTS-M6.md`. Réserves maintenues : test 12 de V2.3b et C13 (optionnel).
+
+### Décisions validées par David (26/11/2026)
+- **D70** : un écran « Traçabilité » en lecture seule, dans une nouvelle section « Contrôle » du menu (dix écrans). Un bandeau de couverture toujours visible, puis deux onglets : Matrice et Orphelins.
+- **D71** : chaîne de référence : Partie prenante —exprime→ Besoin —dérive en→ Exigence ←implémente— User story ←vérifie— Test, un Test pouvant aussi vérifier une Exigence directement. Les liens de décisions et de risques sont hors chaîne.
+- **D72** : couverture en « x sur y », sans score : parties prenantes avec un besoin ; besoins avec une exigence ; exigences avec une story ; exigences **testées** (test direct ou via une story qui l'implémente) ; exigences dont le résultat est Réussi ; exigences Must testées. Résultat d'une exigence = le pire de ses tests (Échoué, Bloqué, À exécuter, Réussi ; « Aucun test »).
+- **D73** : les éléments archivés ou rejetés sont exclus du calcul (ni couvrants, ni à couvrir) ; le bandeau indique leur nombre.
+- **D74** : matrice, une ligne par exigence (besoins, stories, tests directs, tests via story, résultat), filtre « Indispensable (Must) seulement ». **Tri : MoSCoW (Must, Should, Could, Won't, priorité inconnue) puis code**, selon ton conseil.
+- **D75** : sept listes d'orphelins (parties prenantes sans besoin ; besoins sans exigence ; exigences sans story ; exigences sans test ; stories sans exigence ; stories sans test ; tests qui ne vérifient rien). Décisions et risques isolés : non listés.
+- **D76 (option B)** : un clic sur un code ouvre la fiche de l'élément dans son écran de registre.
+- **D77** : calcul = fonction pure `computeTraceability` (`src/domain/traceability.ts`) ; lecteur en lecture seule (`src/data/repositories/traceability.ts`) ; aucune écriture, aucun journal, aucune migration.
+- **D78** : hors périmètre : export (M8), seuils ou couleurs « bon ou mauvais », analyse d'impact, correction automatique.
+
+### Écarts et décisions d'implémentation (à connaître)
+1. **Statut de test inattendu** : un test dont le statut n'est pas l'un des quatre connus rend le résultat de l'exigence « À exécuter », jamais « Réussi ». (Un premier jet le laissait passer ; attrapé par un test avant livraison.)
+2. **Éléments ignorés** : le compteur ne porte que sur les types de la chaîne (parties prenantes, besoins, exigences, stories, tests), pas sur les décisions ni les risques.
+3. **Test qui ne vérifie plus qu'un élément archivé ou rejeté** : il devient « test qui ne vérifie rien » (sa cible n'est plus active).
+4. **Doublon** : un test qui vérifie à la fois l'exigence et une de ses stories est compté **direct** (pas deux fois).
+5. **Dernière exécution** : la matrice affiche la date la plus récente parmi les tests de l'exigence, à titre d'information ; aucun jugement de fraîcheur (D65 : pas d'historique).
+6. **Ouverture de fiche (D76)** : chacun des sept écrans de registre accepte une demande « ouvrir tel élément » et ouvre la fiche dès que sa liste est chargée ; la demande est effacée une fois traitée **et** à toute navigation par le menu, pour qu'elle ne reste jamais en attente. Le crochet React est dans `shared/use-open-request.ts` ; la règle (`shouldOpen`) est dans `shared/open-request.ts`, sans React, pour rester testable.
+7. **Nouveau composant** : `TabBar` (onglets) dans `shared/ui.tsx`.
+8. Aucun code Rust modifié ; aucune migration ; version 0.8.0 (trois manifestes alignés). La 0.7.0 doit pouvoir rouvrir une base utilisée par la 0.8.0 (schéma identique) : vérifié par la recette.
+
+### Limites connues
+- **Les clics ne sont pas testés automatiquement** : ouverture de fiche, changement d'onglet et filtre ne se vérifient qu'à la recette. Le branchement de l'ouverture dans les sept écrans est contrôlé par un test qui lit le texte des sources (il vérifie la présence du crochet et du passage de la demande, pas son exécution).
+- Performance sur une très grosse base : non mesurée (le projet est chargé en mémoire).
+- La matrice est parlante seulement avec des données : le projet d'exemple (M9) y remédiera.
 - Non vérifié ici : build Windows (votre CI), comportement sur votre base réelle.
 
 ## Non vérifié lors de l'écriture (à valider via GitHub Actions)

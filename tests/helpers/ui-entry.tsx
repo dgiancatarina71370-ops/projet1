@@ -12,6 +12,8 @@ import { StoryDetailView, StoryFormView, StoryListView } from '../../src/modules
 import type { StoryRow } from '../../src/modules/stories/StoriesView.tsx';
 import { TestDetailView, TestFormView, TestListView } from '../../src/modules/testcases/TestsView.tsx';
 import type { TestRow } from '../../src/modules/testcases/TestsView.tsx';
+import { TraceabilityPageView } from '../../src/modules/traceability/TraceabilityView.tsx';
+import type { Traceability } from '../../src/domain/traceability.ts';
 import { RiskDetailView, RiskFormView, RiskListView } from '../../src/modules/risks/RisksView.tsx';
 import type { RiskRow } from '../../src/modules/risks/RisksView.tsx';
 import { NeedDetailView, NeedFormView, NeedListView, NoProjectView as AnalysisNoProject, RequirementDetailView, RequirementFormView, RequirementListView } from '../../src/modules/analysis/AnalysisView.tsx';
@@ -75,11 +77,13 @@ export const render = {
     renderToStaticMarkup(
       <TestFormView heading="Nouveau test" values={p.values} errors={p.errors} busy={false} error="" onChange={noop} onSubmit={noop} onCancel={noop} askAbandon={p.askAbandon} onConfirmAbandon={noop} onKeepEditing={noop} />,
     ),
+  trace: (p: { data: Traceability; tab: string; filter: string; error: string }): string =>
+    renderToStaticMarkup(<TraceabilityPageView projectName="Mon projet" summary={p.data.summary} ignored={p.data.ignored} rows={p.data.matrix} orphans={p.data.orphans} tab={p.tab} onTab={noop} filter={p.filter} onFilter={noop} onOpen={noop} error={p.error} />),
   links: (p: { rows: LinkRowView[]; options: LinkOptionView[]; optionKey: string; candidates: LinkCandidateView[]; candidateId: string; error: string; confirmRemove: { linkId: number; message: string } | null }): string =>
     renderToStaticMarkup(
       <LinksView rows={p.rows} options={p.options} optionKey={p.optionKey} candidates={p.candidates} candidateId={p.candidateId} busy={false} error={p.error} confirmRemove={p.confirmRemove} onOption={noop} onCandidate={noop} onAdd={noop} onAskRemove={noop} onConfirmRemove={noop} onCancelRemove={noop} />,
     ),
-  shell: (p: { navigable: boolean; screen: 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'stories' | 'tests' | 'technical'; projects: Array<{ id: number; name: string }>; activeId: number | null }): string =>
+  shell: (p: { navigable: boolean; screen: 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'stories' | 'tests' | 'traceability' | 'technical'; projects: Array<{ id: number; name: string }>; activeId: number | null }): string =>
     renderToStaticMarkup(
       <Shell intro="Introduction" navigable={p.navigable} screen={p.screen} onNavigate={noop} projects={p.projects} activeId={p.activeId} onSelectProject={noop} footer="Signature">
         <p>Contenu</p>

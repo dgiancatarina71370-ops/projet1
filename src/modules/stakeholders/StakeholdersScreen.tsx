@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { changeItemStatus, deleteItem } from '../../data/repositories/items.ts';
 import { linksOfItem } from '../../data/repositories/links.ts';
 import { createStakeholder, listStakeholders, updateStakeholder } from '../../data/repositories/stakeholders.ts';
+import { useOpenRequest } from '../../shared/use-open-request.ts';
 import { Card } from '../../shared/ui.tsx';
 import type { LinksSlot } from '../../shared/ui.tsx';
 import { NoProjectView, StakeholderDetailView, StakeholderFormView, StakeholderListView } from './StakeholdersView.tsx';
@@ -13,7 +14,7 @@ import type { FormErrors, FormValues, StatusFilter } from './logic.ts';
 
 type Mode = { kind: 'list' } | { kind: 'detail'; id: number } | { kind: 'form'; id: number | null };
 
-export function StakeholdersScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void; renderLinks?: LinksSlot }) {
+export function StakeholdersScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void; renderLinks?: LinksSlot; openId?: number | null; onOpenHandled?: () => void }) {
   const { projectId } = props;
   const [rows, setRows] = useState<StakeholderRow[]>([]);
   const [filter, setFilter] = useState<StatusFilter>('all');
@@ -44,6 +45,9 @@ export function StakeholdersScreen(props: { projectId: number | null; projectNam
     setError('');
     void reload();
   }, [reload]);
+
+  // Ouverture demandée depuis la traçabilité (D76) : fiche ouverte dès que la liste est chargée.
+  useOpenRequest(props.openId, rows.map((r) => r.id), (id) => { setConfirmDelete(null); setError(''); setMode({ kind: 'detail', id }); }, props.onOpenHandled);
 
   const run = async (fn: () => Promise<void>): Promise<boolean> => {
     setBusy(true);

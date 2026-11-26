@@ -87,6 +87,26 @@ export function StatusFilterBar(props: { options: ReadonlyArray<{ value: string;
   );
 }
 
+/** Onglets d'un écran (lot M6) : une seule vue affichée à la fois ; l'onglet courant est annoncé par aria-selected. */
+export function TabBar(props: { tabs: ReadonlyArray<{ value: string; label: string }>; value: string; onChange: (v: string) => void }) {
+  return (
+    <div role="tablist" className="flex flex-wrap gap-2 border-b border-hub-line text-sm">
+      {props.tabs.map((t) => (
+        <button
+          key={t.value}
+          type="button"
+          role="tab"
+          aria-selected={props.value === t.value}
+          className={`-mb-px border-b-2 px-3 py-1.5 ${props.value === t.value ? 'border-hub-accent text-hub-accent' : 'border-transparent text-hub-muted'}`}
+          onClick={() => props.onChange(t.value)}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /** Barre d'actions d'une fiche : Modifier, les actions propres au type (statut, archivage), Supprimer… (la confirmation est gérée par l'écran). */
 export function ItemActionBar(props: { busy: boolean; onEdit: () => void; onAskDelete: () => void; children?: ReactNode }) {
   return (

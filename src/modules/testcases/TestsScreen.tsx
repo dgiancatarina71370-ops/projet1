@@ -4,6 +4,7 @@ import { changeItemStatus, deleteItem } from '../../data/repositories/items.ts';
 import { createTestCase, listTestCases, updateTestCase } from '../../data/repositories/testcases.ts';
 import type { TestCase } from '../../data/repositories/testcases.ts';
 import { linksOfItem } from '../../data/repositories/links.ts';
+import { useOpenRequest } from '../../shared/use-open-request.ts';
 import { Card } from '../../shared/ui.tsx';
 import type { LinksSlot } from '../../shared/ui.tsx';
 import { deletionMessage, filterByStatus, isDirty } from '../../shared/register-logic.ts';
@@ -13,7 +14,7 @@ import type { TestForm, TestFormErrors } from './logic.ts';
 
 type Mode = { kind: 'list' } | { kind: 'detail'; id: number } | { kind: 'form'; id: number | null };
 
-export function TestsScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void; renderLinks?: LinksSlot }) {
+export function TestsScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void; renderLinks?: LinksSlot; openId?: number | null; onOpenHandled?: () => void }) {
   const { projectId } = props;
   const [rows, setRows] = useState<TestCase[]>([]);
   const [filter, setFilter] = useState('all');
@@ -44,6 +45,9 @@ export function TestsScreen(props: { projectId: number | null; projectName: stri
     setError('');
     void reload();
   }, [reload]);
+
+  // Ouverture demandée depuis la traçabilité (D76) : fiche ouverte dès que la liste est chargée.
+  useOpenRequest(props.openId, rows.map((r) => r.id), (id) => { setConfirmDelete(null); setError(''); setMode({ kind: 'detail', id }); }, props.onOpenHandled);
 
   const run = async (fn: () => Promise<void>): Promise<boolean> => {
     setBusy(true);

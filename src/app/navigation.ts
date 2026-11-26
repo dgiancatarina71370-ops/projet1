@@ -1,9 +1,9 @@
-// Navigation de l'application (lots M3a à M5, décisions D33 et D67). Logique pure : la liste des écrans et le choix de l'écran affiché.
+// Navigation de l'application (lots M3a à M6, décisions D33, D67 et D70). Logique pure : la liste des écrans et le choix de l'écran affiché.
 // Une entrée n'est ajoutée que quand son écran existe : on n'affiche pas d'écran vide.
 
 import type { ItemKind } from '../domain/kinds.ts';
 
-export type ScreenId = 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'stories' | 'tests' | 'technical';
+export type ScreenId = 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'stories' | 'tests' | 'traceability' | 'technical';
 
 export interface ScreenInfo {
   id: ScreenId;
@@ -16,12 +16,13 @@ export interface NavSection {
   screens: readonly ScreenInfo[];
 }
 
-// Menu regroupé (lot M5, décision D67, option B) : l'ordre suit la chaîne de traçabilité. Projets et Technique restent aux extrémités.
+// Menu regroupé (lot M5, décision D67, option B) : l'ordre suit la chaîne de traçabilité ; la section « Contrôle » (lot M6, D70) porte la vue calculée. Projets et Technique restent aux extrémités.
 export const NAV_SECTIONS: readonly NavSection[] = [
   { title: null, screens: [{ id: 'projects', label: 'Projets' }] },
   { title: 'Analyse', screens: [{ id: 'stakeholders', label: 'Parties prenantes' }, { id: 'needs', label: 'Besoins' }, { id: 'requirements', label: 'Exigences' }] },
   { title: 'Pilotage', screens: [{ id: 'decisions', label: 'Décisions' }, { id: 'risks', label: 'Risques' }] },
   { title: 'Réalisation', screens: [{ id: 'stories', label: 'User stories' }, { id: 'tests', label: 'Tests' }] },
+  { title: 'Contrôle', screens: [{ id: 'traceability', label: 'Traçabilité' }] },
   { title: null, screens: [{ id: 'technical', label: 'Technique' }] },
 ];
 
@@ -33,6 +34,19 @@ export const SCREENS: readonly ScreenInfo[] = NAV_SECTIONS.flatMap((section) => 
  * (« User story » avant M5, par exemple). À compléter avec chaque nouveau registre.
  */
 export const KINDS_WITH_SCREEN: readonly ItemKind[] = ['stakeholder', 'need', 'requirement', 'decision', 'risk', 'story', 'test'];
+
+/** Écran de registre qui montre les éléments d'un type : sert à ouvrir une fiche depuis un autre écran (lot M6, D76). */
+export function screenForKind(kind: ItemKind): ScreenId {
+  switch (kind) {
+    case 'stakeholder': return 'stakeholders';
+    case 'need': return 'needs';
+    case 'requirement': return 'requirements';
+    case 'decision': return 'decisions';
+    case 'risk': return 'risks';
+    case 'story': return 'stories';
+    case 'test': return 'tests';
+  }
+}
 
 /** Écran affiché au démarrage : les projets tant qu'il n'y en a aucun d'actif, sinon les parties prenantes (le travail courant). */
 export function startScreen(activeProjectId: number | null): ScreenId {

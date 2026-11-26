@@ -16,7 +16,7 @@ import type { Notice } from './maintenance.ts';
 import { buildSignature, signatureLines } from '../shared/signature.ts';
 import { Card } from '../shared/ui.tsx';
 import { Shell } from './Shell.tsx';
-import { startScreen } from './navigation.ts';
+import { screenForKind, startScreen } from './navigation.ts';
 import type { ScreenId } from './navigation.ts';
 import { ProjectsScreen } from '../modules/projects/ProjectsScreen.tsx';
 import { chooseActiveProject, selectableProjects } from '../modules/projects/logic.ts';
@@ -26,6 +26,7 @@ import { DecisionsScreen } from '../modules/decisions/DecisionsScreen.tsx';
 import { RisksScreen } from '../modules/risks/RisksScreen.tsx';
 import { StoriesScreen } from '../modules/stories/StoriesScreen.tsx';
 import { TestsScreen } from '../modules/testcases/TestsScreen.tsx';
+import { TraceabilityScreen } from '../modules/traceability/TraceabilityScreen.tsx';
 import { RequirementsScreen } from '../modules/analysis/RequirementsScreen.tsx';
 import { LinksSection } from './LinksSection.tsx';
 import type { ItemKind } from '../domain/kinds.ts';
@@ -52,6 +53,8 @@ export function App() {
   const [notices, setNotices] = useState<Notice[]>([]);
   const [screen, setScreen] = useState<ScreenId>('projects');
   const [activeId, setActiveId] = useState<number | null>(null);
+  // Demande « ouvrir cette fiche » venue de la traçabilité (lot M6, D76) : traitée par l'écran du type, puis effacée.
+  const [openRequest, setOpenRequest] = useState<{ kind: ItemKind; id: number } | null>(null);
 
   const refresh = useCallback(async () => setSnap(await takeSnapshot()), []);
 
@@ -131,14 +134,25 @@ export function App() {
   const active = projectOptions.find((p) => p.id === activeId) ?? null;
   const ready = result?.status === 'ready';
   // Zone « Liens » de chaque fiche : l'application l'assemble (les écrans de registre ne s'importent pas entre eux).
+  const openItem = useCallback((kind: ItemKind, id: number) => {
+    setOpenRequest({ kind, id });
+    setScreen(screenForKind(kind));
+  }, []);
+  const clearOpen = useCallback(() => setOpenRequest(null), []);
+  // Une navigation par le menu annule toute demande en attente (élément supprimé ou d'un autre projet : elle ne doit pas rester pendante).
+  const navigate = useCallback((s: ScreenId) => {
+    setOpenRequest(null);
+    setScreen(s);
+  }, []);
+  const openProps = (kind: ItemKind) => ({ openId: openRequest !== null && openRequest.kind === kind ? openRequest.id : null, onOpenHandled: clearOpen });
   const renderLinks = (itemId: number, kind: string) => <LinksSection key={itemId} itemId={itemId} kind={kind as ItemKind} onChanged={() => void refresh()} />;
 
   return (
     <Shell
-      intro="Lot M5 : user stories, tests et liens entre éléments (de la partie prenante au test). Le schéma de la base passe à la version 6. Sauvegarde, import V1, export et À propos sont dans l’écran Technique. La traçabilité calculée (couverture, éléments orphelins) arrive au lot suivant."
+      intro="Lot M6 : traçabilité calculée (matrice, couverture, éléments orphelins), en lecture seule. Le schéma de la base reste à la version 6. Sauvegarde, import V1, export et À propos sont dans l’écran Technique."
       navigable={ready}
       screen={screen}
-      onNavigate={setScreen}
+      onNavigate={navigate}
       projects={projectOptions}
       activeId={activeId}
       onSelectProject={(id) => void selectProject(id)}
@@ -190,9 +204,10 @@ export function App() {
         <StakeholdersScreen
           projectId={active ? active.id : null}
           projectName={active ? active.name : ''}
-          onGoToProjects={() => setScreen('projects')}
+          onGoToProjects={() => navigate('projects')}
           onChanged={() => void refresh()}
           renderLinks={renderLinks}
+          {...openProps('stakeholder')}
         />
       )}
 
@@ -200,9 +215,10 @@ export function App() {
         <NeedsScreen
           projectId={active ? active.id : null}
           projectName={active ? active.name : ''}
-          onGoToProjects={() => setScreen('projects')}
+          onGoToProjects={() => navigate('projects')}
           onChanged={() => void refresh()}
           renderLinks={renderLinks}
+          {...openProps('need')}
         />
       )}
 
@@ -210,9 +226,10 @@ export function App() {
         <RequirementsScreen
           projectId={active ? active.id : null}
           projectName={active ? active.name : ''}
-          onGoToProjects={() => setScreen('projects')}
+          onGoToProjects={() => navigate('projects')}
           onChanged={() => void refresh()}
           renderLinks={renderLinks}
+          {...openProps('requirement')}
         />
       )}
 
@@ -220,9 +237,10 @@ export function App() {
         <DecisionsScreen
           projectId={active ? active.id : null}
           projectName={active ? active.name : ''}
-          onGoToProjects={() => setScreen('projects')}
+          onGoToProjects={() => navigate('projects')}
           onChanged={() => void refresh()}
           renderLinks={renderLinks}
+          {...openProps('decision')}
         />
       )}
 
@@ -230,9 +248,10 @@ export function App() {
         <RisksScreen
           projectId={active ? active.id : null}
           projectName={active ? active.name : ''}
-          onGoToProjects={() => setScreen('projects')}
+          onGoToProjects={() => navigate('projects')}
           onChanged={() => void refresh()}
           renderLinks={renderLinks}
+          {...openProps('risk')}
         />
       )}
 
@@ -240,9 +259,10 @@ export function App() {
         <StoriesScreen
           projectId={active ? active.id : null}
           projectName={active ? active.name : ''}
-          onGoToProjects={() => setScreen('projects')}
+          onGoToProjects={() => navigate('projects')}
           onChanged={() => void refresh()}
           renderLinks={renderLinks}
+          {...openProps('story')}
         />
       )}
 
@@ -250,9 +270,19 @@ export function App() {
         <TestsScreen
           projectId={active ? active.id : null}
           projectName={active ? active.name : ''}
-          onGoToProjects={() => setScreen('projects')}
+          onGoToProjects={() => navigate('projects')}
           onChanged={() => void refresh()}
           renderLinks={renderLinks}
+          {...openProps('test')}
+        />
+      )}
+
+      {result?.status === 'ready' && screen === 'traceability' && (
+        <TraceabilityScreen
+          projectId={active ? active.id : null}
+          projectName={active ? active.name : ''}
+          onGoToProjects={() => navigate('projects')}
+          onOpenItem={openItem}
         />
       )}
 
