@@ -501,6 +501,32 @@ Méthode : comparaison des huit fichiers `*Screen.tsx` après remplacement des m
 - Écart conservé (D104) : la question d'abandon et le formulaire ne sont pas remis à zéro au changement de projet (identique dans les huit écrans d'origine).
 - Recette : `TESTS-M8b-generalisation.md` (réduite). Non vérifié ici : rendu et comportement réels, compilation Rust, `tsc` avec les vrais types React (Actions).
 
+### M8b VALIDÉE (26/11/2026)
+
+- Pilote (0.10.1) puis généralisation (0.10.2) validés par recette manuelle sur clé. Dette D68 soldée pour les huit écrans de registre. Aucune réserve nouvelle. Réserves ouvertes héritées : test 12 de V2.3b et C13 (optionnels).
+- Séquencement : M9 (projet d'exemple + guide + mémo), puis UX+, puis V2 (Q1, K1, A2, V2.7, V2.3c PDF), puis V3 (IA). Aucun développement de M9 avant plan validé et « Go ».
+
+## Lot M9 : projet d'exemple, guide de démonstration, mémo créateur (version cible 0.11.0, schéma 7 inchangé)
+
+**M9 en cours.** Plan présenté le 26/11/2026, « Go M9 » donné le même jour. D105 à D114 validées (D112 : Markdown et Word).
+
+- **D105** : périmètre = générateur du projet d'exemple, guide, mémo. Ni nouvel écran, ni aide contextuelle, ni parcours d'apprentissage.
+- **D106** : domaine fictif et neutre : « Portail de réservation de salles » d'une commune inventée (Val-des-Sources), fonctions seulement, aucune personne.
+- **D107** : création à la demande par un bouton de l'écran Projets, jamais automatique ; nom « [Exemple] Portail de réservation de salles » ; doublon refusé ; suppression par la suppression de projet habituelle.
+- **D108** : création par les dépôts existants (codes, journal, validations) ; données pures dans `src/domain/sample-project.ts` ; écriture dans `src/data/` ; nettoyage en cas d'échec.
+- **D109** : manques volontaires : EX-006, EX-007 et EX-008 sans story ; EX-008 sans test ; US-006 sans exigence ni test ; TEST-003 en échec ; TEST-005 bloqué ; RIS-004 archivé (démonstration du filtre « inclure les archivés »).
+- **D110** : guide de démonstration hors application, sans captures d'écran produites par Claude.
+- **D111** : mémo créateur hors application, pour non-développeur, avec un passage « ce qui n'est pas vérifié ».
+- **D112** : documents en Markdown (dépôt, `docs/`) et en Word.
+- **D113** : hors périmètre : plusieurs jeux d'exemple, export ou import de l'exemple, changements d'écrans. Les défauts d'UX relevés vont à UX+.
+- **D114** : version 0.11.0, aucune migration.
+
+**Étape 1 (contenu) validée le 26/11/2026** : 38 éléments (5 parties prenantes, 4 besoins, 8 exigences, 3 décisions, 4 risques, 6 stories, 7 tests, 1 atelier) et 52 liens.
+
+**Écarts relevés à l'étape 2 (corrigés dans le contenu, signalés à David)** :
+1. Les codes réels ont trois chiffres (PP-001, EX-001…), pas PP-1 : l'étape 1 les écrivait en abrégé.
+2. Le tableau des orphelins de l'étape 1 était faux : avec TEST-002 ne vérifiant que EX-002, la story US-002 restait sans test. Correction : TEST-002 vérifie aussi US-002 (liens : 51 → 52). Le tableau des orphelins validé est ainsi respecté tel quel.
+
 ## Non vérifié lors de l'écriture (à valider via GitHub Actions)
 - Compilation et tests de `backup.rs` et `main.rs` (dépendent de `rusqlite` et de Tauri, inaccessibles ici), dont la commande `import_pick_file` et la boîte de dialogue Windows. `files.rs` (std seule) a été compilé et testé ici : 15 tests. Pour V2.3a : la commande `export_save` et l'utilisation de `set_file_name` / `set_directory` / `blocking_save_file` du plugin de dialogue.
 - Build Vite + Tailwind, rendu final, `tauri build`, exécution réelle.
