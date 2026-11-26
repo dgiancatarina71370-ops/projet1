@@ -41,27 +41,28 @@ function cleanLines(text: string): string[] {
 }
 
 /**
- * Texte libre (notes, critères, étapes…) en citation. Les retours à la ligne saisis sont conservés (saut de ligne forcé),
- * les paragraphes aussi. Chaque ligne est neutralisée.
+ * Texte libre (notes, critères, étapes…) en paragraphes ordinaires, sans barre de citation (retour de recette M8).
+ * Les retours à la ligne saisis sont conservés (saut de ligne forcé), les paragraphes aussi. Chaque ligne est neutralisée :
+ * c'est cette neutralisation, et non la citation, qui empêche le texte saisi de devenir un titre, une liste ou un tableau (D93).
  */
-export function quote(text: string): string {
+export function freeText(text: string): string {
   const lines = cleanLines(text);
   return lines
     .map((l, i) => {
-      if (l === '') return '>';
+      if (l === '') return '';
       const next = lines[i + 1];
       const hardBreak = next !== undefined && next !== '' ? '  ' : '';
-      return `> ${guardLineStart(inline(l))}${hardBreak}`;
+      return `${guardLineStart(inline(l))}${hardBreak}`;
     })
     .join('\n');
 }
 
-/** Texte libre en citation ; `none` (texte courant, déjà sûr) quand il est vide. */
+/** Texte libre en paragraphes ; `none` (texte courant, déjà sûr) quand il est vide. */
 export function body(text: string, none: string): string {
-  return cleanLines(text).length === 0 ? none : quote(text);
+  return cleanLines(text).length === 0 ? none : freeText(text);
 }
 
-/** Un champ à texte libre : titre en gras puis citation ; « Non renseigné. » quand il est vide. */
+/** Un champ à texte libre : intitulé en gras puis paragraphes ; « Non renseigné. » quand il est vide. */
 export function field(label: string, text: string): string {
   return `**${label} :**\n\n${body(text, 'Non renseigné.')}`;
 }

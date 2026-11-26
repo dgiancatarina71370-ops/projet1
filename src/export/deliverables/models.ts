@@ -326,11 +326,11 @@ function traceabilityMatrix(data: ProjectData): Deliverable {
     return t;
   });
   const trace = computeTraceability(items, data.links);
-  const ignoredText = trace.ignored === 0 ? 'aucun élément archivé ou rejeté' : `${count(trace.ignored, 'élément archivé ou rejeté ignoré', 'éléments archivés ou rejetés ignorés')}`;
+  const ignoredText = trace.ignored === 0 ? 'aucun élément archivé ou rejeté à ignorer' : `${count(trace.ignored, 'élément archivé ou rejeté ignoré', 'éléments archivés ou rejetés ignorés')}`;
   const blocks = [
     heading(1, 'Matrice de traçabilité'),
     `**Projet :** ${inline(data.projectName)}`,
-    `**Périmètre :** éléments actifs de la chaîne parties prenantes, besoins, exigences, user stories, tests ; ${ignoredText} (toujours ignorés dans ce calcul).`,
+    `**Périmètre :** éléments actifs de la chaîne parties prenantes, besoins, exigences, user stories, tests ; ${ignoredText} (les éléments archivés ou rejetés sont toujours ignorés dans ce calcul).`,
     heading(2, 'Couverture'),
     table(['Indicateur', 'Résultat'], COVERAGE_LABELS.map((c) => [cell(c.label), cell(ratioText(trace.summary[c.key]))])),
     heading(2, 'Matrice'),

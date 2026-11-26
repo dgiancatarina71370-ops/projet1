@@ -26,7 +26,7 @@ import { readDocx, missingFromDocx } from '../src/export/docx-check.ts';
 import { buildSignature } from '../src/shared/signature.ts';
 import { COVERAGE_LABELS, MODELS, ORPHAN_LABELS, generateDeliverable, modelInfo, ratioText } from '../src/export/deliverables/models.ts';
 import type { ModelId } from '../src/export/deliverables/models.ts';
-import { body, cell, field, heading, headingText, inline, quote, table } from '../src/export/deliverables/text.ts';
+import { body, cell, field, freeText, heading, headingText, inline, table } from '../src/export/deliverables/text.ts';
 import type { DItem, DLink, ProjectData } from '../src/domain/project-data.ts';
 import { ORPHAN_GROUPS, RESULT_LABELS, ratioText as screenRatioText, summaryLines } from '../src/modules/traceability/logic.ts';
 
@@ -96,28 +96,28 @@ test('D93 : un titre ne se ferme pas par des « # » et ne contient jamais de re
   assert.equal(heading(2, 'A'), '## A');
 });
 
-test('D93 : une citation garde les retours à la ligne et neutralise le début des lignes', () => {
-  assert.equal(quote('a\nb'), '> a  \n> b');
-  assert.equal(quote('a\n\nb'), '> a\n>\n> b');
-  assert.equal(quote('\n\n  a  \n\n\n\n b \n\n'), '> a\n>\n> b');
-  assert.equal(quote('# titre'), '> \\# titre');
-  assert.equal(quote('- puce'), '> \\- puce');
-  assert.equal(quote('+ plus'), '> \\+ plus');
-  assert.equal(quote('= égal'), '> \\= égal');
-  assert.equal(quote('1. un\n2) deux'), '> 1\\. un  \n> 2\\) deux');
-  assert.equal(quote('    indenté'), '> indenté');
-  assert.equal(quote('---'), '> \\---');
-  assert.equal(quote('```js'), '> \\`\\`\\`js');
-  assert.equal(quote('> déjà cité'), '> \\> déjà cité');
-  assert.equal(quote('a\r\nb\rc'), '> a  \n> b  \n> c');
+test('D93 : un texte libre garde ses retours à la ligne et neutralise le début des lignes', () => {
+  assert.equal(freeText('a\nb'), 'a  \nb');
+  assert.equal(freeText('a\n\nb'), 'a\n\nb');
+  assert.equal(freeText('\n\n  a  \n\n\n\n b \n\n'), 'a\n\nb');
+  assert.equal(freeText('# titre'), '\\# titre');
+  assert.equal(freeText('- puce'), '\\- puce');
+  assert.equal(freeText('+ plus'), '\\+ plus');
+  assert.equal(freeText('= égal'), '\\= égal');
+  assert.equal(freeText('1. un\n2) deux'), '1\\. un  \n2\\) deux');
+  assert.equal(freeText('    indenté'), 'indenté');
+  assert.equal(freeText('---'), '\\---');
+  assert.equal(freeText('```js'), '\\`\\`\\`js');
+  assert.equal(freeText('> déjà cité'), '\\> déjà cité');
+  assert.equal(freeText('a\r\nb\rc'), 'a  \nb  \nc');
 });
 
 test('D93 : body, field et table', () => {
   assert.equal(body('', 'Aucune note.'), 'Aucune note.');
   assert.equal(body('  \n ', 'Aucune note.'), 'Aucune note.');
-  assert.equal(body('x', 'Aucune note.'), '> x');
+  assert.equal(body('x', 'Aucune note.'), 'x');
   assert.equal(field('Objectif', ''), '**Objectif :**\n\nNon renseigné.');
-  assert.equal(field('Objectif', 'x'), '**Objectif :**\n\n> x');
+  assert.equal(field('Objectif', 'x'), '**Objectif :**\n\nx');
   assert.equal(table(['A', 'B'], [['1', '2']]), '| A | B |\n| --- | --- |\n| 1 | 2 |');
 });
 
@@ -200,16 +200,16 @@ test('compte rendu d\'atelier : en-tête, participants, éléments issus, notes,
   const md = gen('workshop-report');
   assert.ok(md.startsWith("# Compte rendu d'atelier\n"));
   for (const line of ['**Projet :** Projet CRP', '**Atelier :** ATL-001 — Recueil du besoin', '**Date :** 20/11/2026', '**Lieu ou format :** Salle A', '**Statut :** Tenu']) assert.ok(md.includes(line), line);
-  assert.ok(md.includes('**Objectif :**\n\n> Recueillir le besoin'));
-  assert.ok(md.includes('**Description :**\n\n> Premier atelier'));
+  assert.ok(md.includes('**Objectif :**\n\nRecueillir le besoin'));
+  assert.ok(md.includes('**Description :**\n\nPremier atelier'));
   assert.ok(md.includes('| PP-001 | Alice Martin | DSI | Sponsor |'));
   // Éléments issus : ordre besoin, exigence, décision, risque ; l'exigence archivée (EX-002) est exclue.
   const i = (s: string): number => md.indexOf(s);
   assert.ok(i('| Besoin | BES-001') > 0 && i('| Besoin | BES-001') < i('| Exigence | EX-003') && i('| Exigence | EX-003') < i('| Décision | DEC-001') && i('| Décision | DEC-001') < i('| Risque | RIS-001'));
   assert.ok(!md.includes('EX-002') && !md.includes('PP-002'), 'archivés exclus');
   assert.ok(md.includes('2 éléments archivés ou rejetés exclus'));
-  assert.ok(md.includes('## Notes\n\n> Point 1  \n> Point 2'));
-  assert.ok(md.includes('## Points ouverts et actions\n\n> Action : envoyer le CR'));
+  assert.ok(md.includes('## Notes\n\nPoint 1  \nPoint 2'));
+  assert.ok(md.includes('## Points ouverts et actions\n\nAction : envoyer le CR'));
   assert.ok(md.includes('| Décision | DEC-001 | Choix initial | Remplacée |'));
 });
 
@@ -240,7 +240,7 @@ test('registre des exigences : tri par priorité puis code, archivées exclues, 
   assert.ok(md.includes('| EX-003 | Afficher les campagnes | Fonctionnelle | Indispensable (Must) | Validé | BES-001 |'));
   assert.ok(md.includes('| EX-001 | Exporter en Word | Non fonctionnelle | Important (Should) | Brouillon | — |'));
   assert.ok(!md.includes('EX-002'));
-  assert.ok(md.includes('### EX-003 — Afficher les campagnes\n\n**Description :**\n\n> Vue de synthèse\n\n**Critères d\'acceptation :**\n\n> Liste triée  \n> Filtre par date'));
+  assert.ok(md.includes('### EX-003 — Afficher les campagnes\n\n**Description :**\n\nVue de synthèse\n\n**Critères d\'acceptation :**\n\nListe triée  \nFiltre par date'));
   assert.ok(!md.includes('### EX-001'), 'une exigence sans description ni critères n\'a pas de fiche');
   const all = gen('requirements', reference(), { includeArchived: true });
   assert.ok(all.includes('| EX-002 | Ancienne exigence | Contrainte | Souhaitable (Could) | Archivé | — |'));
@@ -253,7 +253,7 @@ test('registre des décisions : date, décideur, remplacements dans les deux sen
   assert.ok(md.includes('**Synthèse :** 2 décisions. Tri : code.'));
   assert.ok(md.includes('| DEC-001 | Choix initial | Remplacée | 10/11/2026 | Comité | remplacée par DEC-002 |'));
   assert.ok(md.includes('| DEC-002 | Choix révisé | Prise | — | — | remplace DEC-001 |'));
-  assert.ok(md.includes('### DEC-001 — Choix initial\n\n**Alternatives envisagées :**\n\n> Option B\n\n**Justification :**\n\n> Coût'));
+  assert.ok(md.includes('### DEC-001 — Choix initial\n\n**Alternatives envisagées :**\n\nOption B\n\n**Justification :**\n\nCoût'));
   assert.ok(!md.includes('### DEC-002'));
 });
 
@@ -261,7 +261,7 @@ test('registre des risques : niveaux côte à côte, aucun score, plan de traite
   const md = gen('risks');
   assert.ok(md.includes('| RIS-001 | Retard de livraison | Identifié | Élevé | Moyen | Chef de projet |'));
   assert.ok(md.includes('Aucun score n\'est calculé'));
-  assert.ok(md.includes('### RIS-001 — Retard de livraison\n\n**Plan de traitement :**\n\n> Livrer par lots'));
+  assert.ok(md.includes('### RIS-001 — Retard de livraison\n\n**Plan de traitement :**\n\nLivrer par lots'));
   assert.ok(md.includes('**Synthèse :** 1 risque.'));
 });
 
@@ -269,7 +269,7 @@ test('backlog des user stories : phrase complète ou champs séparés, exigences
   const md = gen('stories');
   assert.ok(md.includes('| US-001 | Voir les campagnes | Prête | EX-003 |'));
   assert.ok(md.includes('En tant que **responsable CRP**, je veux **suivre les campagnes**, afin de **piloter**.'));
-  assert.ok(md.includes("**Critères d'acceptation :**\n\n> Tri par date"));
+  assert.ok(md.includes("**Critères d'acceptation :**\n\nTri par date"));
   const data = reference();
   data.items = data.items.map((x) => (x.id === 6 ? { ...x, d: { role: 'responsable', goal: '', benefit: 'piloter', criteria: '' } } : x));
   const partial = gen('stories', data);
@@ -281,9 +281,9 @@ test('cahier de recette : type, statut, dernière exécution, ce que le test vé
   const md = gen('test-plan');
   assert.ok(md.includes('**Synthèse :** 1 test (1 Réussi).'));
   assert.ok(md.includes('| TEST-001 | Affichage | Recette (UAT) | Réussi | 20/11/2026 | EX-003 |'));
-  assert.ok(md.includes('**Préconditions :**\n\n> Connecté'));
-  assert.ok(md.includes('**Étapes :**\n\n> Ouvrir  \n> Cliquer'));
-  assert.ok(md.includes('**Résultat attendu :**\n\n> Liste visible'));
+  assert.ok(md.includes('**Préconditions :**\n\nConnecté'));
+  assert.ok(md.includes('**Étapes :**\n\nOuvrir  \nCliquer'));
+  assert.ok(md.includes('**Résultat attendu :**\n\nListe visible'));
   const data = reference();
   data.items = [...data.items, di(20, 'test', 'TEST-002', 'Jamais exécuté', 'to_run', { test_type: 'unit', preconditions: '', steps: '', expected: '', last_run_on: '' }), di(21, 'test', 'TEST-003', 'Échec', 'failed', { test_type: 'integration', preconditions: '', steps: '', expected: '', last_run_on: '2026-11-21' })];
   const many = gen('test-plan', data);
@@ -295,7 +295,13 @@ test('cahier de recette : type, statut, dernière exécution, ce que le test vé
 test('matrice de traçabilité : même calcul que l\'écran, mêmes libellés', () => {
   const md = gen('traceability');
   assert.ok(md.includes('1 élément archivé ou rejeté ignoré') === false, 'deux éléments de la chaîne sont archivés dans le jeu');
-  assert.ok(md.includes('2 éléments archivés ou rejetés ignorés (toujours ignorés dans ce calcul)'));
+  assert.ok(md.includes('2 éléments archivés ou rejetés ignorés (les éléments archivés ou rejetés sont toujours ignorés dans ce calcul).'));
+  const none = gen('traceability', { projectName: 'P', items: [], links: [] });
+  assert.ok(none.includes('aucun élément archivé ou rejeté à ignorer (les éléments archivés ou rejetés sont toujours ignorés dans ce calcul).'), 'aucun : phrase sans accord bancal');
+  assert.ok(!none.includes('(toujours ignorés'));
+  const one = reference();
+  one.items = one.items.filter((i) => i.id !== 13);
+  assert.ok(gen('traceability', one).includes('1 élément archivé ou rejeté ignoré (les éléments'), 'un seul : singulier');
   // Libellés identiques à ceux de l'écran (une divergence ferait dire deux choses différentes à l'écran et au document).
   const screen = summaryLines({ stakeholdersWithNeed: { covered: 0, total: 0 }, needsWithRequirement: { covered: 0, total: 0 }, requirementsWithStory: { covered: 0, total: 0 }, requirementsTested: { covered: 0, total: 0 }, requirementsPassed: { covered: 0, total: 0 }, mustTested: { covered: 0, total: 0 } });
   assert.deepEqual(COVERAGE_LABELS.map((c) => [c.key, c.label]), screen.map((l) => [l.key, l.label]));
@@ -466,7 +472,7 @@ test('de bout en bout : contenu réel du compte rendu et de la matrice, version 
     const { projectId, workshopId } = await buildProject();
     const saved = await exportGeneratedToFile(projectId, 'workshop-report', 'markdown', { version: VERSION, now: NOW, includeArchived: false, workshopId });
     const md = fs.readFileSync(saved!.path, 'utf8');
-    for (const s of ['**Atelier :** ATL-001 — Atelier 1', '| PP-001 | Alice | DSI | Sponsor |', '| Besoin | BES-001 | Besoin 1 | Brouillon |', '| Décision | DEC-001 | Décision 1 | Proposée |', '| Risque | RIS-001 | Risque 1 | Identifié |', '> N', '> A']) assert.ok(md.includes(s), s);
+    for (const s of ['**Atelier :** ATL-001 — Atelier 1', '| PP-001 | Alice | DSI | Sponsor |', '| Besoin | BES-001 | Besoin 1 | Brouillon |', '| Décision | DEC-001 | Décision 1 | Proposée |', '| Risque | RIS-001 | Risque 1 | Identifié |', 'N\n', 'A\n']) assert.ok(md.includes(s), s);
     const tr = fs.readFileSync((await exportGeneratedToFile(projectId, 'traceability', 'markdown', { version: VERSION, now: NOW, includeArchived: false }))!.path, 'utf8');
     assert.ok(tr.includes('| EX-001 — Exigence 1 | Indispensable (Must) | BES-001 | US-001 | TEST-001 | À exécuter |'));
     await assert.rejects(exportGeneratedToFile(projectId, 'traceability', 'markdown', { version: '—', now: NOW, includeArchived: false }), /version de l'application est inconnue/);

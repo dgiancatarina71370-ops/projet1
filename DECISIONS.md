@@ -409,7 +409,7 @@ Les intitulés ci-dessous décrivent ce qui a été **implémenté** pour chaque
 
 ## Lot M8 : livrables générés depuis les données (schéma 7 inchangé, version 0.10.0)
 
-**M8 en attente de recette.** Plan présenté le 26/11/2026 ; D88 à D97 validées le même jour, « Go M8 » donné. Recette : `TESTS-M8.md`. Réserves maintenues : test 12 de V2.3b et C13 (optionnel).
+**M8 en attente de recette (deuxième livraison).** Plan présenté le 26/11/2026 ; D88 à D97 validées le même jour, « Go M8 » donné. Retour de recette partiel du 26/11/2026 : matrice Word lisible et sans message de réparation ; barres verticales du compte rendu refusées (option A) et pluriel de la phrase de périmètre de la matrice, corrigés dans cette livraison. Recette : `TESTS-M8.md`. Réserves maintenues : test 12 de V2.3b et C13 (optionnel).
 
 ### Décisions validées par David (26/11/2026)
 - **D88** : un seul lot, sans migration (schéma 7, version 0.10.0, aucun code Rust modifié). La 0.9.0 peut rouvrir une base utilisée par la 0.10.0.
@@ -417,7 +417,7 @@ Les intitulés ci-dessous décrivent ce qui a été **implémenté** pour chaque
 - **D90** : sept modèles fixes (pas de modèles modifiables par l'utilisateur) : compte rendu d'atelier, registre des exigences, registre des décisions, registre des risques, backlog des user stories, cahier de recette, matrice de traçabilité.
 - **D91** : écran « Livrables » (douzième écran, fin de la section Pilotage) : modèle, atelier (compte rendu), case « inclure les éléments archivés ou rejetés » (décochée), « Enregistrer sous… », aperçu texte, export Markdown, HTML ou Word.
 - **D92 (option A)** : bouton « Exporter le compte rendu » sur la fiche d'un atelier ; il ouvre l'écran Livrables avec le modèle et l'atelier présélectionnés.
-- **D93** : le texte saisi n'est jamais interprété comme du Markdown (échappement, citations, début de ligne neutralisé).
+- **D93** : le texte saisi n'est jamais interprété comme du Markdown (échappement des caractères, début de ligne neutralisé). **Corrigé après recette (26/11/2026, option A de David)** : le texte libre n'est plus mis en citation (barre verticale à gauche, jugée peu lisible dans le compte rendu) ; il s'affiche en paragraphes ordinaires sous un intitulé en gras, dans les sept modèles. La sécurité vient de l'échappement, pas de la citation.
 - **D94** : en-tête (projet, périmètre, synthèse), dates JJ/MM/AAAA, « Aucun… » pour une section vide, tri fixe (code ; priorité MoSCoW puis code pour les exigences ; ordre de M6 pour la traçabilité), signature ajoutée une fois par le pipeline.
 - **D95 (option A)** : la dette de duplication des écrans de registre (D68) n'est **pas** traitée dans M8 ; elle fait l'objet d'un lot dédié **M8b**, avant M9. **Changement de position assumé** par rapport à M7 (« avant ou pendant M8 ») : M8 est du code neuf, le mêler à une refonte de huit écrans validés aurait rendu un défaut de recette inattribuable.
 - **D96** : un export ne modifie aucune donnée et ne laisse aucune ligne au journal (comme depuis V2.3a).
@@ -444,7 +444,7 @@ Les intitulés ci-dessous décrivent ce qui a été **implémenté** pour chaque
 - **Non vérifié ici** : l'ouverture des fichiers Word dans Microsoft Word lui-même (absence de message de réparation, largeur des colonnes). **La matrice de traçabilité (six colonnes, titres longs) en portrait A4 est le point le plus risqué** ; c'est le premier à regarder à la recette. Compilation Windows (CI), boîte « Enregistrer sous… », clics, aperçu à l'écran, performances.
 - Pas de PDF (V2.3c), pas de table des matières ni de page de garde, pas de modèle modifiable.
 - Le contenu d'un document dépend uniquement de l'état de la base au moment de l'export ; rien n'est figé ni versionné.
-- Les sections de détail reprennent le texte libre en citation ; la mise en forme saisie par l'utilisateur (gras, listes) est volontairement perdue.
+- Les sections de détail reprennent le texte libre en paragraphes ordinaires ; la mise en forme saisie par l'utilisateur (gras, listes) est volontairement perdue.
 
 ## Non vérifié lors de l'écriture (à valider via GitHub Actions)
 - Compilation et tests de `backup.rs` et `main.rs` (dépendent de `rusqlite` et de Tauri, inaccessibles ici), dont la commande `import_pick_file` et la boîte de dialogue Windows. `files.rs` (std seule) a été compilé et testé ici : 15 tests. Pour V2.3a : la commande `export_save` et l'utilisation de `set_file_name` / `set_directory` / `blocking_save_file` du plugin de dialogue.
