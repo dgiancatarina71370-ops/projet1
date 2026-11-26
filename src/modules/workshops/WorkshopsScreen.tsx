@@ -14,7 +14,7 @@ import type { WorkshopForm, WorkshopFormErrors } from './logic.ts';
 
 type Mode = { kind: 'list' } | { kind: 'detail'; id: number } | { kind: 'form'; id: number | null };
 
-export function WorkshopsScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void; renderLinks?: LinksSlot; openId?: number | null; onOpenHandled?: () => void }) {
+export function WorkshopsScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void; renderLinks?: LinksSlot; openId?: number | null; onOpenHandled?: () => void; onExportReport?: (workshopId: number) => void }) {
   const { projectId } = props;
   const [rows, setRows] = useState<Workshop[]>([]);
   const [filter, setFilter] = useState('all');
@@ -117,6 +117,7 @@ export function WorkshopsScreen(props: { projectId: number | null; projectName: 
         <div className="space-y-4">
           <WorkshopDetailView
             row={current}
+            onExportReport={props.onExportReport ? () => props.onExportReport?.(current.id) : undefined}
             busy={busy}
             error={error}
             confirmDelete={confirmDelete}

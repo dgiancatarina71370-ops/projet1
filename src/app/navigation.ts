@@ -1,9 +1,9 @@
-// Navigation de l'application (lots M3a à M7, décisions D33, D67, D70 et D83). Logique pure : la liste des écrans et le choix de l'écran affiché.
+// Navigation de l'application (lots M3a à M8, décisions D33, D67, D70, D83 et D91). Logique pure : la liste des écrans et le choix de l'écran affiché.
 // Une entrée n'est ajoutée que quand son écran existe : on n'affiche pas d'écran vide.
 
 import type { ItemKind } from '../domain/kinds.ts';
 
-export type ScreenId = 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'stories' | 'tests' | 'traceability' | 'workshops' | 'technical';
+export type ScreenId = 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'stories' | 'tests' | 'traceability' | 'workshops' | 'deliverables' | 'technical';
 
 export interface ScreenInfo {
   id: ScreenId;
@@ -20,7 +20,7 @@ export interface NavSection {
 export const NAV_SECTIONS: readonly NavSection[] = [
   { title: null, screens: [{ id: 'projects', label: 'Projets' }] },
   { title: 'Analyse', screens: [{ id: 'workshops', label: 'Ateliers' }, { id: 'stakeholders', label: 'Parties prenantes' }, { id: 'needs', label: 'Besoins' }, { id: 'requirements', label: 'Exigences' }] },
-  { title: 'Pilotage', screens: [{ id: 'decisions', label: 'Décisions' }, { id: 'risks', label: 'Risques' }] },
+  { title: 'Pilotage', screens: [{ id: 'decisions', label: 'Décisions' }, { id: 'risks', label: 'Risques' }, { id: 'deliverables', label: 'Livrables' }] },
   { title: 'Réalisation', screens: [{ id: 'stories', label: 'User stories' }, { id: 'tests', label: 'Tests' }] },
   { title: 'Contrôle', screens: [{ id: 'traceability', label: 'Traçabilité' }] },
   { title: null, screens: [{ id: 'technical', label: 'Technique' }] },

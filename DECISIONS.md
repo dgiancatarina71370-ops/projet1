@@ -380,7 +380,7 @@ Les intitulés ci-dessous décrivent ce qui a été **implémenté** pour chaque
 
 ## Lot M7 : ateliers (schéma 7, version 0.9.0)
 
-**M7 en attente de recette.** Plan présenté le 26/11/2026 ; D79 à D87 validées le même jour (D86 option A), « Go M7 » donné. Recette : `TESTS-M7.md`. Réserves maintenues : test 12 de V2.3b et C13 (optionnel).
+**M7 VALIDÉE par David le 26/11/2026.** Plan présenté le 26/11/2026 ; D79 à D87 validées le même jour (D86 option A), « Go M7 » donné. Recette `TESTS-M7.md` : tests 1 à 25 OK sur clé USB. Réserves maintenues : test 12 de V2.3b et C13 (optionnel).
 
 ### Décisions validées par David (26/11/2026)
 - **D79** : un seul lot M7 (schéma 7, version 0.9.0, une migration : `workshop_details`).
@@ -406,6 +406,45 @@ Les intitulés ci-dessous décrivent ce qui a été **implémenté** pour chaque
 - Les colonnes de source du modèle (document source et extrait cité, présentes depuis M1) restent inutilisées : la filiation passe par les liens.
 - Sans M8, un atelier n'est qu'une fiche : rien ne s'exporte encore.
 - Non vérifié ici : build Windows (votre CI), comportement sur votre base réelle.
+
+## Lot M8 : livrables générés depuis les données (schéma 7 inchangé, version 0.10.0)
+
+**M8 en attente de recette.** Plan présenté le 26/11/2026 ; D88 à D97 validées le même jour, « Go M8 » donné. Recette : `TESTS-M8.md`. Réserves maintenues : test 12 de V2.3b et C13 (optionnel).
+
+### Décisions validées par David (26/11/2026)
+- **D88** : un seul lot, sans migration (schéma 7, version 0.10.0, aucun code Rust modifié). La 0.9.0 peut rouvrir une base utilisée par la 0.10.0.
+- **D89 (option A)** : le livrable est généré à la volée, jamais enregistré dans la table `documents`.
+- **D90** : sept modèles fixes (pas de modèles modifiables par l'utilisateur) : compte rendu d'atelier, registre des exigences, registre des décisions, registre des risques, backlog des user stories, cahier de recette, matrice de traçabilité.
+- **D91** : écran « Livrables » (douzième écran, fin de la section Pilotage) : modèle, atelier (compte rendu), case « inclure les éléments archivés ou rejetés » (décochée), « Enregistrer sous… », aperçu texte, export Markdown, HTML ou Word.
+- **D92 (option A)** : bouton « Exporter le compte rendu » sur la fiche d'un atelier ; il ouvre l'écran Livrables avec le modèle et l'atelier présélectionnés.
+- **D93** : le texte saisi n'est jamais interprété comme du Markdown (échappement, citations, début de ligne neutralisé).
+- **D94** : en-tête (projet, périmètre, synthèse), dates JJ/MM/AAAA, « Aucun… » pour une section vide, tri fixe (code ; priorité MoSCoW puis code pour les exigences ; ordre de M6 pour la traçabilité), signature ajoutée une fois par le pipeline.
+- **D95 (option A)** : la dette de duplication des écrans de registre (D68) n'est **pas** traitée dans M8 ; elle fait l'objet d'un lot dédié **M8b**, avant M9. **Changement de position assumé** par rapport à M7 (« avant ou pendant M8 ») : M8 est du code neuf, le mêler à une refonte de huit écrans validés aurait rendu un défaut de recette inattribuable.
+- **D96** : un export ne modifie aucune donnée et ne laisse aucune ligne au journal (comme depuis V2.3a).
+- **D97** : hors périmètre : PDF (V2.3c), modèles modifiables, graphiques ou images, enregistrement dans `documents`, envoi par messagerie, IA, lien cliquable depuis un code vers sa fiche.
+- **Séquencement validé** : M8 (livrables), M8b (dette D68), M9 (projet d'exemple, guide, mémo), puis « UX+ » (améliorations ergonomiques après stabilisation).
+
+### Choix de conception
+1. **Couches** : `src/export/deliverables/models.ts` (sept générateurs purs : données du projet vers Markdown) et `text.ts` (neutralisation du texte) ; `src/data/repositories/project-export.ts` (lecteur en lecture seule : éléments, champs des tables d'extension, liens d'un seul projet) ; `exportGeneratedToFile` dans `src/export/service.ts`, qui réutilise le pipeline existant (signature, Markdown, HTML, Word) sans le modifier. Le type `ProjectData` vit dans `src/domain/project-data.ts` pour que la couche data et la couche export le partagent sans dépendre l'une de l'autre (règle R3).
+2. **Périmètre** : les éléments archivés ou rejetés (mêmes statuts que D73 de M6) sont exclus par défaut et le document le dit (« 2 éléments archivés ou rejetés exclus »). La matrice de traçabilité les ignore toujours (calcul de M6, inchangé) ; la case est alors inactive et expliquée.
+3. **Mise en forme** : une table de synthèse (colonnes courtes), puis des fiches « Détail » seulement pour les éléments qui ont du texte long renseigné. Les champs vides ne sont pas listés dans les fiches ; le compte rendu écrit « Non renseigné » pour ses champs fixes.
+4. **Atelier** : tous les ateliers sont proposés, archivés compris (on choisit celui dont on veut le compte rendu). Participants = liens « participe à », éléments issus = liens « provient de » (besoins, exigences, décisions, risques).
+5. **Libellés de la matrice** : copiés de l'écran Traçabilité ; un test vérifie qu'ils sont identiques (une divergence ferait dire deux choses différentes à l'écran et au document).
+6. **Nom de fichier et titre** : « <modèle> <projet> » assaini par la règle existante (100 octets au plus) ; un compte rendu s'appelle « Compte rendu atelier ATL-001 <titre> ».
+
+### Écarts et points à connaître
+1. **Barres obliques inverses visibles** : pour neutraliser le texte, le Markdown généré contient des « \ » devant les caractères spéciaux (« Gestion\_des\_données », « a \| b »). Elles sont visibles dans l'**aperçu** et dans le fichier **.md** brut ; elles ne le sont pas dans le HTML ni dans le Word (le rendu les interprète). C'est le prix de D93.
+2. **Adresse web saisie telle quelle** : une adresse commençant par `http://` ou `https://` écrite dans un texte devient un lien cliquable dans le HTML et le Word (comportement existant du moteur d'export, adresses sûres seulement). Un lien « déguisé » `[texte](adresse)` saisi par l'utilisateur est neutralisé ; un test le vérifie.
+3. **Ouverture de fiche d'atelier** (écart de M7) : toujours aucun écran ne la déclenche ; le bouton de D92 va vers Livrables, pas vers la fiche.
+4. **Aucun plafond de taille** : l'aperçu affiche tout le texte généré ; un projet très volumineux pourrait ralentir l'écran. Un test génère et exporte en Word 200 exigences ; le comportement de l'écran sur un très gros projet n'est pas vérifié.
+5. **Tests existants mis à jour** : douze écrans (au lieu de onze) dans quatre fichiers de test.
+6. Aucune migration, aucun code Rust. Version 0.10.0 (trois manifestes alignés).
+
+### Limites connues
+- **Non vérifié ici** : l'ouverture des fichiers Word dans Microsoft Word lui-même (absence de message de réparation, largeur des colonnes). **La matrice de traçabilité (six colonnes, titres longs) en portrait A4 est le point le plus risqué** ; c'est le premier à regarder à la recette. Compilation Windows (CI), boîte « Enregistrer sous… », clics, aperçu à l'écran, performances.
+- Pas de PDF (V2.3c), pas de table des matières ni de page de garde, pas de modèle modifiable.
+- Le contenu d'un document dépend uniquement de l'état de la base au moment de l'export ; rien n'est figé ni versionné.
+- Les sections de détail reprennent le texte libre en citation ; la mise en forme saisie par l'utilisateur (gras, listes) est volontairement perdue.
 
 ## Non vérifié lors de l'écriture (à valider via GitHub Actions)
 - Compilation et tests de `backup.rs` et `main.rs` (dépendent de `rusqlite` et de Tauri, inaccessibles ici), dont la commande `import_pick_file` et la boîte de dialogue Windows. `files.rs` (std seule) a été compilé et testé ici : 15 tests. Pour V2.3a : la commande `export_save` et l'utilisation de `set_file_name` / `set_directory` / `blocking_save_file` du plugin de dialogue.

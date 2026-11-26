@@ -28,6 +28,8 @@ import { WorkshopsScreen } from '../modules/workshops/WorkshopsScreen.tsx';
 import { StoriesScreen } from '../modules/stories/StoriesScreen.tsx';
 import { TestsScreen } from '../modules/testcases/TestsScreen.tsx';
 import { TraceabilityScreen } from '../modules/traceability/TraceabilityScreen.tsx';
+import { DeliverablesScreen } from '../modules/deliverables/DeliverablesScreen.tsx';
+import type { DeliverablePreset } from '../modules/deliverables/DeliverablesScreen.tsx';
 import { RequirementsScreen } from '../modules/analysis/RequirementsScreen.tsx';
 import { LinksSection } from './LinksSection.tsx';
 import type { ItemKind } from '../domain/kinds.ts';
@@ -56,6 +58,8 @@ export function App() {
   const [activeId, setActiveId] = useState<number | null>(null);
   // Demande « ouvrir cette fiche » venue de la traçabilité (lot M6, D76) : traitée par l'écran du type, puis effacée.
   const [openRequest, setOpenRequest] = useState<{ kind: ItemKind; id: number } | null>(null);
+  // Demande « exporter le compte rendu de cet atelier » (lot M8, D92) : l'écran Livrables présélectionne le modèle et l'atelier, puis l'efface.
+  const [deliverablePreset, setDeliverablePreset] = useState<DeliverablePreset | null>(null);
 
   const refresh = useCallback(async () => setSnap(await takeSnapshot()), []);
 
@@ -140,9 +144,16 @@ export function App() {
     setScreen(screenForKind(kind));
   }, []);
   const clearOpen = useCallback(() => setOpenRequest(null), []);
+  const clearPreset = useCallback(() => setDeliverablePreset(null), []);
+  const exportWorkshopReport = useCallback((workshopId: number) => {
+    setOpenRequest(null);
+    setDeliverablePreset({ modelId: 'workshop-report', workshopId });
+    setScreen('deliverables');
+  }, []);
   // Une navigation par le menu annule toute demande en attente (élément supprimé ou d'un autre projet : elle ne doit pas rester pendante).
   const navigate = useCallback((s: ScreenId) => {
     setOpenRequest(null);
+    setDeliverablePreset(null);
     setScreen(s);
   }, []);
   const openProps = (kind: ItemKind) => ({ openId: openRequest !== null && openRequest.kind === kind ? openRequest.id : null, onOpenHandled: clearOpen });
@@ -150,7 +161,7 @@ export function App() {
 
   return (
     <Shell
-      intro="Lot M7 : ateliers (date, objectif, notes, points ouverts) reliés aux parties prenantes et aux éléments qui en proviennent. Le schéma de la base passe à la version 7. Sauvegarde, import V1, export et À propos sont dans l’écran Technique."
+      intro="Lot M8 : livrables générés depuis les données du projet (compte rendu d’atelier, registres, backlog, cahier de recette, matrice de traçabilité), exportables en Markdown, HTML ou Word. Le schéma de la base reste à la version 7. Sauvegarde, import V1, export et À propos sont dans l’écran Technique."
       navigable={ready}
       screen={screen}
       onNavigate={navigate}
@@ -208,6 +219,7 @@ export function App() {
           onGoToProjects={() => navigate('projects')}
           onChanged={() => void refresh()}
           renderLinks={renderLinks}
+          onExportReport={exportWorkshopReport}
           {...openProps('workshop')}
         />
       )}
@@ -295,6 +307,17 @@ export function App() {
           projectName={active ? active.name : ''}
           onGoToProjects={() => navigate('projects')}
           onOpenItem={openItem}
+        />
+      )}
+
+      {result?.status === 'ready' && screen === 'deliverables' && (
+        <DeliverablesScreen
+          projectId={active ? active.id : null}
+          projectName={active ? active.name : ''}
+          version={version}
+          onGoToProjects={() => navigate('projects')}
+          preset={deliverablePreset}
+          onPresetHandled={clearPreset}
         />
       )}
 

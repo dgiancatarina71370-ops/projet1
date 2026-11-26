@@ -49,9 +49,10 @@ export function WorkshopListView(props: { projectName: string; rows: WorkshopRow
   );
 }
 
-export function WorkshopDetailView(props: DetailActions & { row: WorkshopRow }) {
+export function WorkshopDetailView(props: DetailActions & { row: WorkshopRow; onExportReport?: () => void }) {
   const r = props.row;
   return (
+    <div className="space-y-3">
     <DetailFrame {...props} code={r.code} title={r.title} statusText={statusLabel(r.status, 'workshop')} statuses={STATUS_OPTIONS} current={r.status}>
       <dt className="text-hub-muted">Date</dt><dd>{dayLabel(r.held_on)}</dd>
       <dt className="text-hub-muted">Lieu ou format</dt><dd>{r.place || '—'}</dd>
@@ -60,6 +61,12 @@ export function WorkshopDetailView(props: DetailActions & { row: WorkshopRow }) 
       <dt className="text-hub-muted">Notes</dt><dd className="whitespace-pre-wrap">{r.notes || '—'}</dd>
       <dt className="text-hub-muted">Points ouverts et actions</dt><dd className="whitespace-pre-wrap">{r.follow_up || '—'}</dd>
     </DetailFrame>
+    {props.onExportReport && (
+      <div>
+        <button type="button" className="rounded border border-hub-line px-3 py-1 text-sm" onClick={props.onExportReport}>Exporter le compte rendu</button>
+      </div>
+    )}
+    </div>
   );
 }
 
