@@ -1,10 +1,12 @@
 // Écran « Projets » (lot M3a, décisions D34 et D41) : création avec un nom saisi, renommage, activation, suppression annoncée.
 import { useState } from 'react';
+import { createSampleProject } from '../../data/repositories/sample-project.ts';
 import { createProject, deleteProject, projectDeletionImpact, renameProject } from '../../data/repositories/projects.ts';
 import type { Project } from '../../data/repositories/projects.ts';
 import { Card } from '../../shared/ui.tsx';
 import { ProjectsView } from './ProjectsView.tsx';
-import { projectDeletionMessage, validateName } from './logic.ts';
+import { SAMPLE_PROJECT_NAME } from '../../domain/sample-project.ts';
+import { hasSampleProject, projectDeletionMessage, sampleCreatedMessage, validateName } from './logic.ts';
 
 export function ProjectsScreen(props: {
   projects: Project[];
@@ -21,10 +23,12 @@ export function ProjectsScreen(props: {
   const [confirmDelete, setConfirmDelete] = useState<{ id: number; message: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
 
   const run = async (fn: () => Promise<void>): Promise<boolean> => {
     setBusy(true);
     setError('');
+    setInfo('');
     try {
       await fn();
       return true;
@@ -49,6 +53,16 @@ export function ProjectsScreen(props: {
         confirmDelete={confirmDelete}
         busy={busy}
         error={error}
+        info={info}
+        sampleExists={hasSampleProject(props.projects, SAMPLE_PROJECT_NAME)}
+        onCreateSample={async () => {
+          let created: { projectId: number; items: number; links: number } | null = null;
+          if (await run(async () => { created = await createSampleProject(); }) && created) {
+            const done = created as { projectId: number; items: number; links: number };
+            await props.onChanged(done.projectId);
+            setInfo(sampleCreatedMessage(done));
+          }
+        }}
         onNewName={(v) => { setNewName(v); setNewError(''); }}
         onCreate={async () => {
           const msg = validateName(newName);

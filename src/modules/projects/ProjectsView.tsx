@@ -20,6 +20,11 @@ export function ProjectsView(props: {
   confirmDelete: { id: number; message: string } | null;
   busy: boolean;
   error: string;
+  /** Message de réussite (création du projet d'exemple). */
+  info: string;
+  /** Un projet d'exemple existe déjà : la création est refusée. */
+  sampleExists: boolean;
+  onCreateSample: () => void;
   onNewName: (v: string) => void;
   onCreate: () => void;
   onActivate: (id: number) => void;
@@ -41,6 +46,13 @@ export function ProjectsView(props: {
           </div>
         </Field>
       </form>
+      <div className="max-w-xl space-y-2 rounded border border-hub-line px-3 py-2 text-sm">
+        <p className="font-medium">Projet d'exemple</p>
+        <p className="text-hub-muted">Crée un projet complet et fictif (portail de réservation de salles : atelier, besoins, exigences, décisions, risques, user stories, tests et liens) pour découvrir l'outil ou faire une démonstration. Il se supprime comme n'importe quel projet.</p>
+        {props.sampleExists && <p className="text-hub-muted">Le projet d'exemple existe déjà : activez-le dans la liste ci-dessous, ou supprimez-le pour le recréer.</p>}
+        <button type="button" className={BUTTON_SECONDARY} disabled={props.busy || props.sampleExists} onClick={props.onCreateSample}>Créer le projet d'exemple</button>
+      </div>
+      {props.info && <p role="status" className="text-sm text-hub-ok">{props.info}</p>}
       {props.error && <p role="alert" className="text-sm text-hub-bad">{props.error}</p>}
       {props.rows.length === 0 ? (
         <p className="text-sm text-hub-muted">Aucun projet. Créez le premier avec le formulaire ci-dessus.</p>

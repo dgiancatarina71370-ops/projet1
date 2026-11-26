@@ -54,3 +54,15 @@ export function validateName(name: string): string | null {
   if (clean.length > 200) return 'Le nom du projet est limité à 200 caractères.';
   return null;
 }
+
+// ------------------------------------------------------------------ projet d'exemple (lot M9, décision D107)
+
+/** Vrai si un projet (pas un dossier) porte déjà le nom du projet d'exemple : le bouton de création est alors inactif. */
+export function hasSampleProject(projects: readonly ProjectLike[], sampleName: string): boolean {
+  return projects.some((p) => p.kind === 'project' && p.name === sampleName);
+}
+
+/** Message affiché après la création du projet d'exemple. */
+export function sampleCreatedMessage(result: { items: number; links: number }): string {
+  return `Projet d'exemple créé : ${result.items} éléments et ${result.links} liens. Il est maintenant le projet actif.`;
+}

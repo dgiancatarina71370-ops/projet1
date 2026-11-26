@@ -137,7 +137,7 @@ export const render = {
         onKeepEditing={noop}
       />,
     ),
-  projects: (p: { rows: Array<{ id: number; parent_id: number | null; kind: string; name: string }>; activeId: number | null; renamingId: number | null; confirm: { id: number; message: string } | null; newError: string }): string =>
+  projects: (p: { rows: Array<{ id: number; parent_id: number | null; kind: string; name: string }>; activeId: number | null; renamingId: number | null; confirm: { id: number; message: string } | null; newError: string; sampleExists?: boolean; info?: string }): string =>
     renderToStaticMarkup(
       <ProjectsView
         rows={p.rows}
@@ -150,6 +150,9 @@ export const render = {
         confirmDelete={p.confirm}
         busy={false}
         error=""
+        info={p.info ?? ''}
+        sampleExists={p.sampleExists ?? false}
+        onCreateSample={noop}
         onNewName={noop}
         onCreate={noop}
         onActivate={noop}
