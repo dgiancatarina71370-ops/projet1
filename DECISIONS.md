@@ -527,6 +527,8 @@ Méthode : comparaison des huit fichiers `*Screen.tsx` après remplacement des m
 1. Les codes réels ont trois chiffres (PP-001, EX-001…), pas PP-1 : l'étape 1 les écrivait en abrégé.
 2. Le tableau des orphelins de l'étape 1 était faux : avec TEST-002 ne vérifiant que EX-002, la story US-002 restait sans test. Correction : TEST-002 vérifie aussi US-002 (liens : 51 → 52). Le tableau des orphelins validé est ainsi respecté tel quel.
 
+**Étape 3 (générateur en base) livrée le 26/11/2026.** `src/data/repositories/sample-project.ts` : `findSampleProject()` et `createSampleProject()` ; création par les dépôts existants, doublon refusé, nettoyage du projet partiel en cas d'échec, contrôle que chaque code attribué est celui des données. Vérifié : le lien « remplace » ne change PAS le statut de la décision remplacée (aucun code ne le fait) : DEC-001 est donc passée explicitement à « Remplacée » par le générateur, comme les autres statuts. Le bouton de l'écran Projets reste à brancher (étape 4).
+
 ## Non vérifié lors de l'écriture (à valider via GitHub Actions)
 - Compilation et tests de `backup.rs` et `main.rs` (dépendent de `rusqlite` et de Tauri, inaccessibles ici), dont la commande `import_pick_file` et la boîte de dialogue Windows. `files.rs` (std seule) a été compilé et testé ici : 15 tests. Pour V2.3a : la commande `export_save` et l'utilisation de `set_file_name` / `set_directory` / `blocking_save_file` du plugin de dialogue.
 - Build Vite + Tailwind, rendu final, `tauri build`, exécution réelle.
