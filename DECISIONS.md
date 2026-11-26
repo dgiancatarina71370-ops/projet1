@@ -494,6 +494,13 @@ Méthode : comparaison des huit fichiers `*Screen.tsx` après remplacement des m
 - Tests : `tests/m8b.test.ts` (transitions et structure). Trois tests de lecture de code source (ui-m6, ui-m7, ui-m8) ont été adaptés : ils vérifient désormais le crochet d'ouverture dans le composant générique et la délégation des écrans pilotes.
 - Non vérifié ici : rendu et comportement réels à l'écran (recette `TESTS-M8b.md`), compilation Rust et build Tauri (GitHub Actions). Le contrôle de types local s'appuie sur des déclarations React simplifiées : le `tsc` du dépôt (types React réels) reste à confirmer par `verify` dans Actions.
 
+### M8b, généralisation (version 0.10.2) : état de livraison
+
+- Pilote Ateliers + Risques validé le 26/11/2026. Les six autres écrans (Besoins, Exigences, Décisions, User stories, Tests, Parties prenantes) délèguent à `RegisterScreen`. Aucun écran ne reste hors du modèle (condition 7).
+- Parties prenantes : deux adaptateurs locaux (`ListAdapter`, `DetailAdapter`) absorbent les écarts documentés (bouton Archiver/Réactiver au lieu du changement de statut libre ; filtre à trois valeurs). Vues et `logic.ts` non modifiés. Texte du message « aucun projet » identique à celui de l'ancienne vue locale.
+- Écart conservé (D104) : la question d'abandon et le formulaire ne sont pas remis à zéro au changement de projet (identique dans les huit écrans d'origine).
+- Recette : `TESTS-M8b-generalisation.md` (réduite). Non vérifié ici : rendu et comportement réels, compilation Rust, `tsc` avec les vrais types React (Actions).
+
 ## Non vérifié lors de l'écriture (à valider via GitHub Actions)
 - Compilation et tests de `backup.rs` et `main.rs` (dépendent de `rusqlite` et de Tauri, inaccessibles ici), dont la commande `import_pick_file` et la boîte de dialogue Windows. `files.rs` (std seule) a été compilé et testé ici : 15 tests. Pour V2.3a : la commande `export_save` et l'utilisation de `set_file_name` / `set_directory` / `blocking_save_file` du plugin de dialogue.
 - Build Vite + Tailwind, rendu final, `tauri build`, exécution réelle.

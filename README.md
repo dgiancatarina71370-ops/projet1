@@ -1,4 +1,4 @@
-# BA-Mentor Portable Ultimate Edition — lot M8b pilote (refonte interne des écrans Ateliers et Risques)
+# BA-Mentor Portable Ultimate Edition — lot M8b (refonte interne des huit écrans de registre)
 
 Tauri v2 + React + TypeScript + Tailwind + SQLite. Données dans `BAMentorData/` à côté de l'exécutable.
 

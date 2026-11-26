@@ -160,3 +160,33 @@ test('ouvrir un formulaire ferme une question d\'abandon restée affichée', () 
   const s = run(start(), { type: 'openForm', id: null, start: EMPTY }, { type: 'change', key: 'title', value: 'x' }, { type: 'cancelForm' }, { type: 'openForm', id: null, start: EMPTY });
   assert.equal(s.askAbandon, false);
 });
+
+test('généralisation : les huit écrans de registre délèguent au composant générique, sans logique d\'état propre', () => {
+  const screens = ['stakeholders/StakeholdersScreen', 'analysis/NeedsScreen', 'analysis/RequirementsScreen', 'decisions/DecisionsScreen', 'risks/RisksScreen', 'stories/StoriesScreen', 'testcases/TestsScreen', 'workshops/WorkshopsScreen'];
+  for (const f of screens) {
+    const src = fs.readFileSync(new URL(`../src/modules/${f}.tsx`, import.meta.url), 'utf8');
+    assert.match(src, /<RegisterScreen config=\{CONFIG\}/, `${f} délègue`);
+    assert.ok(!/useState|useEffect|useCallback/.test(src), `${f} ne porte plus d'état propre`);
+    assert.ok(src.split('\n').length < 70, `${f} reste une configuration`);
+  }
+});
+
+test('libellés d\'origine des six écrans généralisés (aucun changement visible)', () => {
+  const want: Record<string, string[]> = {
+    'analysis/NeedsScreen': ["title: 'Besoins'", "what: 'Les besoins'", "kind: 'need'", `gone: "Ce besoin n'existe plus."`, "createHeading: 'Nouveau besoin'", "editHeading: 'Modifier le besoin'"],
+    'analysis/RequirementsScreen': ["title: 'Exigences'", "what: 'Les exigences'", "kind: 'requirement'", `gone: "Cette exigence n'existe plus."`, "createHeading: 'Nouvelle exigence'", `editHeading: "Modifier l'exigence"`],
+    'decisions/DecisionsScreen': ["title: 'Décisions'", "what: 'Les décisions'", "kind: 'decision'", `gone: "Cette décision n'existe plus."`, "createHeading: 'Nouvelle décision'", `editHeading: "Modifier la décision"`],
+    'stories/StoriesScreen': ["title: 'User stories'", "what: 'Les user stories'", "kind: 'story'", `gone: "Cette user story n'existe plus."`, "createHeading: 'Nouvelle user story'", `editHeading: "Modifier la user story"`],
+    'testcases/TestsScreen': ["title: 'Tests'", "what: 'Les tests'", "kind: 'test'", `gone: "Ce test n'existe plus."`, "createHeading: 'Nouveau test'", `editHeading: "Modifier le test"`],
+    'stakeholders/StakeholdersScreen': ["title: 'Parties prenantes'", "what: 'Les parties prenantes'", "kind: 'stakeholder'", `gone: "Cette partie prenante n'existe plus."`, "createHeading: 'Nouvelle partie prenante'", "editHeading: 'Modifier la partie prenante'"],
+  };
+  for (const [f, items] of Object.entries(want)) {
+    const src = fs.readFileSync(new URL(`../src/modules/${f}.tsx`, import.meta.url), 'utf8');
+    for (const t of items) assert.ok(src.includes(t), `${f} : ${t}`);
+  }
+});
+
+test('Parties prenantes : l\'adaptateur bascule entre actif et archivé (comportement d\'origine)', () => {
+  const src = fs.readFileSync(new URL('../src/modules/stakeholders/StakeholdersScreen.tsx', import.meta.url), 'utf8');
+  assert.match(src, /onToggleArchive=\{\(\) => onChangeStatus\(props\.row\.status === 'archived' \? 'active' : 'archived'\)\}/);
+});
