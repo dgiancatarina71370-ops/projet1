@@ -1,4 +1,5 @@
 // Lot M8 : livrables générés depuis les données (décisions D88 à D97). Générateurs purs, lecteur en lecture seule, export signé.
+// Depuis F5 (F5-D10), il n'existe plus d'export direct : un livrable s'enregistre comme document, puis le document s'exporte.
 // L'écran est dans ui-m8.test.ts.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -17,7 +18,8 @@ import { createTestCase } from '../src/data/repositories/testcases.ts';
 import { createWorkshop } from '../src/data/repositories/workshops.ts';
 import { createLink } from '../src/data/repositories/links.ts';
 import { loadProjectData } from '../src/data/repositories/project-export.ts';
-import { exportGeneratedToFile } from '../src/export/service.ts';
+import { exportDocumentToFile, saveDeliverable } from '../src/export/service.ts';
+import type { SavedExport } from '../src/data/export-files.ts';
 import { exportDocument, FORMATS } from '../src/export/pipeline.ts';
 import type { ExportFormat } from '../src/export/pipeline.ts';
 import { parseMarkdown } from '../src/export/model.ts';
@@ -362,6 +364,14 @@ test('chaque modèle produit un Markdown analysable, une seule fois chaque titre
 
 // ------------------------------------------------------------------ lecteur (lecture seule) et export signé
 
+
+interface ViaOptions { version: string; now: Date; includeArchived: boolean; workshopId?: number | null; askWhere?: boolean }
+/** Chemin unique depuis F5 : enregistrer le livrable comme document, puis exporter ce document. Remplace l'ancien export direct. */
+async function exportGeneratedToFile(projectId: number, modelId: string, format: ExportFormat, o: ViaOptions): Promise<SavedExport | null> {
+  const saved = await saveDeliverable(projectId, modelId, { includeArchived: o.includeArchived, workshopId: o.workshopId });
+  return exportDocumentToFile(saved.id, format, { version: o.version, now: o.now, askWhere: o.askWhere });
+}
+
 interface Built {
   projectId: number;
   workshopId: number;
@@ -432,18 +442,24 @@ test('D96 : lire et générer ne modifient rien (tables identiques, journal inch
   }
 });
 
-test('de bout en bout : sept modèles x trois formats, signés, sans écriture en base', async () => {
+test('de bout en bout : sept modèles enregistrés puis exportés en trois formats, signés ; l\'export n\'écrit rien', async () => {
   const t = await migratedDb();
   try {
     const { projectId, workshopId } = await buildProject();
     const before = snapshot(t.raw);
+    const ids = new Map<string, number>();
+    for (const m of MODELS) ids.set(m.id, (await saveDeliverable(projectId, m.id, { includeArchived: false, workshopId })).id);
+    const saved7 = snapshot(t.raw);
+    assert.equal(saved7.documents.count, before.documents.count + 7, 'un document par modèle');
+    assert.equal(Number((await query<{ n: number }>("SELECT count(*) AS n FROM activity_log WHERE object_type = 'document' AND action = 'created'"))[0].n), 7, 'une ligne de journal par enregistrement');
     const sig = buildSignature(VERSION, NOW);
     const seen = new Set<string>();
     for (const m of MODELS) {
       for (const format of Object.keys(FORMATS) as ExportFormat[]) {
-        const saved = await exportGeneratedToFile(projectId, m.id, format, { version: VERSION, now: NOW, includeArchived: false, workshopId });
+        const saved = await exportDocumentToFile(ids.get(m.id)!, format, { version: VERSION, now: NOW });
         assert.ok(saved, `${m.id}/${format}`);
         assert.ok(saved.name.endsWith(`.${FORMATS[format].ext}`) && saved.name.includes('20261126-143005'), saved.name);
+        assert.ok(saved.name.includes(' v1-2026'), `${saved.name} : la version est dans le nom du fichier`);
         assert.ok(!seen.has(saved.name), 'noms distincts');
         seen.add(saved.name);
         const bytes = new Uint8Array(fs.readFileSync(saved.path));
@@ -452,15 +468,17 @@ test('de bout en bout : sept modèles x trois formats, signés, sans écriture e
           assert.deepEqual(await missingFromDocx(bytes, sig), [], `${m.id} : signature Word`);
           const docx = await readDocx(bytes);
           assert.ok(docx.paragraphs.some((p) => p.includes('Projet M8')), `${m.id} : contenu Word`);
+          assert.ok(docx.paragraphs.some((p) => p.includes('Document : version 1, brouillon')), `${m.id} : mention du statut dans Word`);
         } else {
           const text = new TextDecoder().decode(bytes);
           assert.ok(text.includes('BA-Mentor Portable Ultimate Edition') && text.includes('Version : 0.10.0') && text.includes('Date de génération : 26/11/2026 14:30'), `${m.id}/${format} : signature`);
           assert.ok(text.includes('Projet M8'));
+          assert.ok(text.includes(format === 'markdown' ? '**Document :** version 1, brouillon' : 'Document :</strong> version 1, brouillon'), `${m.id}/${format} : mention du statut`);
         }
       }
     }
     assert.equal(seen.size, 21);
-    assert.deepEqual(snapshot(t.raw), before, 'aucune ligne ajoutée, ni au journal');
+    assert.deepEqual(snapshot(t.raw), saved7, 'un export n\'ajoute aucune ligne, ni au journal (D96)');
   } finally {
     t.close();
   }

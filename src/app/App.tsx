@@ -8,7 +8,6 @@ import { getLastProjectId, setLastProjectId } from '../data/repositories/ui-stat
 import type { Project } from '../data/repositories/projects.ts';
 import { BackupPanel } from './BackupPanel.tsx';
 import { ImportPanel } from './ImportPanel.tsx';
-import { ExportPanel } from './ExportPanel.tsx';
 import { AboutPanel } from './AboutPanel.tsx';
 import { EmptyDbPanel } from './EmptyDbPanel.tsx';
 import { installCloseHandler, setDatabaseReady, startMaintenance } from './maintenance.ts';
@@ -32,6 +31,7 @@ import { HomeScreen } from '../modules/home/HomeScreen.tsx';
 import { JournalScreen } from '../modules/journal/JournalScreen.tsx';
 import { DeliverablesScreen } from '../modules/deliverables/DeliverablesScreen.tsx';
 import type { DeliverablePreset } from '../modules/deliverables/DeliverablesScreen.tsx';
+import { DocumentsScreen } from '../modules/documents/DocumentsScreen.tsx';
 import { RequirementsScreen } from '../modules/analysis/RequirementsScreen.tsx';
 import { LinksSection } from './LinksSection.tsx';
 import type { ItemKind } from '../domain/kinds.ts';
@@ -63,6 +63,8 @@ export function App() {
   const [openRequest, setOpenRequest] = useState<{ kind: ItemKind; id: number } | null>(null);
   // Demande « exporter le compte rendu de cet atelier » (lot M8, D92) : l'écran Livrables présélectionne le modèle et l'atelier, puis l'efface.
   const [deliverablePreset, setDeliverablePreset] = useState<DeliverablePreset | null>(null);
+  // Demande « ouvrir ce document » venue de Livrables (lot F5, F5-D10) : l'écran Documents sélectionne le document, puis l'efface.
+  const [documentRequest, setDocumentRequest] = useState<number | null>(null);
 
   const refresh = useCallback(async () => setSnap(await takeSnapshot()), []);
 
@@ -148,6 +150,13 @@ export function App() {
   }, []);
   const clearOpen = useCallback(() => setOpenRequest(null), []);
   const clearPreset = useCallback(() => setDeliverablePreset(null), []);
+  const clearDocumentRequest = useCallback(() => setDocumentRequest(null), []);
+  const openDocument = useCallback((id: number) => {
+    setOpenRequest(null);
+    setDeliverablePreset(null);
+    setDocumentRequest(id);
+    setScreen('documents');
+  }, []);
   const exportWorkshopReport = useCallback((workshopId: number) => {
     setOpenRequest(null);
     setDeliverablePreset({ modelId: 'workshop-report', workshopId });
@@ -157,12 +166,14 @@ export function App() {
   const navigate = useCallback((s: ScreenId) => {
     setOpenRequest(null);
     setDeliverablePreset(null);
+    setDocumentRequest(null);
     setTraceTab(null);
     setScreen(s);
   }, []);
   const openOrphans = useCallback(() => {
     setOpenRequest(null);
     setDeliverablePreset(null);
+    setDocumentRequest(null);
     setTraceTab('orphans');
     setScreen('traceability');
   }, []);
@@ -171,7 +182,7 @@ export function App() {
 
   return (
     <Shell
-      intro="Analyse d’un projet : ateliers, parties prenantes, besoins, exigences, décisions, risques, user stories et tests, traçabilité calculée, livrables exportables en Markdown, HTML ou Word. Sauvegarde, import V1, export et À propos sont dans l’écran Technique."
+      intro="Analyse d’un projet : ateliers, parties prenantes, besoins, exigences, décisions, risques, user stories et tests, traçabilité calculée, livrables enregistrés comme documents datés et versionnés, exportables en Markdown, HTML ou Word. Sauvegarde et import V1 sont dans l’écran Technique."
       navigable={ready}
       screen={screen}
       onNavigate={navigate}
@@ -346,10 +357,21 @@ export function App() {
         <DeliverablesScreen
           projectId={active ? active.id : null}
           projectName={active ? active.name : ''}
-          version={version}
           onGoToProjects={() => navigate('projects')}
+          onOpenDocument={openDocument}
           preset={deliverablePreset}
           onPresetHandled={clearPreset}
+        />
+      )}
+
+      {result?.status === 'ready' && screen === 'documents' && (
+        <DocumentsScreen
+          projectId={active ? active.id : null}
+          projectName={active ? active.name : ''}
+          version={version}
+          onGoToProjects={() => navigate('projects')}
+          openId={documentRequest}
+          onOpenHandled={clearDocumentRequest}
         />
       )}
 
@@ -381,10 +403,6 @@ export function App() {
                 setNotices((old) => [...old.slice(-4), { level: 'info', text: 'Import V1 terminé : les données sont dans la base.' }]);
               }}
             />
-          </Card>
-
-          <Card title="Exporter un livrable (Markdown, HTML, Word)">
-            <ExportPanel version={version} refreshKey={snap ? snap.tables.map((t) => t.rows).join(',') : ''} />
           </Card>
 
           <Card title={`Tables (${snap?.tables.length ?? 0})`}>

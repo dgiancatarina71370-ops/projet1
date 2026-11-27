@@ -179,7 +179,8 @@ test('branchement : filtres et page repartent de zéro, changer un filtre revien
   const app = fs.readFileSync('src/app/App.tsx', 'utf8');
   assert.match(app, /screen === 'journal'[\s\S]*?<JournalScreen[\s\S]*?onOpenItem=\{openItem\}/);
   const tech = app.slice(app.indexOf("screen === 'technical'"), app.indexOf("screen === 'about'"));
-  for (const keep of ['Base de données', 'Centre de sauvegarde', 'Importer les données de la V1', 'Exporter un livrable', 'Tables (']) assert.ok(tech.includes(keep), `Technique garde « ${keep} »`);
+  for (const keep of ['Base de données', 'Centre de sauvegarde', 'Importer les données de la V1', 'Tables (']) assert.ok(tech.includes(keep), `Technique garde « ${keep} »`);
+  assert.ok(!tech.includes('Exporter un livrable') && !tech.includes('ExportPanel'), 'depuis F5 (F5-D10), la carte d\'export a quitté Technique pour l\'écran Documents');
   assert.ok(!tech.includes('AboutPanel') && !tech.includes('Journal d’activité'), 'Technique perd À propos et le journal global');
   const about = app.slice(app.indexOf("screen === 'about'"));
   assert.ok(about.includes('<AboutPanel'), 'À propos a son écran');

@@ -77,7 +77,7 @@ test('liens : « participe à » et « provient de » (D82), libellés neutres e
 // ------------------------------------------------------------------ migration 7
 
 test('migration 7 : une table ajoutée, données existantes intactes, sauvegarde pre-migration au schéma 6, 24 tables', async () => {
-  assert.equal(SCHEMA_VERSION, 7);
+  assert.ok(SCHEMA_VERSION >= 7);
   assert.equal(migrations[6].name, 'workshop_details');
   const t = emptyDb();
   await migrate(migrations.slice(0, 6), { backup: t.driver.backup });
@@ -85,7 +85,7 @@ test('migration 7 : une table ajoutée, données existantes intactes, sauvegarde
   t.raw.exec("INSERT INTO items (id, project_id, kind, number, code, title, description, status, created_at, updated_at) VALUES (1, 1, 'story', 1, 'US-001', 'S', '', 'draft', 'x', 'x')");
   t.raw.exec('INSERT INTO story_details (item_id) VALUES (1)');
   const before = snapshot(t.raw);
-  const report = await migrate(migrations, { backup: t.driver.backup });
+  const report = await migrate(migrations.slice(0, 7), { backup: t.driver.backup });
   assert.deepEqual(report.applied, [7]);
   assert.equal(await getSchemaVersion(), 7);
   assert.equal(t.backups.filter((b) => b.kind === 'pre-migration').length, 1);
@@ -124,7 +124,7 @@ test('base du schéma 6 : s\'ouvre et passe au schéma 7 sans perdre user storie
   t.raw.exec("INSERT INTO projects (id, kind, name, created_at, updated_at) VALUES (1, 'project', 'P', 'x', 'x')");
   t.raw.exec("INSERT INTO items (id, project_id, kind, number, code, title, description, status, created_at, updated_at) VALUES (1, 1, 'test', 1, 'TEST-001', 'T', '', 'to_run', 'x', 'x')");
   t.raw.exec('INSERT INTO test_details (item_id) VALUES (1)');
-  await migrate(migrations, { backup: t.driver.backup });
+  await migrate(migrations.slice(0, 7), { backup: t.driver.backup });
   assert.equal(await getSchemaVersion(), 7);
   assert.equal(await count('test_details'), 1);
   t.close();

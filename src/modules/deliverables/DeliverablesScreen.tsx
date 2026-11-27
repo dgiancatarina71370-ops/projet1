@@ -1,15 +1,13 @@
-// Écran « Livrables » (lot M8) : charge les données du projet actif, génère l'aperçu et exporte. LECTURE SEULE : aucune écriture en base (D96).
+// Écran « Livrables » (lots M8 puis F5) : charge les données du projet actif, génère l'aperçu et l'ENREGISTRE comme document (F5-D05, F5-D06).
+// La génération et l'aperçu ne modifient rien ; seul le bouton « Enregistrer comme document » écrit (une ligne de journal). L'export se fait dans Documents.
 import { useEffect, useMemo, useState } from 'react';
 import { loadProjectData } from '../../data/repositories/project-export.ts';
 import type { ProjectData } from '../../domain/project-data.ts';
 import { generateDeliverable } from '../../export/deliverables/models.ts';
-import { exportGeneratedToFile } from '../../export/service.ts';
-import { FORMATS } from '../../export/pipeline.ts';
-import type { ExportFormat } from '../../export/pipeline.ts';
-import { formatBytes } from '../../shared/format.ts';
+import { saveDeliverable } from '../../export/service.ts';
 import { Card } from '../../shared/ui.tsx';
 import { DeliverablesView, NoProjectView } from './DeliverablesView.tsx';
-import { DEFAULT_MODEL, NO_WORKSHOP_VALUE, exportedMessage, modelOf, selectionProblem, workshopChoices } from './logic.ts';
+import { DEFAULT_MODEL, NO_WORKSHOP_VALUE, modelOf, savedMessage, selectionProblem, workshopChoices } from './logic.ts';
 
 const errorText = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
@@ -18,14 +16,14 @@ export interface DeliverablePreset {
   workshopId: number;
 }
 
-export function DeliverablesScreen(props: { projectId: number | null; projectName: string; version: string; onGoToProjects: () => void; preset?: DeliverablePreset | null; onPresetHandled?: () => void }) {
+export function DeliverablesScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onOpenDocument: (id: number) => void; preset?: DeliverablePreset | null; onPresetHandled?: () => void }) {
   const { projectId } = props;
   const [data, setData] = useState<ProjectData | null>(null);
   const [loadError, setLoadError] = useState('');
   const [modelId, setModelId] = useState<string>(DEFAULT_MODEL);
   const [workshopId, setWorkshopId] = useState(NO_WORKSHOP_VALUE);
   const [includeArchived, setIncludeArchived] = useState(false);
-  const [askWhere, setAskWhere] = useState(false);
+  const [savedId, setSavedId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ level: 'ok' | 'error'; text: string } | null>(null);
 
@@ -34,6 +32,7 @@ export function DeliverablesScreen(props: { projectId: number | null; projectNam
     let dead = false;
     setData(null);
     setMessage(null);
+    setSavedId(null);
     setWorkshopId(NO_WORKSHOP_VALUE);
     if (projectId === null) return () => { dead = true; };
     loadProjectData(projectId)
@@ -66,13 +65,15 @@ export function DeliverablesScreen(props: { projectId: number | null; projectNam
     }
   }, [data, model, problem, includeArchived, workshopId]);
 
-  const run = async (format: ExportFormat) => {
+  const save = async () => {
     if (projectId === null || model === null) return;
     setBusy(true);
     setMessage(null);
+    setSavedId(null);
     try {
-      const saved = await exportGeneratedToFile(projectId, model.id, format, { version: props.version, askWhere, includeArchived, workshopId: workshopId === NO_WORKSHOP_VALUE ? null : Number(workshopId) });
-      if (saved) setMessage({ level: 'ok', text: exportedMessage(FORMATS[format].label, saved.name, formatBytes(saved.sizeBytes), saved.path) });
+      const saved = await saveDeliverable(projectId, model.id, { includeArchived, workshopId: workshopId === NO_WORKSHOP_VALUE ? null : Number(workshopId) });
+      setSavedId(saved.id);
+      setMessage({ level: 'ok', text: savedMessage(saved) });
     } catch (e) {
       setMessage({ level: 'error', text: errorText(e) });
     } finally {
@@ -91,16 +92,16 @@ export function DeliverablesScreen(props: { projectId: number | null; projectNam
         workshopOptions={workshops}
         workshopId={workshopId}
         includeArchived={includeArchived}
-        askWhere={askWhere}
         busy={busy}
         problem={problem}
         preview={preview.text}
         message={message ?? (preview.error ? { level: 'error', text: preview.error } : null)}
-        onModel={(v) => { setModelId(v); setMessage(null); }}
-        onWorkshop={(v) => { setWorkshopId(v); setMessage(null); }}
+        onModel={(v) => { setModelId(v); setMessage(null); setSavedId(null); }}
+        onWorkshop={(v) => { setWorkshopId(v); setMessage(null); setSavedId(null); }}
         onIncludeArchived={setIncludeArchived}
-        onAskWhere={setAskWhere}
-        onExport={(f) => void run(f)}
+        onSave={() => void save()}
+        savedDocumentId={savedId}
+        onOpenDocument={props.onOpenDocument}
       />
     </Card>
   );

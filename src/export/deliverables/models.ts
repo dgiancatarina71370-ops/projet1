@@ -8,7 +8,8 @@ import { natureLabel, priorityLabel } from '../../domain/requirements.ts';
 import { levelLabel } from '../../domain/stakeholders.ts';
 import { testTypeLabel } from '../../domain/testcases.ts';
 import { dayLabel } from '../../domain/decisions.ts';
-import { IGNORED_STATUSES, computeTraceability, priorityRank } from '../../domain/traceability.ts';
+import { CHAIN_KINDS, IGNORED_STATUSES, computeTraceability, priorityRank } from '../../domain/traceability.ts';
+import type { SnapshotItem } from '../../domain/documents.ts';
 import type { MatrixRow, Orphans, Ratio, TraceItem, TraceRef, TraceResult } from '../../domain/traceability.ts';
 import { count } from '../../shared/plural.ts';
 import type { DItem, ProjectData } from '../../domain/project-data.ts';
@@ -122,16 +123,20 @@ const finish = (blocks: readonly string[]): string => `${blocks.join('\n\n')}\n`
 // ---------------------------------------------------------------------------------------------------------------------
 // Compte rendu d'atelier
 
-function workshopReport(data: ProjectData, opts: DeliverableOptions): Deliverable {
-  const w = data.items.find((i) => i.kind === 'workshop' && i.id === opts.workshopId);
-  if (!w) throw new Error(opts.workshopId == null ? 'Choisissez un atelier.' : "Cet atelier n'existe plus.");
+/** Participants et éléments issus d'un atelier, dans le périmètre choisi (partagé par le document et par sa liste figée, lot F5). */
+function workshopScope(data: ProjectData, w: DItem, opts: DeliverableOptions): { shownParticipants: DItem[]; shownSources: DItem[]; hidden: number } {
   const visible = (i: DItem): boolean => opts.includeArchived || !isHidden(i.status);
-
   const participants = related(data, w, 'participates', 'in').filter((i) => i.kind === 'stakeholder');
   const sources = related(data, w, 'originates', 'in').filter((i) => i.kind !== 'workshop');
   const shownParticipants = participants.filter(visible);
   const shownSources = sources.filter(visible).sort((a, b) => kindOrder(a.kind) - kindOrder(b.kind) || byCode(a, b));
-  const hidden = participants.length - shownParticipants.length + sources.length - shownSources.length;
+  return { shownParticipants, shownSources, hidden: participants.length - shownParticipants.length + sources.length - shownSources.length };
+}
+
+function workshopReport(data: ProjectData, opts: DeliverableOptions): Deliverable {
+  const w = data.items.find((i) => i.kind === 'workshop' && i.id === opts.workshopId);
+  if (!w) throw new Error(opts.workshopId == null ? 'Choisissez un atelier.' : "Cet atelier n'existe plus.");
+  const { shownParticipants, shownSources, hidden } = workshopScope(data, w, opts);
 
   const scope = opts.includeArchived
     ? '**Périmètre :** tous les éléments liés, y compris les éléments archivés ou rejetés.'
@@ -372,4 +377,23 @@ export function generateDeliverable(id: ModelId, data: ProjectData, options: Del
     case 'test-plan': return testPlan(data, options);
     case 'traceability': return traceabilityMatrix(data);
   }
+}
+
+/**
+ * Éléments figés avec un livrable (lot F5, F5-D07) : ceux que le document présente, d'après le même périmètre que sa génération.
+ * Registres : les éléments du type dans le périmètre. Compte rendu : l'atelier, ses participants et ses éléments affichés.
+ * Matrice : les éléments actifs de la chaîne de traçabilité. Fonction pure.
+ */
+export function deliverableItems(id: ModelId, data: ProjectData, options: DeliverableOptions): SnapshotItem[] {
+  const snap = (i: DItem): SnapshotItem => ({ code: i.code, title: i.title, status: i.status });
+  const registers: Partial<Record<ModelId, ItemKind>> = { requirements: 'requirement', decisions: 'decision', risks: 'risk', stories: 'story', 'test-plan': 'test' };
+  const kind = registers[id];
+  if (kind !== undefined) return scopeOf(data, kind, options).shown.map(snap);
+  if (id === 'workshop-report') {
+    const w = data.items.find((i) => i.kind === 'workshop' && i.id === options.workshopId);
+    if (!w) throw new Error(options.workshopId == null ? 'Choisissez un atelier.' : "Cet atelier n'existe plus.");
+    const { shownParticipants, shownSources } = workshopScope(data, w, options);
+    return [w, ...shownParticipants, ...shownSources].map(snap);
+  }
+  return data.items.filter((i) => CHAIN_KINDS.includes(i.kind) && !isHidden(i.status)).map(snap);
 }

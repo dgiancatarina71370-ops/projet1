@@ -10,7 +10,7 @@ export const FIXTURES: Record<string, string[]> = {
   settings: ["INSERT INTO settings (key, value) VALUES ('theme', 'dark')"],
   flags: ["INSERT INTO flags (key, enabled, custom, label) VALUES ('stats', 1, 0, 'Statistiques')"],
   projects: [`INSERT INTO projects (id, kind, name, created_at, updated_at) VALUES (1, 'project', 'Projet de test', '${T}', '${T}')`],
-  documents: [`INSERT INTO documents (id, project_id, kind, name, status, content, created_at, updated_at) VALUES (1, 1, 'cr', 'Compte-rendu', 'draft', 'Contenu éé « test »', '${T}', '${T}')`],
+  documents: [`INSERT INTO documents (id, project_id, kind, name, status, content, created_at, updated_at, series_key, version, replaces_id, options_json, items_snapshot, validation_comment) VALUES (1, 1, 'generated', 'Compte-rendu', 'draft', 'Contenu éé « test »', '${T}', '${T}', 'requirements', 1, NULL, '{"includeArchived":false,"workshopId":null}', '[{"code":"EX-001","title":"Exigence éé","status":"draft"}]', 'Commentaire de test')`],
   items: [
     `INSERT INTO items (id, project_id, kind, number, code, title, description, status, source_document_id, source_excerpt, created_at, updated_at) VALUES (1, 1, 'need', 1, 'BES-001', 'Besoin de test', 'Description éé', 'draft', 1, 'Extrait « test »', '${T}', '${T}')`,
     `INSERT INTO items (id, project_id, kind, number, code, title, description, status, created_at, updated_at) VALUES (2, 1, 'requirement', 1, 'EX-001', 'Exigence de test', '', 'draft', '${T}', '${T}')`,

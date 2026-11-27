@@ -37,6 +37,9 @@ export function archiveNote(model: ModelInfo | null): string {
 
 export const modelOf = (value: string): ModelInfo | null => modelInfo(value);
 
-export function exportedMessage(formatLabel: string, name: string, size: string, path: string): string {
-  return `Export ${formatLabel} créé : ${name} (${size}). Emplacement : ${path}`;
+/** Résultat d'un enregistrement (lot F5, F5-D05) : ce que l'utilisateur doit savoir, en une phrase. */
+export function savedMessage(result: { outcome: 'created'; version: number; replacedVersion: number | null } | { outcome: 'identical'; version: number }): string {
+  if (result.outcome === 'identical') return `Contenu identique à la version ${result.version} : aucune nouvelle version.`;
+  if (result.replacedVersion === null) return `Document enregistré : version ${result.version} (brouillon).`;
+  return `Version ${result.version} enregistrée ; la version ${result.replacedVersion} est remplacée.`;
 }

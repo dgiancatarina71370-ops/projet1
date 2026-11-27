@@ -58,6 +58,13 @@ export interface JournalLine {
 
 const GONE = 'supprimé depuis';
 
+/** Détail d'un document (lot F5, F5-D12) : une création de document généré s'écrit « v2 » au journal et s'affiche « Version 2 ». */
+function documentDetail(action: string, detail: string | null): string {
+  if (action !== 'created' || detail === null) return '';
+  const m = /^v(\d+)$/.exec(detail);
+  return m ? `Version ${m[1]}` : '';
+}
+
 function itemLine(e: JournalRowInput, base: Omit<JournalLine, 'label' | 'code' | 'kind' | 'itemId' | 'detail' | 'object'>): JournalLine {
   if (e.action === 'deleted') return { ...base, object: 'Élément', label: deletedLabel(e.detail), code: null, kind: null, itemId: null, detail: '' };
   const kind: ItemKind | null = isKind(e.item_kind) ? e.item_kind : null;
@@ -82,7 +89,7 @@ export function journalLine(e: JournalRowInput): JournalLine {
   }
   if (e.object_type === 'document') {
     const label = e.document_name ?? (e.action === 'deleted' ? 'Document supprimé' : `(document ${GONE})`);
-    return { ...base, object: 'Document', label, ...none, detail: e.action === 'imported' ? 'Importé depuis la V1' : '' };
+    return { ...base, object: 'Document', label, ...none, detail: e.action === 'imported' ? 'Importé depuis la V1' : documentDetail(e.action, e.detail) };
   }
   if (e.object_type === 'document_send') return { ...base, object: 'Document', label: 'Envoi de document', ...none, detail: e.action === 'imported' ? 'Importé depuis la V1' : '' };
   if (e.object_type === 'project' || e.object_type === 'folder') {

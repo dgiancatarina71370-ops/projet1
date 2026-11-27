@@ -1,6 +1,6 @@
 ---
 title: "BA-Mentor — Guide de démonstration"
-subtitle: "Version 0.14.0 · Projet d'exemple « Portail de réservation de salles »"
+subtitle: "Version 0.15.0 · Projet d'exemple « Portail de réservation de salles »"
 lang: fr-FR
 ---
 
@@ -8,9 +8,9 @@ lang: fr-FR
 
 Il te permet de présenter BA-Mentor en **10 à 12 minutes**, devant un Business Manager, un recruteur ou un client, en suivant un fil unique : **du besoin exprimé en atelier jusqu'aux livrables, avec la traçabilité qui relie le tout.**
 
-Ce guide décrit uniquement ce que l'application fait aujourd'hui (version 0.14.0). Il ne contient **pas de captures d'écran** : ajoute les tiennes si tu veux un support imprimé.
+Ce guide décrit uniquement ce que l'application fait aujourd'hui (version 0.15.0). Il ne contient **pas de captures d'écran** : ajoute les tiennes si tu veux un support imprimé.
 
-**Avant chaque démonstration, vérifie** que la version affichée en pied de page est bien celle du guide (0.14.0). Si l'application a évolué, certains libellés ou nombres ci-dessous peuvent ne plus correspondre : rejoue la démonstration une fois en entier la veille.
+**Avant chaque démonstration, vérifie** que la version affichée en pied de page est bien celle du guide (0.15.0). Si l'application a évolué, certains libellés ou nombres ci-dessous peuvent ne plus correspondre : rejoue la démonstration une fois en entier la veille.
 
 # 2. Le message à faire passer
 
@@ -37,7 +37,7 @@ Trois idées à garder en tête, pas plus :
 
 # 4. Le déroulé
 
-Les durées sont indicatives. L'application s'ouvre sur **Accueil** dès qu'un projet est actif : couverture de traçabilité, orphelins, brouillons et dix dernières modifications du projet actif (avec le projet d'exemple : 5 sur 8 exigences avec une user story, 6 orphelins, 2 exigences et 2 user stories en brouillon). Le menu de gauche commence par **Accueil** et **Projets**, puis des sections : **Analyse** (Ateliers, Parties prenantes, Besoins, Exigences), **Pilotage** (Décisions, Risques, Livrables), **Réalisation** (User stories, Tests), **Contrôle** (Traçabilité, Journal), puis **Technique** (sauvegarde, import, export) et **À propos**. L'écran **Journal** liste, pour le projet actif, ce qui a été créé, modifié ou supprimé, avec filtres et pages de 25 entrées ; il est facultatif dans une démonstration.
+Les durées sont indicatives. L'application s'ouvre sur **Accueil** dès qu'un projet est actif : couverture de traçabilité, orphelins, brouillons et dix dernières modifications du projet actif (avec le projet d'exemple : 5 sur 8 exigences avec une user story, 6 orphelins, 2 exigences et 2 user stories en brouillon). Le menu de gauche commence par **Accueil** et **Projets**, puis des sections : **Analyse** (Ateliers, Parties prenantes, Besoins, Exigences), **Pilotage** (Décisions, Risques, Livrables, Documents), **Réalisation** (User stories, Tests), **Contrôle** (Traçabilité, Journal), puis **Technique** (sauvegarde, import) et **À propos**. L'écran **Journal** liste, pour le projet actif, ce qui a été créé, modifié ou supprimé, avec filtres et pages de 25 entrées ; il est facultatif dans une démonstration.
 
 ## Étape 1 — Planter le décor (1 min) · écran Projets
 
@@ -99,16 +99,17 @@ Les durées sont indicatives. L'application s'ouvre sur **Accueil** dès qu'un p
 
 **À dire** : « Voici ce que je ne peux pas voir dans un tableur : où sont les trous. Cette exigence indispensable est en échec. Celle-ci n'a aucune story. Cette story n'a aucune exigence derrière elle. L'outil le calcule à chaque fois, je n'ai rien à maintenir à la main. »
 
-## Étape 9 — Les livrables (2 min) · Livrables
+## Étape 9 — Les livrables et les documents (2 min 30) · Livrables, Documents
 
 **À montrer** :
 
 1. Choisir le modèle **Compte rendu d'atelier**, puis l'atelier de cadrage : l'aperçu apparaît.
-2. Cliquer sur **Exporter en Word**, ouvrir le fichier dans Word : date, lieu, objectif, participants, éléments issus de l'atelier, notes, points ouverts.
+2. Cliquer sur **Enregistrer comme document**, puis **Ouvrir dans Documents** : le document est en **Brouillon**, version 1, avec la liste figée des éléments. Cliquer sur **Exporter en Word** et ouvrir le fichier dans Word : sous le titre, « Document : version 1, brouillon », puis date, lieu, objectif, participants, éléments issus de l'atelier, notes, points ouverts.
 3. Changer de modèle : **Registre des risques**, cocher puis décocher **Inclure les éléments archivés ou rejetés** : RIS-004 apparaît et disparaît.
-4. Citer les sept modèles : compte rendu d'atelier, registre des exigences, registre des décisions, registre des risques, backlog des user stories, cahier de recette, matrice de traçabilité.
+4. Modifier une exigence, revenir dans Livrables et enregistrer à nouveau : une **version 2** apparaît, la version 1 passe à l'état « Remplacé » (case « Afficher les versions remplacées »). Enregistrer sans rien changer : « Contenu identique, aucune nouvelle version ».
+5. Citer les sept modèles : compte rendu d'atelier, registre des exigences, registre des décisions, registre des risques, backlog des user stories, cahier de recette, matrice de traçabilité.
 
-**À dire** : « Ces documents ne sont pas tapés : ils sortent des données. Si je change une exigence, je régénère. Chaque fichier est signé du nom de l'application, de la version et de la date. »
+**À dire** : « Ces documents ne sont pas tapés : ils sortent des données. Chaque enregistrement fige une photographie datée ; si je change une exigence, je régénère et j'obtiens la version suivante, l'ancienne reste consultable. Chaque fichier est signé du nom de l'application, de la version et de la date. »
 
 **Piège** : la matrice de traçabilité ignore l'option des archivés, c'est normal (l'écran l'explique).
 

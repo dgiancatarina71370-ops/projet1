@@ -1,7 +1,5 @@
 // Écran « Livrables » (lot M8), version d'affichage pure : elle reçoit tout par propriétés. Le conteneur (DeliverablesScreen.tsx) l’alimente.
 import { NoProjectView, SelectField } from '../../shared/ui.tsx';
-import { FORMATS } from '../../export/pipeline.ts';
-import type { ExportFormat } from '../../export/pipeline.ts';
 import { archiveNote, MODEL_OPTIONS } from './logic.ts';
 import type { ModelInfo } from '../../export/deliverables/models.ts';
 
@@ -14,7 +12,6 @@ export interface DeliverablesViewProps {
   workshopOptions: ReadonlyArray<{ value: string; label: string }>;
   workshopId: string;
   includeArchived: boolean;
-  askWhere: boolean;
   busy: boolean;
   /** Ce qui empêche de générer (vide : tout est prêt). */
   problem: string;
@@ -24,17 +21,18 @@ export interface DeliverablesViewProps {
   onModel: (v: string) => void;
   onWorkshop: (v: string) => void;
   onIncludeArchived: (v: boolean) => void;
-  onAskWhere: (v: boolean) => void;
-  onExport: (format: ExportFormat) => void;
+  onSave: () => void;
+  /** Document à ouvrir dans l'écran Documents après un enregistrement (ou un contenu identique) ; null : aucun. */
+  savedDocumentId: number | null;
+  onOpenDocument: (id: number) => void;
 }
 
 export function DeliverablesView(props: DeliverablesViewProps) {
-  const formats = Object.keys(FORMATS) as ExportFormat[];
   return (
     <div className="space-y-4 text-sm">
       <p className="text-hub-muted">
-        Génère un livrable à partir des données du projet « {props.projectName} » et l'exporte en Markdown, HTML ou Word, avec la signature de l'application.
-        Rien n'est enregistré dans la base : le livrable se régénère à chaque export. Le texte saisi dans les fiches est repris tel quel, jamais interprété comme une mise en forme.
+        Génère un livrable à partir des données du projet « {props.projectName} » et l'enregistre comme document en brouillon. L'export en Markdown, HTML ou Word se fait ensuite depuis l'écran Documents, à partir du contenu enregistré.
+        Si le contenu est identique à la dernière version, rien n'est créé ; s'il a changé, une nouvelle version est enregistrée et la précédente devient « Remplacée ». Le texte saisi dans les fiches est repris tel quel, jamais interprété comme une mise en forme.
       </p>
       <div className="grid max-w-xl gap-3">
         <SelectField id="dl-model" label="Modèle de livrable" value={props.modelId} options={MODEL_OPTIONS} onChange={props.onModel} />
@@ -47,21 +45,17 @@ export function DeliverablesView(props: DeliverablesViewProps) {
           </label>
           <p className="ml-6 text-hub-muted">{archiveNote(props.model)}</p>
         </div>
-        <label className="flex items-center gap-2">
-          <input id="dl-ask" type="checkbox" checked={props.askWhere} onChange={(e) => props.onAskWhere(e.target.checked)} />
-          Choisir l'emplacement (« Enregistrer sous… »)
-        </label>
-        <p className="text-hub-muted">
-          Par défaut, le fichier est écrit dans le dossier <span className="font-mono">exports</span> de BAMentorData, sans jamais écraser un export existant. Les exports ne font pas partie des sauvegardes.
-        </p>
       </div>
       {props.problem !== '' && <p role="status" className="text-hub-muted">{props.problem}</p>}
-      <div className="flex flex-wrap gap-2">
-        {formats.map((f) => (
-          <button key={f} type="button" disabled={props.busy || props.problem !== ''} onClick={() => props.onExport(f)} className="rounded border border-hub-line px-3 py-1 disabled:opacity-50">
-            Exporter en {FORMATS[f].label}
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="button" disabled={props.busy || props.problem !== ''} onClick={props.onSave} className="rounded border border-hub-line px-3 py-1 disabled:opacity-50">
+          Enregistrer comme document
+        </button>
+        {props.savedDocumentId !== null && (
+          <button type="button" onClick={() => props.onOpenDocument(props.savedDocumentId as number)} className="rounded border border-hub-line px-3 py-1">
+            Ouvrir dans Documents
           </button>
-        ))}
+        )}
       </div>
       {props.message && (
         <p role={props.message.level === 'error' ? 'alert' : 'status'} className={`break-all ${props.message.level === 'error' ? 'text-hub-bad' : 'text-hub-ok'}`}>{props.message.text}</p>
@@ -69,7 +63,7 @@ export function DeliverablesView(props: DeliverablesViewProps) {
       {props.preview !== '' && (
         <div className="space-y-1">
           <h3 className="font-semibold">Aperçu (Markdown généré)</h3>
-          <p className="text-hub-muted">Les fichiers HTML et Word sont mis en forme à partir de ce texte. La signature est ajoutée à l'export.</p>
+          <p className="text-hub-muted">Ce texte est celui qui sera enregistré. Les fichiers HTML et Word en sont tirés à l'export, avec la signature de l'application.</p>
           <pre aria-label="Aperçu du livrable" className="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded border border-hub-line p-3 font-mono text-xs">{props.preview}</pre>
         </div>
       )}

@@ -13,7 +13,7 @@ import { readDocx, missingFromDocx } from '../src/export/docx-check.ts';
 import { xmlSafe } from '../src/export/render-docx.ts';
 import { exportDocumentToFile } from '../src/export/service.ts';
 import { buildSignature, signatureLines } from '../src/shared/signature.ts';
-import { listDocuments } from '../src/data/repositories/documents.ts';
+import { listDocuments } from './helpers/documents.ts';
 import { runImport } from '../src/data/import-v1.ts';
 
 const NOW = new Date(2026, 10, 21, 17, 5, 9);

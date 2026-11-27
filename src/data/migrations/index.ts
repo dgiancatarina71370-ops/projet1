@@ -6,8 +6,9 @@ import m0004 from './0004_requirement_details.ts';
 import m0005 from './0005_decision_risk_details.ts';
 import m0006 from './0006_story_test_details.ts';
 import m0007 from './0007_workshop_details.ts';
+import m0008 from './0008_documents_workflow.ts';
 
 // Ajouter ici chaque nouvelle migration, dans l'ordre. Les versions doivent se suivre sans trou (vérifié au démarrage et par les tests).
-export const migrations: Migration[] = [m0001, m0002, m0003, m0004, m0005, m0006, m0007];
+export const migrations: Migration[] = [m0001, m0002, m0003, m0004, m0005, m0006, m0007, m0008];
 
 export const SCHEMA_VERSION = migrations.length;

@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { loadRender } from './helpers/ui-loader.ts';
-import { DEFAULT_MODEL, MODEL_OPTIONS, NO_WORKSHOP_VALUE, archiveNote, exportedMessage, modelOf, selectionProblem, workshopChoices } from '../src/modules/deliverables/logic.ts';
+import { DEFAULT_MODEL, MODEL_OPTIONS, NO_WORKSHOP_VALUE, archiveNote, modelOf, savedMessage, selectionProblem, workshopChoices } from '../src/modules/deliverables/logic.ts';
 import { MODELS, modelInfo } from '../src/export/deliverables/models.ts';
 import { NAV_SECTIONS, SCREENS } from '../src/app/navigation.ts';
 import type { DItem } from '../src/domain/project-data.ts';
@@ -13,10 +13,10 @@ const w = (id: number, code: string, title: string, status: string): DItem => ({
 
 // ------------------------------------------------------------------ logique pure
 
-test('menu : « Livrables » termine la section Pilotage (D91), quinze écrans depuis F4', () => {
+test('menu : « Livrables » puis « Documents » terminent la section Pilotage (D91, F5-D01), seize écrans depuis F5', () => {
   const pilotage = NAV_SECTIONS.find((s) => s.title === 'Pilotage');
-  assert.deepEqual(pilotage?.screens.map((s) => s.label), ['Décisions', 'Risques', 'Livrables']);
-  assert.equal(SCREENS.length, 15);
+  assert.deepEqual(pilotage?.screens.map((s) => s.label), ['Décisions', 'Risques', 'Livrables', 'Documents']);
+  assert.equal(SCREENS.length, 16);
   assert.equal(SCREENS.find((s) => s.id === 'deliverables')?.label, 'Livrables');
 });
 
@@ -47,20 +47,24 @@ test('écran livrables : ce qui empêche de générer', () => {
   assert.equal(selectionProblem(reg, '', 0), '', 'un registre n\'a pas besoin d\'atelier');
 });
 
-test('écran livrables : note sous la case « archivés ou rejetés », message d\'export', () => {
+test('écran livrables : note sous la case « archivés ou rejetés », messages d\'enregistrement (F5-D05)', () => {
   assert.match(archiveNote(modelOf('requirements')), /seuls les éléments actifs/);
   assert.match(archiveNote(modelOf('traceability')), /Sans effet sur la matrice de traçabilité/);
-  assert.equal(exportedMessage('Word', 'a.docx', '1,2 Ko', 'C:\\x\\a.docx'), 'Export Word créé : a.docx (1,2 Ko). Emplacement : C:\\x\\a.docx');
+  assert.equal(savedMessage({ outcome: 'created', version: 1, replacedVersion: null }), 'Document enregistré : version 1 (brouillon).');
+  assert.equal(savedMessage({ outcome: 'created', version: 2, replacedVersion: 1 }), 'Version 2 enregistrée ; la version 1 est remplacée.');
+  assert.equal(savedMessage({ outcome: 'identical', version: 3 }), 'Contenu identique à la version 3 : aucune nouvelle version.');
 });
 
-test('branchement : l\'écran appelle la lecture et l\'export, l\'application rend l\'écran et passe la demande de la fiche atelier (D92)', () => {
+test('branchement : l\'écran appelle la lecture et l\'enregistrement (plus d\'export direct, F5-D10), l\'application rend l\'écran et passe la demande de la fiche atelier (D92)', () => {
   const screen = fs.readFileSync(new URL('../src/modules/deliverables/DeliverablesScreen.tsx', import.meta.url), 'utf8');
   assert.match(screen, /loadProjectData\(projectId\)/);
-  assert.match(screen, /exportGeneratedToFile\(projectId, model\.id, format/);
+  assert.match(screen, /saveDeliverable\(projectId, model\.id,/);
+  assert.ok(!/exportGeneratedToFile|exportDocumentToFile/.test(screen), 'plus d\'export depuis Livrables');
   assert.match(screen, /onPresetHandled\?\.\(\)/);
-  assert.ok(!/mutate|INSERT|UPDATE|DELETE/.test(screen), 'l\'écran n\'écrit rien');
+  assert.ok(!/mutate|INSERT|UPDATE|DELETE/.test(screen), 'l\'écran n\'écrit pas lui-même : l\'écriture passe par le service et le dépôt');
   const app = fs.readFileSync(new URL('../src/app/App.tsx', import.meta.url), 'utf8');
   assert.match(app, /screen === 'deliverables'/);
+  assert.match(app, /screen === 'documents'/);
   assert.match(app, /onExportReport=\{exportWorkshopReport\}/);
   assert.match(app, /setDeliverablePreset\(\{ modelId: 'workshop-report', workshopId \}\)/);
   assert.match(app, /setDeliverablePreset\(null\);\n/, 'une navigation par le menu efface la demande');
@@ -77,8 +81,8 @@ interface ViewProps {
   workshopOptions: Array<{ value: string; label: string }>;
   workshopId: string;
   includeArchived: boolean;
-  askWhere: boolean;
   busy: boolean;
+  savedDocumentId: number | null;
   problem: string;
   preview: string;
   message: { level: 'ok' | 'error'; text: string } | null;
@@ -93,29 +97,31 @@ const render = loadRender<Render>();
 const ui = (name: string, fn: (r: Render) => void) => test(name, { skip: render === null ? 'esbuild introuvable : rendu des écrans non vérifié' : false }, () => fn(render as Render));
 
 const base = (over: Partial<ViewProps> = {}): ViewProps => ({
-  projectName: 'Projet <CRP>', modelId: 'requirements', model: modelInfo('requirements'), workshopOptions: workshopChoices([]), workshopId: '', includeArchived: false, askWhere: false, busy: false, problem: '', preview: '', message: null, ...over,
+  projectName: 'Projet <CRP>', modelId: 'requirements', model: modelInfo('requirements'), workshopOptions: workshopChoices([]), workshopId: '', includeArchived: false, busy: false, savedDocumentId: null, problem: '', preview: '', message: null, ...over,
 });
 
 ui('rendu : le menu place « Livrables » dans Pilotage, après les risques', (r) => {
   const html = r.shell({ navigable: true, screen: 'deliverables', projects: [{ id: 1, name: 'A' }], activeId: 1 });
   assert.match(html, /aria-current="page"[^>]*>Livrables</);
-  assert.ok(html.indexOf('>Pilotage<') < html.indexOf('>Risques<') && html.indexOf('>Risques<') < html.indexOf('>Livrables<') && html.indexOf('>Livrables<') < html.indexOf('>Réalisation<'));
+  assert.ok(html.indexOf('>Pilotage<') < html.indexOf('>Risques<') && html.indexOf('>Risques<') < html.indexOf('>Livrables<') && html.indexOf('>Livrables<') < html.indexOf('>Documents<') && html.indexOf('>Documents<') < html.indexOf('>Réalisation<'));
 });
 
-ui('rendu : écran livrables (modèle, description, trois formats, échappement du nom de projet, pas d\'aperçu vide)', (r) => {
+ui('rendu : écran livrables (modèle, description, bouton d\'enregistrement, échappement du nom de projet, pas d\'aperçu vide)', (r) => {
   const html = r.deliverables(base());
-  for (const t of ['Modèle de livrable', 'Registre des exigences', 'Backlog des user stories', 'Cahier de recette', 'Matrice de traçabilité', "Compte rendu d&#x27;atelier", 'Exporter en Markdown', 'Exporter en HTML', 'Exporter en Word', 'Inclure les éléments archivés ou rejetés', 'Choisir l&#x27;emplacement', 'Projet &lt;CRP&gt;', 'Rien n&#x27;est enregistré dans la base']) assert.ok(html.includes(t), t);
+  for (const t of ['Modèle de livrable', 'Registre des exigences', 'Backlog des user stories', 'Cahier de recette', 'Matrice de traçabilité', "Compte rendu d&#x27;atelier", 'Enregistrer comme document', 'Inclure les éléments archivés ou rejetés', 'Projet &lt;CRP&gt;', 'depuis l&#x27;écran Documents']) assert.ok(html.includes(t), t);
   assert.ok(!html.includes('Projet <CRP>'));
   assert.ok(!html.includes('Aperçu'), 'pas d\'aperçu quand il n\'y a rien à montrer');
   assert.ok(!html.includes('id="dl-workshop"'), 'pas de choix d\'atelier pour un registre');
-  assert.doesNotMatch(html, /<button[^>]*disabled=""[^>]*>Exporter en/, 'boutons actifs quand tout est prêt');
+  assert.doesNotMatch(html, /<button[^>]*disabled=""[^>]*>Enregistrer comme document/, 'bouton actif quand tout est prêt');
+  for (const t of ['Exporter en', 'Choisir l&#x27;emplacement']) assert.ok(!html.includes(t), `plus de ${t} dans Livrables`);
+  assert.ok(!html.includes('Ouvrir dans Documents'), 'pas de bouton d\'ouverture avant un enregistrement');
 });
 
-ui('rendu : compte rendu — choix d\'atelier, boutons bloqués tant qu\'il manque l\'atelier, message d\'explication', (r) => {
+ui('rendu : compte rendu — choix d\'atelier, bouton bloqué tant qu\'il manque l\'atelier, message d\'explication', (r) => {
   const items = [w(1, 'ATL-001', 'Recueil', 'held')];
   const html = r.deliverables(base({ modelId: 'workshop-report', model: modelInfo('workshop-report'), workshopOptions: workshopChoices(items), problem: 'Choisissez un atelier.' }));
   assert.ok(html.includes('id="dl-workshop"') && html.includes('ATL-001 — Recueil (Tenu)') && html.includes('Choisissez un atelier.'));
-  assert.equal((html.match(/<button[^>]*disabled=""[^>]*>Exporter en/g) ?? []).length, 3, 'les trois boutons sont bloqués');
+  assert.match(html, /<button[^>]*disabled=""[^>]*>Enregistrer comme document/, 'le bouton est bloqué');
 });
 
 ui('rendu : traçabilité — la case des archivés est inactive et expliquée', (r) => {
@@ -126,11 +132,12 @@ ui('rendu : traçabilité — la case des archivés est inactive et expliquée',
 });
 
 ui('rendu : aperçu échappé, message de réussite ou d\'erreur, occupation', (r) => {
-  const html = r.deliverables(base({ preview: '# Titre <script>x</script>\n| a | b |', message: { level: 'ok', text: 'Export Word créé : a.docx' } }));
+  const html = r.deliverables(base({ preview: '# Titre <script>x</script>\n| a | b |', message: { level: 'ok', text: 'Document enregistré : version 1 (brouillon).' }, savedDocumentId: 7 }));
   assert.ok(html.includes('Aperçu (Markdown généré)') && html.includes('&lt;script&gt;x&lt;/script&gt;') && !html.includes('<script>x'));
-  assert.match(html, /role="status"[^>]*>Export Word créé : a\.docx</);
+  assert.match(html, /role="status"[^>]*>Document enregistré : version 1 \(brouillon\)\.</);
+  assert.ok(html.includes('Ouvrir dans Documents'), 'le bouton d\'ouverture apparaît après un enregistrement');
   assert.match(r.deliverables(base({ message: { level: 'error', text: 'Panne <x>' } })), /role="alert"[^>]*>Panne &lt;x&gt;</);
-  assert.equal((r.deliverables(base({ busy: true })).match(/<button[^>]*disabled=""[^>]*>Exporter en/g) ?? []).length, 3, 'pendant un export, les boutons sont bloqués');
+  assert.match(r.deliverables(base({ busy: true })), /<button[^>]*disabled=""[^>]*>Enregistrer comme document/, 'pendant un enregistrement, le bouton est bloqué');
 });
 
 ui('rendu : fiche atelier — le bouton « Exporter le compte rendu » n\'existe que si l\'application le branche', (r) => {

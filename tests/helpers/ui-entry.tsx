@@ -15,6 +15,8 @@ import { TestDetailView, TestFormView, TestListView } from '../../src/modules/te
 import type { TestRow } from '../../src/modules/testcases/TestsView.tsx';
 import { DeliverablesView } from '../../src/modules/deliverables/DeliverablesView.tsx';
 import type { DeliverablesViewProps } from '../../src/modules/deliverables/DeliverablesView.tsx';
+import { DocumentsView } from '../../src/modules/documents/DocumentsView.tsx';
+import type { DocumentsViewProps } from '../../src/modules/documents/DocumentsView.tsx';
 import { WorkshopDetailView, WorkshopFormView, WorkshopListView } from '../../src/modules/workshops/WorkshopsView.tsx';
 import type { WorkshopRow } from '../../src/modules/workshops/WorkshopsView.tsx';
 import { TraceabilityPageView } from '../../src/modules/traceability/TraceabilityView.tsx';
@@ -100,8 +102,10 @@ export const render = {
     renderToStaticMarkup(<WorkshopListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} {...extras(p.rows, p.query)} />),
   wsDetail: (p: { row: WorkshopRow; confirm: string | null; error: string; withExport?: boolean }): string =>
     renderToStaticMarkup(<WorkshopDetailView row={p.row} onExportReport={p.withExport ? noop : undefined} {...detailProps(p)} />),
-  deliverables: (p: Omit<DeliverablesViewProps, 'onModel' | 'onWorkshop' | 'onIncludeArchived' | 'onAskWhere' | 'onExport'>): string =>
-    renderToStaticMarkup(<DeliverablesView {...p} onModel={noop} onWorkshop={noop} onIncludeArchived={noop} onAskWhere={noop} onExport={noop} />),
+  deliverables: (p: Omit<DeliverablesViewProps, 'onModel' | 'onWorkshop' | 'onIncludeArchived' | 'onSave' | 'onOpenDocument'>): string =>
+    renderToStaticMarkup(<DeliverablesView {...p} onModel={noop} onWorkshop={noop} onIncludeArchived={noop} onSave={noop} onOpenDocument={noop} />),
+  documents: (p: Omit<DocumentsViewProps, 'onShowReplaced' | 'onSelect' | 'onAskWhere' | 'onExport'>): string =>
+    renderToStaticMarkup(<DocumentsView {...p} onShowReplaced={noop} onSelect={noop} onAskWhere={noop} onExport={noop} />),
   wsForm: (p: { errors: Record<string, string>; askAbandon: boolean; values: { title: string; description: string; heldOn: string; place: string; objective: string; notes: string; followUp: string } }): string =>
     renderToStaticMarkup(
       <WorkshopFormView heading="Nouvel atelier" values={p.values} errors={p.errors} busy={false} error="" onChange={noop} onSubmit={noop} onCancel={noop} askAbandon={p.askAbandon} onConfirmAbandon={noop} onKeepEditing={noop} />,
@@ -112,7 +116,7 @@ export const render = {
     renderToStaticMarkup(
       <LinksView rows={p.rows} options={p.options} optionKey={p.optionKey} candidates={p.candidates} candidateId={p.candidateId} busy={false} error={p.error} confirmRemove={p.confirmRemove} onOption={noop} onCandidate={noop} onAdd={noop} onAskRemove={noop} onConfirmRemove={noop} onCancelRemove={noop} />,
     ),
-  shell: (p: { navigable: boolean; screen: 'home' | 'journal' | 'about' | 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'workshops' | 'deliverables' | 'stories' | 'tests' | 'traceability' | 'technical'; projects: Array<{ id: number; name: string }>; activeId: number | null }): string =>
+  shell: (p: { navigable: boolean; screen: 'home' | 'journal' | 'about' | 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'workshops' | 'deliverables' | 'documents' | 'stories' | 'tests' | 'traceability' | 'technical'; projects: Array<{ id: number; name: string }>; activeId: number | null }): string =>
     renderToStaticMarkup(
       <Shell intro="Introduction" navigable={p.navigable} screen={p.screen} onNavigate={noop} projects={p.projects} activeId={p.activeId} onSelectProject={noop} footer="Signature">
         <p>Contenu</p>

@@ -9,7 +9,8 @@ import { parseMarkdown, decodeEntities, isSafeHref } from '../src/export/model.t
 import { safeFileStem, exportFileName, truncateBytes, localStamp } from '../src/export/filename.ts';
 import { exportDocumentToFile } from '../src/export/service.ts';
 import { buildSignature, signatureLines } from '../src/shared/signature.ts';
-import { listDocuments } from '../src/data/repositories/documents.ts';
+import { listDocuments } from './helpers/documents.ts';
+import { listProjectDocuments } from '../src/data/repositories/documents.ts';
 import { runImport } from '../src/data/import-v1.ts';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -227,8 +228,8 @@ test('exportDocumentToFile : livrable de la base → fichier signé dans exports
       { sql: "INSERT INTO projects (id, parent_id, kind, name, created_at, updated_at) VALUES (1, NULL, 'project', 'Projet A', '2026-03-01T08:00:00.000Z', '2026-03-01T08:00:00.000Z')", activity: { objectType: 'project', action: 'created', objectId: 1, projectId: 1 } },
       { sql: "INSERT INTO documents (id, project_id, kind, name, status, content, created_at, updated_at) VALUES (1, 1, 'cr', 'CR du 12/03', 'draft', ?, '2026-03-12T08:00:00.000Z', '2026-03-12T08:00:00.000Z')", params: ['# CR\n\nDécision : **valider** é à ç.\n'], activity: { objectType: 'document', action: 'created', objectId: 1, projectId: 1 } },
     ]);
-    const docs = await listDocuments();
-    assert.deepEqual(docs.map((d) => [d.id, d.name, d.projectName, d.status]), [[1, 'CR du 12/03', 'Projet A', 'draft']]);
+    const docs = await listProjectDocuments(1);
+    assert.deepEqual(docs.map((d) => [d.id, d.name, d.status, d.version, d.series_key]), [[1, 'CR du 12/03', 'draft', 1, null]], 'un document écrit sans série reste un document isolé, version 1');
 
     const a = await exportDocumentToFile(1, 'markdown', { version: '0.2.4', now: NOW });
     const b = await exportDocumentToFile(1, 'markdown', { version: '0.2.4', now: NOW }); // même seconde : jamais d'écrasement

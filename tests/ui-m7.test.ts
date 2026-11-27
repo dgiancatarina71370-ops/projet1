@@ -13,7 +13,7 @@ import { KINDS } from '../src/domain/kinds.ts';
 test('menu : « Ateliers » ouvre la section Analyse, avant les parties prenantes (D83)', () => {
   const analysis = NAV_SECTIONS.find((s) => s.title === 'Analyse');
   assert.deepEqual(analysis?.screens.map((s) => s.label), ['Ateliers', 'Parties prenantes', 'Besoins', 'Exigences']);
-  assert.equal(SCREENS.length, 15);
+  assert.equal(SCREENS.length, 16);
   assert.equal(screenForKind('workshop'), 'workshops');
   assert.ok(KINDS_WITH_SCREEN.includes('workshop'));
   assert.ok(KINDS.every((k) => KINDS_WITH_SCREEN.includes(k.kind)), 'chaque type a son écran');
