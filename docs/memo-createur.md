@@ -1,6 +1,6 @@
 ---
 title: "BA-Mentor — Mémo du créateur"
-subtitle: "Version 0.13.0 · schéma de base 7 · pour David, sans prérequis de développeur"
+subtitle: "Version 0.14.0 · schéma de base 7 · pour David, sans prérequis de développeur"
 lang: fr-FR
 ---
 
@@ -48,7 +48,7 @@ Imagine un immeuble à étages où chaque étage n'a le droit de parler qu'à ce
 | `data` | Tout ce qui lit et écrit la base. **Seule** couche autorisée à écrire. | Le magasinier. |
 | `shared` | Briques d'écran communes (boutons, formulaires, écran de registre générique). | La boîte à outils. |
 | `modules` | Un module par écran métier (Ateliers, Exigences, Risques…). | Les pièces. |
-| `app` | Assemble tout : menu, navigation, écran Technique. | Le hall d'entrée. |
+| `app` | Assemble tout : menu, navigation, écrans Technique et À propos. | Le hall d'entrée. |
 
 Les règles que le code **contrôle automatiquement** (script `check-architecture`) à chaque livraison :
 
@@ -118,7 +118,7 @@ Ce qu'il faut retenir :
 
 - **Une migration se fait toute seule** au premier lancement d'une version qui en contient une, après une sauvegarde « avant migration », en une seule opération « tout ou rien ».
 - **Elle ne se défait pas.** Une version plus ancienne **refuse** d'ouvrir une base plus récente, avec un message te demandant d'utiliser une version plus récente.
-- **Les lots M8, M8b, M9, F1, F2 et F3 n'ont aucune migration** : le schéma reste 7. Une 0.9.x peut donc rouvrir une base utilisée par une 0.13.0. Tu le sais en lisant la ligne « schéma » du pied de page ou de l'écran À propos.
+- **Les lots M8, M8b, M9, F1, F2, F3 et F4 n'ont aucune migration** : le schéma reste 7. Une 0.9.x peut donc rouvrir une base utilisée par une 0.14.0. Tu le sais en lisant la ligne « schéma » du pied de page ou de l'écran À propos.
 - Avant une version qui change le schéma, **fais une copie complète de ton dossier** (exécutable et `BAMentorData`), c'est ton filet de sécurité absolu.
 
 # 8. Comment une version naît (le cycle de livraison)
@@ -147,7 +147,7 @@ Ce qu'il faut retenir :
 
 # 9. La numérotation des versions
 
-- Une version, par exemple **0.13.0**, doit être écrite à **trois endroits identiques** : `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`. Le contrôle « versions alignées » échoue si l'un diffère.
+- Une version, par exemple **0.14.0**, doit être écrite à **trois endroits identiques** : `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`. Le contrôle « versions alignées » échoue si l'un diffère.
 - C'est `tauri.conf.json` qui fait foi pour l'écran **À propos**, le pied de page et la signature des fichiers exportés.
 - Convention suivie jusqu'ici (une habitude, pas une règle contrôlée) : un lot qui ajoute une fonction visible augmente le deuxième chiffre (0.10 → 0.11 → 0.12) ; une refonte interne ou un correctif augmente le troisième (0.10.1, 0.10.2, 0.11.1).
 
@@ -198,12 +198,13 @@ Les fichiers `TESTS-*.md` du dépôt sont l'historique de toutes tes recettes : 
 - La performance sur une très grosse base n'a pas été mesurée : le projet est chargé en mémoire.
 - **Recherche des registres (0.12.0)** : elle porte sur le code, le titre et la description, dans le registre affiché et le projet actif ; pas sur les champs propres à un type (critères, plan de traitement, notes d'atelier), pas de tolérance aux fautes de frappe, pas de recherche entre registres. Sur plus de 50 éléments, seul un test automatique la couvre, pas ta recette.
 - **Accueil du projet (0.13.0)** : lecture seule. Les brouillons ne comptent que les besoins, les exigences et les user stories (seuls types avec un statut Brouillon) ; un clic ouvre le registre, sans filtre préappliqué. Les dix dernières modifications viennent du journal et ne portent que sur les éléments (pas les liens ni les documents) ; un élément supprimé s'affiche sans code ni titre, car le journal n'en garde pas. Un projet importé de la V1 n'y montre rien tant que ses éléments n'ont pas été touchés.
+- **Journal (0.14.0)** : l'écran Journal ne montre que les entrées du **projet actif**. Les entrées sans projet, écrites par l'import de la V1 (contacts, réglages, indicateurs, étapes PSPO, notes), restent dans la base mais ne sont plus affichées nulle part (décision du 27/11/2026). Un lien supprimé n'indique plus quels éléments il reliait (le journal ne garde que son type) ; les noms des champs modifiés sont affichés, pas leurs valeurs. Les entrées d'un projet supprimé restent dans la base, sans être visibles. La lecture n'est pas indexée : non mesurée sur une très grosse base.
 - L'import des données de la V1 n'a été vu qu'avec les données d'exemple de la V1 ; un export plus riche (livrable validé, archivé, envoi, contact) n'a été passé que sous forme de jeu **fictif** (test 5 de `TESTS-F1.md`, réussi à ta recette du 27/11/2026). La 1.0 n'utilise que des données fictives ; une vraie migration de tes données V1 est hors périmètre.
 
 **Non vérifié par moi (à confirmer par GitHub Actions ou par toi)**
 
 - La compilation du Rust et de Tauri, la fabrication de l'exécutable, les boîtes de dialogue Windows : seul GitHub Actions le fait.
-- La **vérification des types avec les vrais types React** : je ne peux pas la lancer ici (registre npm refusé). Elle est verte sur la 0.12.0 (F2 validé le 27/11/2026, exécution n° 49) ; pour la 0.13.0, c'est le job `types` qui fait foi (section 8). Le lot F3 ajoute trois composants React et une propriété d'écran.
+- La **vérification des types avec les vrais types React** : je ne peux pas la lancer ici (registre npm refusé). Elle est verte sur la 0.13.0 (F3 validé le 27/11/2026, exécution n° 50) ; pour la 0.14.0, c'est le job `types` qui fait foi (section 8). Le lot F4 ajoute trois composants React et réorganise l'écran principal.
 - Le rendu réel et le comportement à l'écran de chaque lot : ta recette.
 - L'ouverture des fichiers Word dans Word, l'impression, l'aspect final.
 - La compatibilité d'un autre poste Windows que le tien (composant d'affichage WebView2, droits d'écriture sur la clé, antivirus ou avertissement SmartScreen sur un exécutable non signé). Ta clé fonctionne sur ta machine ; je n'ai aucune preuve pour une autre.

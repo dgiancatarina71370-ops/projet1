@@ -1,6 +1,7 @@
 // Logique pure de l'écran « Accueil » (lot F3) : libellés, phrases, lignes de modification. Sans base ni React.
-import { isKind, kindInfo, statusLabel } from '../../domain/kinds.ts';
+import { isKind, kindInfo } from '../../domain/kinds.ts';
 import type { ItemKind } from '../../domain/kinds.ts';
+import { actionVerb, deletedLabel } from '../../domain/activity-labels.ts';
 import { formatLocal } from '../../shared/format.ts';
 
 export type DraftKind = 'need' | 'requirement' | 'story';
@@ -32,18 +33,6 @@ export function orphanText(n: number): string {
 
 export const NO_ACTIVITY_TEXT = 'Aucune modification d’élément dans ce projet.';
 
-/** Libellé de suppression, accordé au genre du type. */
-const DELETED_LABELS: Record<ItemKind, string> = {
-  stakeholder: 'Partie prenante supprimée',
-  need: 'Besoin supprimé',
-  requirement: 'Exigence supprimée',
-  decision: 'Décision supprimée',
-  risk: 'Risque supprimé',
-  story: 'User story supprimée',
-  test: 'Test supprimé',
-  workshop: 'Atelier supprimé',
-};
-
 export interface ActivityInput {
   id: number;
   object_id: number | null;
@@ -73,29 +62,19 @@ export function activityWhen(at: string): string {
   return formatLocal(Date.parse(at));
 }
 
-function statusText(detail: string | null, kind: ItemKind | null): string {
-  const parts = (detail ?? '').split('>');
-  if (parts.length !== 2 || parts[0] === '' || parts[1] === '') return 'statut modifié';
-  return `statut : ${statusLabel(parts[0], kind ?? undefined)} → ${statusLabel(parts[1], kind ?? undefined)}`;
-}
-
-function verb(action: string, detail: string | null, kind: ItemKind | null): string {
-  if (action === 'created') return 'créé';
-  if (action === 'status_changed') return statusText(detail, kind);
-  if (action === 'updated') return 'modifié';
-  return action;
-}
-
 export function activityLine(a: ActivityInput): ActivityLine {
   const when = activityWhen(a.at);
   if (a.action === 'deleted') {
-    return { id: a.id, itemId: null, when, text: isKind(a.detail) ? DELETED_LABELS[a.detail] : 'Élément supprimé', code: null, title: null, kind: null };
+    return { id: a.id, itemId: null, when, text: deletedLabel(a.detail), code: null, title: null, kind: null };
   }
   const kind: ItemKind | null = isKind(a.kind) ? a.kind : null;
   // Élément supprimé depuis : le journal garde l'événement, mais plus le code ni le titre.
-  if (a.code === null || kind === null) return { id: a.id, itemId: null, when, text: `${verb(a.action, a.detail, null)} (élément supprimé depuis)`, code: null, title: null, kind: null };
-  return { id: a.id, itemId: a.object_id, when, text: verb(a.action, a.detail, kind), code: a.code, title: a.title, kind };
+  if (a.code === null || kind === null) return { id: a.id, itemId: null, when, text: `${actionVerb(a.action, a.detail, null)} (élément supprimé depuis)`, code: null, title: null, kind: null };
+  return { id: a.id, itemId: a.object_id, when, text: actionVerb(a.action, a.detail, kind), code: a.code, title: a.title, kind };
 }
 
 /** Libellé du type, pour l'infobulle d'une ligne. */
 export const kindLabel = (kind: ItemKind): string => kindInfo(kind).label;
+
+// Repris de src/domain/activity-labels.ts (lot F4) : les écrans Accueil et Journal partagent les mêmes libellés.
+export { deletedLabel } from '../../domain/activity-labels.ts';

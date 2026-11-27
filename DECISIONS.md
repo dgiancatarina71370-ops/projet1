@@ -635,7 +635,7 @@ Validées le 27/11/2026 : V1-D01 à V1-D05, V1-D07 à V1-D09, V1-D11 à V1-D14 ;
 
 ## Lot F3 : Accueil du projet (version 0.13.0, schéma 7)
 
-**Plan validé par David le 27/11/2026** (décisions F3-D01 à F3-D10 sans modification, avec confirmation expresse de F3-D05, F3-D06 et F3-D09 ; périmètre, recette TESTS-F3, contrôles CI, limites et risques), **« Go » donné le même jour.** Document : « Plan détaillé du lot F3 — Accueil du projet (0.13.0) ». Lot en recette : non validé tant que David ne l'a pas écrit.
+**Plan validé par David le 27/11/2026** (décisions F3-D01 à F3-D10 sans modification, avec confirmation expresse de F3-D05, F3-D06 et F3-D09 ; périmètre, recette TESTS-F3, contrôles CI, limites et risques), **« Go » donné le même jour.** Document : « Plan détaillé du lot F3 — Accueil du projet (0.13.0) ».
 
 - **F3-D01** : entrée « Accueil » (identifiant `home`), première du menu, dans la section sans titre avant Projets.
 - **F3-D02** : démarrage sur Accueil quand un projet est actif ; sans projet actif, démarrage inchangé sur Projets. Accueil sans projet affiche le message habituel avec le bouton vers Projets.
@@ -649,6 +649,26 @@ Validées le 27/11/2026 : V1-D01 à V1-D05, V1-D07 à V1-D09, V1-D11 à V1-D14 ;
 - **F3-D10** : version 0.13.0, README, TESTS-F3.md, mémo créateur et guide de démonstration mis à jour.
 
 **État de livraison (0.13.0)** : 460 tests automatiques verts en local (443 avant), architecture sans violation, versions alignées, typecheck sur stubs sans erreur autre que les erreurs connues des stubs. Contrôles négatifs par mutation réussis : filtre de projet du journal retiré, brouillons de tous les projets, plafond de dix retiré, événements de liens inclus, ordre inversé, démarrage sur un autre écran : chacun fait échouer au moins un test. Non vérifié ici : job `types` réel, rendu et clics à l'écran, heure locale, Rust, exécutable, performance de la lecture du journal sur une grosse base.
+
+**F3 VALIDÉ par David le 27/11/2026 (version 0.13.0, schéma 7).** CI (exécution n° 50, « Add files via upload ») : quatre jobs verts (`verify`, `types`, `rust-tests`, `build`) ; job `types` vert sur `ba-mentor@0.13.0`, mêmes versions qu'en F1 et F2 : TypeScript 5.9.3, `@types/react` 18.3.32, `@types/react-dom` 18.3.7, `@types/node` 22.20.7. Job `verify` : 460 tests, confirmés par David (non visibles sur la capture fournie). Recette : validée globalement, sans résultat test par test. F3-D01 à F3-D10 définitives. Aucun lot ouvert ; prochain lot du plan : F4 (débloqué par F3).
+
+## Lot F4 : Technique scindé et journal consultable (version 0.14.0, schéma 7)
+
+**Plan validé par David le 27/11/2026** (décisions F4-D01 à F4-D11 sans modification ; F4-D03 confirmée expressément : pas de sélecteur « Entrées hors projet », les données héritées de la V1 peuvent rester en base mais n'ont pas vocation à être visibles dans l'UX de la 1.0 ; pagination à 25, filtres, libellés, répartition, recette TESTS-F4, contrôles CI, limites), **« Go » donné le même jour.** Document : « Plan détaillé du lot F4 (Technique scindé et journal consultable, 0.14.0) ».
+
+- **F4-D01** : écrans `journal` et `about` ; Journal dans la section Contrôle après Traçabilité ; Technique puis À propos terminent le menu ; 15 écrans.
+- **F4-D02** : Technique = Base de données, Centre de sauvegarde, Import V1, Export d'un livrable (jusqu'à F5), Tables ; À propos = la fiche actuelle ; le bloc global « 12 derniers » disparaît.
+- **F4-D03** : journal limité au projet actif. Les entrées sans projet (imports V1 de contacts, réglages, indicateurs, étapes PSPO, DoD, notes) ne sont plus affichées nulle part ; elles restent en base. Pas de sélecteur.
+- **F4-D04** : groupes de types d'objet : Éléments (`item`), Liens (`link`), Documents (`document`, `document_send`), Projet (`project`, `folder`).
+- **F4-D05** : actions Toutes, Créé, Modifié, Statut changé, Supprimé, Importé ; détail en français (statut accordé au type, « Champs : Titre, Priorité », type de lien lisible) ; un nom de champ inconnu s'affiche tel quel, sans erreur.
+- **F4-D06** : dépôt `src/data/repositories/journal.ts` (une page et un décompte, mêmes filtres, jointures en lecture) ; `recentProjectActivity` (F3) inchangée.
+- **F4-D07** : ligne = date locale, objet, action, libellé, détail ; code d'élément cliquable ; élément supprimé sans code ni titre, ses anciennes lignes « (élément supprimé depuis) » ; lien existant « BES-001 → EX-001 » sans clic ; lien supprimé : son type seul ; document : son nom.
+- **F4-D08** : libellés purs partagés dans `src/domain/activity-labels.ts` (règle R1) ; l'accueil les réimporte sans changement de comportement (tests F3 inchangés).
+- **F4-D09** : 25 entrées par page, plus récentes d'abord (ordre décroissant de l'identifiant du journal) ; « Page 2 sur 5 · 118 entrées » ; changer un filtre revient à la page 1.
+- **F4-D10** : sans projet : message habituel ; filtres sans résultat : « Aucune entrée pour ces filtres (N au total dans ce projet). » ; filtres et page remis à zéro à chaque arrivée et au changement de projet.
+- **F4-D11** : version 0.14.0, README, TESTS-F4.md, mémo, guide.
+
+**État de livraison (0.14.0)** : 475 tests automatiques verts en local (460 avant), architecture sans violation, versions alignées, typecheck sur stubs sans autre erreur que les erreurs connues des stubs. Contrôles négatifs par mutation : filtre de projet retiré, décalage de page retiré, ordre inversé, filtre d'action ignoré, filtre de type ignoré, page non réinitialisée : chacun fait échouer au moins un test. Une septième mutation (retirer la protection « action <> deleted » de la jointure sur les éléments) n'est **pas** détectée : c'est un garde-fou défensif sans effet observable tant que les identifiants ne sont jamais réutilisés (AUTOINCREMENT) ; non testable sans base corrompue. `recentActivity()` est conservée dans `projects.ts` (encore appelée par `tests/mutate.test.ts`). Non vérifié ici : job `types` réel, rendu et clics à l'écran, heure locale, Rust, exécutable, performance de la lecture sur un très gros journal (non indexée). Limites connues : un lien supprimé ne dit plus quels éléments il reliait ; les entrées d'un projet supprimé restent en base sans être visibles.
 
 ## Non vérifié lors de l'écriture (à valider via GitHub Actions)
 - Compilation et tests de `backup.rs` et `main.rs` (dépendent de `rusqlite` et de Tauri, inaccessibles ici), dont la commande `import_pick_file` et la boîte de dialogue Windows. `files.rs` (std seule) a été compilé et testé ici : 15 tests. Pour V2.3a : la commande `export_save` et l'utilisation de `set_file_name` / `set_directory` / `blocking_save_file` du plugin de dialogue.

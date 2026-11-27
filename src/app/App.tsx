@@ -3,9 +3,9 @@ import type { ReactNode } from 'react';
 import { boot, continueWithEmptyDatabase } from './boot.ts';
 import type { BootResult } from './boot.ts';
 import { query } from '../data/db.ts';
-import { listProjects, recentActivity } from '../data/repositories/projects.ts';
+import { listProjects } from '../data/repositories/projects.ts';
 import { getLastProjectId, setLastProjectId } from '../data/repositories/ui-state.ts';
-import type { ActivityEntry, Project } from '../data/repositories/projects.ts';
+import type { Project } from '../data/repositories/projects.ts';
 import { BackupPanel } from './BackupPanel.tsx';
 import { ImportPanel } from './ImportPanel.tsx';
 import { ExportPanel } from './ExportPanel.tsx';
@@ -29,6 +29,7 @@ import { StoriesScreen } from '../modules/stories/StoriesScreen.tsx';
 import { TestsScreen } from '../modules/testcases/TestsScreen.tsx';
 import { TraceabilityScreen } from '../modules/traceability/TraceabilityScreen.tsx';
 import { HomeScreen } from '../modules/home/HomeScreen.tsx';
+import { JournalScreen } from '../modules/journal/JournalScreen.tsx';
 import { DeliverablesScreen } from '../modules/deliverables/DeliverablesScreen.tsx';
 import type { DeliverablePreset } from '../modules/deliverables/DeliverablesScreen.tsx';
 import { RequirementsScreen } from '../modules/analysis/RequirementsScreen.tsx';
@@ -38,7 +39,6 @@ import type { ItemKind } from '../domain/kinds.ts';
 interface Snapshot {
   tables: Array<{ name: string; rows: number }>;
   projects: Project[];
-  activity: ActivityEntry[];
 }
 
 async function takeSnapshot(): Promise<Snapshot> {
@@ -48,7 +48,7 @@ async function takeSnapshot(): Promise<Snapshot> {
     const [r] = await query<{ n: number }>(`SELECT count(*) AS n FROM ${t.name}`);
     tables.push({ name: t.name, rows: Number(r.n) });
   }
-  return { tables, projects: await listProjects(), activity: await recentActivity(12) };
+  return { tables, projects: await listProjects() };
 }
 
 export function App() {
@@ -333,6 +333,15 @@ export function App() {
         />
       )}
 
+      {result?.status === 'ready' && screen === 'journal' && (
+        <JournalScreen
+          projectId={active ? active.id : null}
+          projectName={active ? active.name : ''}
+          onGoToProjects={() => navigate('projects')}
+          onOpenItem={openItem}
+        />
+      )}
+
       {result?.status === 'ready' && screen === 'deliverables' && (
         <DeliverablesScreen
           projectId={active ? active.id : null}
@@ -378,30 +387,20 @@ export function App() {
             <ExportPanel version={version} refreshKey={snap ? snap.tables.map((t) => t.rows).join(',') : ''} />
           </Card>
 
-          <Card title="À propos">
-            <AboutPanel version={version} buildDate={buildDate} dataDir={result.info.dataDir} schema={result.report.to} />
+          <Card title={`Tables (${snap?.tables.length ?? 0})`}>
+            <ul className="grid grid-cols-2 gap-x-4 text-sm md:grid-cols-3">
+              {snap?.tables.map((t) => (
+                <li key={t.name} className="flex justify-between"><span>{t.name}</span><span className="text-hub-muted">{t.rows}</span></li>
+              ))}
+            </ul>
           </Card>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card title="Journal d’activité (12 derniers)">
-              <ul className="space-y-1 text-sm">
-                {snap?.activity.length === 0 && <li className="text-hub-muted">Journal vide.</li>}
-                {snap?.activity.map((a) => (
-                  <li key={a.id} className="text-hub-muted">
-                    <span className="text-hub-fg">{a.action}</span> · {a.object_type} #{a.object_id} · {a.at.slice(0, 19).replace('T', ' ')}
-                  </li>
-                ))}
-              </ul>
-            </Card>
-            <Card title={`Tables (${snap?.tables.length ?? 0})`}>
-              <ul className="grid grid-cols-2 gap-x-4 text-sm">
-                {snap?.tables.map((t) => (
-                  <li key={t.name} className="flex justify-between"><span>{t.name}</span><span className="text-hub-muted">{t.rows}</span></li>
-                ))}
-              </ul>
-            </Card>
-          </div>
         </>
+      )}
+
+      {result?.status === 'ready' && screen === 'about' && (
+        <Card title="À propos">
+          <AboutPanel version={version} buildDate={buildDate} dataDir={result.info.dataDir} schema={result.report.to} />
+        </Card>
       )}
     </Shell>
   );

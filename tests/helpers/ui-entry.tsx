@@ -25,6 +25,9 @@ import { NeedDetailView, NeedFormView, NeedListView, NoProjectView as AnalysisNo
 import type { NeedRow, RequirementRow } from '../../src/modules/analysis/AnalysisView.tsx';
 import { HomeView } from '../../src/modules/home/HomeView.tsx';
 import type { HomeViewProps } from '../../src/modules/home/HomeView.tsx';
+import { JournalView } from '../../src/modules/journal/JournalView.tsx';
+import type { JournalViewProps } from '../../src/modules/journal/JournalView.tsx';
+import { AboutPanel } from '../../src/app/AboutPanel.tsx';
 import { NoProjectView, StakeholderDetailView, StakeholderFormView, StakeholderListView } from '../../src/modules/stakeholders/StakeholdersView.tsx';
 
 const noop = (): void => undefined;
@@ -41,6 +44,8 @@ const detailProps = (p: { confirm: string | null; error: string }) => ({
 const homeProps = (p: Omit<HomeViewProps, 'onOpenTraceability' | 'onOpenOrphans' | 'onOpenRegister' | 'onOpenItem'>): HomeViewProps => ({ ...p, onOpenTraceability: noop, onOpenOrphans: noop, onOpenRegister: noop, onOpenItem: noop });
 
 export const render = {
+  journal: (p: Omit<JournalViewProps, 'onGroup' | 'onAction' | 'onPrevious' | 'onNext' | 'onOpenItem'>): string => renderToStaticMarkup(<JournalView {...p} onGroup={noop} onAction={noop} onPrevious={noop} onNext={noop} onOpenItem={noop} />),
+  about: (p: { version: string; buildDate: string; dataDir: string; schema: number | null }): string => renderToStaticMarkup(<AboutPanel {...p} />),
   home: (p: Omit<HomeViewProps, 'onOpenTraceability' | 'onOpenOrphans' | 'onOpenRegister' | 'onOpenItem'>): string => renderToStaticMarkup(<HomeView {...homeProps(p)} />),
   analysisNoProject: (what: string): string => renderToStaticMarkup(<AnalysisNoProject what={what} onGoToProjects={noop} />),
   needList: (p: { rows: NeedRow[]; total: number; filter: string; query?: string }): string =>
@@ -107,7 +112,7 @@ export const render = {
     renderToStaticMarkup(
       <LinksView rows={p.rows} options={p.options} optionKey={p.optionKey} candidates={p.candidates} candidateId={p.candidateId} busy={false} error={p.error} confirmRemove={p.confirmRemove} onOption={noop} onCandidate={noop} onAdd={noop} onAskRemove={noop} onConfirmRemove={noop} onCancelRemove={noop} />,
     ),
-  shell: (p: { navigable: boolean; screen: 'home' | 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'workshops' | 'deliverables' | 'stories' | 'tests' | 'traceability' | 'technical'; projects: Array<{ id: number; name: string }>; activeId: number | null }): string =>
+  shell: (p: { navigable: boolean; screen: 'home' | 'journal' | 'about' | 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'workshops' | 'deliverables' | 'stories' | 'tests' | 'traceability' | 'technical'; projects: Array<{ id: number; name: string }>; activeId: number | null }): string =>
     renderToStaticMarkup(
       <Shell intro="Introduction" navigable={p.navigable} screen={p.screen} onNavigate={noop} projects={p.projects} activeId={p.activeId} onSelectProject={noop} footer="Signature">
         <p>Contenu</p>

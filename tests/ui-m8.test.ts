@@ -13,10 +13,10 @@ const w = (id: number, code: string, title: string, status: string): DItem => ({
 
 // ------------------------------------------------------------------ logique pure
 
-test('menu : « Livrables » termine la section Pilotage (D91), treize écrans depuis F3', () => {
+test('menu : « Livrables » termine la section Pilotage (D91), quinze écrans depuis F4', () => {
   const pilotage = NAV_SECTIONS.find((s) => s.title === 'Pilotage');
   assert.deepEqual(pilotage?.screens.map((s) => s.label), ['Décisions', 'Risques', 'Livrables']);
-  assert.equal(SCREENS.length, 13);
+  assert.equal(SCREENS.length, 15);
   assert.equal(SCREENS.find((s) => s.id === 'deliverables')?.label, 'Livrables');
 });
 

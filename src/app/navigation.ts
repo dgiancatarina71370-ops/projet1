@@ -3,7 +3,7 @@
 
 import type { ItemKind } from '../domain/kinds.ts';
 
-export type ScreenId = 'home' | 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'stories' | 'tests' | 'traceability' | 'workshops' | 'deliverables' | 'technical';
+export type ScreenId = 'home' | 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'stories' | 'tests' | 'traceability' | 'workshops' | 'deliverables' | 'journal' | 'technical' | 'about';
 
 export interface ScreenInfo {
   id: ScreenId;
@@ -22,8 +22,8 @@ export const NAV_SECTIONS: readonly NavSection[] = [
   { title: 'Analyse', screens: [{ id: 'workshops', label: 'Ateliers' }, { id: 'stakeholders', label: 'Parties prenantes' }, { id: 'needs', label: 'Besoins' }, { id: 'requirements', label: 'Exigences' }] },
   { title: 'Pilotage', screens: [{ id: 'decisions', label: 'Décisions' }, { id: 'risks', label: 'Risques' }, { id: 'deliverables', label: 'Livrables' }] },
   { title: 'Réalisation', screens: [{ id: 'stories', label: 'User stories' }, { id: 'tests', label: 'Tests' }] },
-  { title: 'Contrôle', screens: [{ id: 'traceability', label: 'Traçabilité' }] },
-  { title: null, screens: [{ id: 'technical', label: 'Technique' }] },
+  { title: 'Contrôle', screens: [{ id: 'traceability', label: 'Traçabilité' }, { id: 'journal', label: 'Journal' }] },
+  { title: null, screens: [{ id: 'technical', label: 'Technique' }, { id: 'about', label: 'À propos' }] },
 ];
 
 /** Tous les écrans, dans l'ordre du menu. */

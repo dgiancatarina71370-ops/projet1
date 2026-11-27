@@ -11,8 +11,8 @@ import { NAV_SECTIONS, SCREENS } from '../src/app/navigation.ts';
 
 test('menu : sections nommées (Analyse, Pilotage, Réalisation, Contrôle), Projets et Technique seuls, ordre figé (D67, D70)', () => {
   assert.deepEqual(NAV_SECTIONS.map((s) => s.title), [null, 'Analyse', 'Pilotage', 'Réalisation', 'Contrôle', null]);
-  assert.deepEqual(NAV_SECTIONS.map((s) => s.screens.map((x) => x.label)), [['Accueil', 'Projets'], ['Ateliers', 'Parties prenantes', 'Besoins', 'Exigences'], ['Décisions', 'Risques', 'Livrables'], ['User stories', 'Tests'], ['Traçabilité'], ['Technique']]);
-  assert.deepEqual(SCREENS.map((s) => s.id), ['home', 'projects', 'workshops', 'stakeholders', 'needs', 'requirements', 'decisions', 'risks', 'deliverables', 'stories', 'tests', 'traceability', 'technical']);
+  assert.deepEqual(NAV_SECTIONS.map((s) => s.screens.map((x) => x.label)), [['Accueil', 'Projets'], ['Ateliers', 'Parties prenantes', 'Besoins', 'Exigences'], ['Décisions', 'Risques', 'Livrables'], ['User stories', 'Tests'], ['Traçabilité', 'Journal'], ['Technique', 'À propos']]);
+  assert.deepEqual(SCREENS.map((s) => s.id), ['home', 'projects', 'workshops', 'stakeholders', 'needs', 'requirements', 'decisions', 'risks', 'deliverables', 'stories', 'tests', 'traceability', 'journal', 'technical', 'about']);
   assert.equal(new Set(SCREENS.map((s) => s.id)).size, SCREENS.length);
 });
 
