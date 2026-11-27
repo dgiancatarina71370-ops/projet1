@@ -98,8 +98,10 @@ export const originLabel = (isGenerated: boolean): string => (isGenerated ? 'Gé
  * Ligne de mention dans un export (F5-D08) : version et statut du document au moment de l'export.
  * Une version remplacée le dit, pour qu'un ancien fichier ne passe pas pour la version courante.
  */
-export function mentionLine(version: number, status: string, replacedByVersion: number | null = null): string {
-  const base = `**Document :** version ${version}, ${documentStatusLabel(status).toLowerCase()}`;
+export function mentionLine(version: number, status: string, replacedByVersion: number | null = null, validatedOn: string | null = null): string {
+  // F6-D10 : un document validé porte la date de validation (« validé le 27/11/2026 ») quand elle est connue.
+  const state = status === 'validated' && validatedOn !== null ? `${documentStatusLabel(status).toLowerCase()} le ${validatedOn}` : documentStatusLabel(status).toLowerCase();
+  const base = `**Document :** version ${version}, ${state}`;
   return replacedByVersion === null ? base : `${base}, remplacée par la version ${replacedByVersion}`;
 }
 
@@ -117,3 +119,94 @@ export function withMention(markdown: string, line: string): string {
 
 /** Titre servant au nom du fichier et au titre du document exporté : le nom, tronqué par l'appelant, puis la version. */
 export const versionedTitle = (name: string, version: number): string => `${name} v${version}`;
+
+
+// ------------------------------------------------------------------ lot F6 : valider, archiver, comparer (F6-D01 à D07)
+
+export type DocumentAction = 'validate' | 'archive' | 'unarchive';
+
+/** Longueur maximale du commentaire de validation (F6-D01). */
+export const MAX_VALIDATION_COMMENT = 500;
+
+/**
+ * Gestes permis sur un document selon son statut stocké et le fait qu'une version suivante existe (F6-D01 à D04).
+ * Valider : brouillon non remplacé. Archiver : brouillon ou validé non remplacé. Désarchiver : archivé non remplacé.
+ * Un document remplacé n'a aucun geste : il est déjà hors de la liste par défaut et n'est jamais modifié (F5-D04).
+ */
+export function availableActions(status: string, replaced: boolean): DocumentAction[] {
+  if (replaced) return [];
+  if (status === 'draft') return ['validate', 'archive'];
+  if (status === 'validated') return ['archive'];
+  if (status === 'archived') return ['unarchive'];
+  return [];
+}
+
+/** Statut de retour d'un désarchivage (F6-D04) : validé si le document l'a déjà été, sinon brouillon. */
+export function unarchiveTarget(validatedAt: string | null): 'validated' | 'draft' {
+  return validatedAt !== null && validatedAt !== '' ? 'validated' : 'draft';
+}
+
+/** Commentaire de validation : espaces retirés, vide = absent. Plus de 500 caractères : erreur (jamais de troncature silencieuse). */
+export function normalizeValidationComment(text: string | null | undefined): string | null {
+  const t = (text ?? '').trim();
+  if (t === '') return null;
+  if ([...t].length > MAX_VALIDATION_COMMENT) throw new Error(`Le commentaire de validation est limité à ${MAX_VALIDATION_COMMENT} caractères.`);
+  return t;
+}
+
+export interface StatusChange {
+  code: string;
+  title: string;
+  from: string;
+  to: string;
+}
+
+export interface TitleChange {
+  code: string;
+  from: string;
+  to: string;
+}
+
+/** Écarts entre la liste figée d'un document et les éléments courants du même périmètre (F6-D06, D07). */
+export interface Comparison {
+  added: SnapshotItem[];
+  removed: SnapshotItem[];
+  statusChanged: StatusChange[];
+  titleChanged: TitleChange[];
+}
+
+const codeNumber = (code: string): number => {
+  const m = /(\d+)$/.exec(code);
+  return m ? Number(m[1]) : 0;
+};
+
+/** Ordre des codes : préfixe puis numéro (EX-002 avant EX-010). */
+export function compareCodes(a: string, b: string): number {
+  const pa = a.replace(/\d+$/, '');
+  const pb = b.replace(/\d+$/, '');
+  if (pa !== pb) return pa < pb ? -1 : 1;
+  return codeNumber(a) - codeNumber(b) || (a < b ? -1 : a > b ? 1 : 0);
+}
+
+/**
+ * Compare la liste figée aux éléments courants, rapprochés par code. Tout est calculé ici, rien n'est enregistré.
+ * Un élément figé qui manque au périmètre courant est « retiré » : il peut avoir été supprimé, archivé, rejeté ou être sorti du
+ * périmètre, et ce texte ne prétend pas le distinguer. Statut et titre sont comparés séparément : un élément peut figurer dans les deux groupes.
+ */
+export function compareSnapshots(frozen: readonly SnapshotItem[], current: readonly SnapshotItem[]): Comparison {
+  const before = new Map(frozen.map((i) => [i.code, i]));
+  const now = new Map(current.map((i) => [i.code, i]));
+  const added = current.filter((i) => !before.has(i.code)).sort((a, b) => compareCodes(a.code, b.code));
+  const removed = frozen.filter((i) => !now.has(i.code)).sort((a, b) => compareCodes(a.code, b.code));
+  const statusChanged: StatusChange[] = [];
+  const titleChanged: TitleChange[] = [];
+  for (const f of [...frozen].sort((a, b) => compareCodes(a.code, b.code))) {
+    const c = now.get(f.code);
+    if (c === undefined) continue;
+    if (c.status !== f.status) statusChanged.push({ code: f.code, title: c.title, from: f.status, to: c.status });
+    if (c.title !== f.title) titleChanged.push({ code: f.code, from: f.title, to: c.title });
+  }
+  return { added, removed, statusChanged, titleChanged };
+}
+
+export const hasDifferences = (c: Comparison): boolean => c.added.length + c.removed.length + c.statusChanged.length + c.titleChanged.length > 0;

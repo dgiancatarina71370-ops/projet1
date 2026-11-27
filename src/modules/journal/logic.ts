@@ -58,8 +58,12 @@ export interface JournalLine {
 
 const GONE = 'supprimé depuis';
 
-/** Détail d'un document (lot F5, F5-D12) : une création de document généré s'écrit « v2 » au journal et s'affiche « Version 2 ». */
+/**
+ * Détail d'un document : une création de document généré s'écrit « v2 » au journal et s'affiche « Version 2 » (F5-D12) ;
+ * un changement d'état s'écrit « draft>validated » et s'affiche « Brouillon → Validé » (F6-D09).
+ */
 function documentDetail(action: string, detail: string | null): string {
+  if (action === 'status_changed') return statusTransition(detail, null) ?? 'statut modifié';
   if (action !== 'created' || detail === null) return '';
   const m = /^v(\d+)$/.exec(detail);
   return m ? `Version ${m[1]}` : '';

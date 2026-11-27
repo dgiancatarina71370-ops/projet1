@@ -38,8 +38,13 @@ export function archiveNote(model: ModelInfo | null): string {
 export const modelOf = (value: string): ModelInfo | null => modelInfo(value);
 
 /** Résultat d'un enregistrement (lot F5, F5-D05) : ce que l'utilisateur doit savoir, en une phrase. */
-export function savedMessage(result: { outcome: 'created'; version: number; replacedVersion: number | null } | { outcome: 'identical'; version: number }): string {
-  if (result.outcome === 'identical') return `Contenu identique à la version ${result.version} : aucune nouvelle version.`;
+export function savedMessage(result: { outcome: 'created'; version: number; replacedVersion: number | null } | { outcome: 'identical'; version: number; status?: string }): string {
+  if (result.outcome === 'identical') {
+    // F6-D05 : une version archivée n'est pas recréée ; on invite à la désarchiver. Une version validée le dit.
+    if (result.status === 'archived') return `Contenu identique à la version ${result.version}, qui est archivée : désarchivez-la dans Documents pour la rouvrir. Aucune nouvelle version.`;
+    if (result.status === 'validated') return `Contenu identique à la version ${result.version}, validée : aucune nouvelle version.`;
+    return `Contenu identique à la version ${result.version} : aucune nouvelle version.`;
+  }
   if (result.replacedVersion === null) return `Document enregistré : version ${result.version} (brouillon).`;
   return `Version ${result.version} enregistrée ; la version ${result.replacedVersion} est remplacée.`;
 }

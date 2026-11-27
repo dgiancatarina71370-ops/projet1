@@ -1,10 +1,10 @@
 // Écran « Documents » (lot F5), version d'affichage pure : elle reçoit tout par propriétés. Le conteneur (DocumentsScreen.tsx) l'alimente.
-// Les boutons d'export ne modifient aucune donnée (D96) ; aucun bouton ne modifie ni ne supprime un document.
+// Les boutons d'export et de comparaison ne modifient aucune donnée (D96) ; seuls Valider, Archiver et Désarchiver écrivent (lot F6), jamais le contenu.
 import { Card, NoProjectView } from '../../shared/ui.tsx';
 import { FORMATS } from '../../export/pipeline.ts';
 import type { ExportFormat } from '../../export/pipeline.ts';
-import { emptyDocumentsText } from './logic.ts';
-import type { DocumentDetailView, DocumentLine } from './logic.ts';
+import { emptyDocumentsText, MAX_COMMENT_HINT } from './logic.ts';
+import type { ComparisonView, DocumentDetailView, DocumentLine } from './logic.ts';
 
 export { NoProjectView };
 
@@ -15,6 +15,8 @@ export interface DocumentsViewProps {
   total: number;
   replacedCount: number;
   showReplaced: boolean;
+  archivedCount: number;
+  showArchived: boolean;
   selectedId: number | null;
   detail: DocumentDetailView | null;
   /** Texte brut du contenu stocké. Jamais interprété. */
@@ -22,7 +24,20 @@ export interface DocumentsViewProps {
   askWhere: boolean;
   busy: boolean;
   message: { level: 'ok' | 'error'; text: string } | null;
+  /** Cadre de validation ouvert (F6-D01) et commentaire en cours de saisie. */
+  validating: boolean;
+  comment: string;
+  /** Résultat de la comparaison : une comparaison, un texte « impossible », ou rien tant qu'elle n'est pas demandée. */
+  comparison: { view: ComparisonView } | { unavailable: string } | null;
   onShowReplaced: (v: boolean) => void;
+  onShowArchived: (v: boolean) => void;
+  onStartValidate: () => void;
+  onCancelValidate: () => void;
+  onComment: (v: string) => void;
+  onConfirmValidate: () => void;
+  onArchive: () => void;
+  onUnarchive: () => void;
+  onCompare: () => void;
   onSelect: (id: number) => void;
   onAskWhere: (v: boolean) => void;
   onExport: (format: ExportFormat) => void;
@@ -37,10 +52,16 @@ export function DocumentsView(props: DocumentsViewProps) {
         <p className="mb-3 text-hub-muted">
           Un document est une photographie datée d’un livrable : son contenu ne change plus, même si les fiches évoluent ensuite. Enregistrez un livrable depuis l’écran Livrables ; un nouvel enregistrement dont le contenu a changé crée la version suivante et la précédente devient « Remplacée ».
         </p>
-        <label className="mb-3 flex items-center gap-2">
-          <input id="doc-replaced" type="checkbox" checked={props.showReplaced} onChange={(e) => props.onShowReplaced(e.target.checked)} />
-          Afficher les versions remplacées ({props.replacedCount})
-        </label>
+        <div className="mb-3 flex flex-wrap gap-x-6 gap-y-1">
+          <label className="flex items-center gap-2">
+            <input id="doc-replaced" type="checkbox" checked={props.showReplaced} onChange={(e) => props.onShowReplaced(e.target.checked)} />
+            Afficher les versions remplacées ({props.replacedCount})
+          </label>
+          <label className="flex items-center gap-2">
+            <input id="doc-archived" type="checkbox" checked={props.showArchived} onChange={(e) => props.onShowArchived(e.target.checked)} />
+            Afficher les archivés ({props.archivedCount})
+          </label>
+        </div>
         {props.lines.length === 0 ? (
           <p className="text-hub-muted">{emptyDocumentsText(props.total)}</p>
         ) : (
@@ -77,6 +98,36 @@ export function DocumentsView(props: DocumentsViewProps) {
           </dl>
 
           <div className="mb-3 space-y-2">
+            <div className="flex flex-wrap gap-2">
+              {props.detail.actions.includes('validate') && (
+                <button type="button" disabled={props.busy || props.validating} onClick={props.onStartValidate} className="rounded border border-hub-line px-3 py-1 disabled:opacity-50">Valider</button>
+              )}
+              {props.detail.actions.includes('archive') && (
+                <button type="button" disabled={props.busy} onClick={props.onArchive} className="rounded border border-hub-line px-3 py-1 disabled:opacity-50">Archiver</button>
+              )}
+              {props.detail.actions.includes('unarchive') && (
+                <button type="button" disabled={props.busy} onClick={props.onUnarchive} className="rounded border border-hub-line px-3 py-1 disabled:opacity-50">Désarchiver</button>
+              )}
+              {props.detail.canCompare && (
+                <button type="button" disabled={props.busy} onClick={props.onCompare} className="rounded border border-hub-line px-3 py-1 disabled:opacity-50">Comparer avec l’état courant</button>
+              )}
+            </div>
+            {props.validating && props.detail.actions.includes('validate') && (
+              <div className="space-y-2 rounded border border-hub-line p-3">
+                <p className="text-hub-muted">Une validation ne s’annule pas : pour corriger un document validé, enregistrez une nouvelle version depuis Livrables.</p>
+                <label className="block">
+                  {MAX_COMMENT_HINT}
+                  <textarea aria-label="Commentaire de validation" maxLength={500} rows={3} value={props.comment} onChange={(e) => props.onComment(e.target.value)} className="mt-1 w-full rounded border border-hub-line bg-hub-bg p-2" />
+                </label>
+                <div className="flex gap-2">
+                  <button type="button" disabled={props.busy} onClick={props.onConfirmValidate} className="rounded border border-hub-line px-3 py-1 disabled:opacity-50">Confirmer la validation</button>
+                  <button type="button" disabled={props.busy} onClick={props.onCancelValidate} className="rounded border border-hub-line px-3 py-1 disabled:opacity-50">Annuler</button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="mb-3 space-y-2">
             <label className="flex items-center gap-2">
               <input id="doc-ask" type="checkbox" checked={props.askWhere} onChange={(e) => props.onAskWhere(e.target.checked)} />
               Choisir l’emplacement (« Enregistrer sous… »)
@@ -95,6 +146,33 @@ export function DocumentsView(props: DocumentsViewProps) {
               <p role={props.message.level === 'error' ? 'alert' : 'status'} className={`break-all ${props.message.level === 'error' ? 'text-hub-bad' : 'text-hub-ok'}`}>{props.message.text}</p>
             )}
           </div>
+
+          {props.comparison !== null && (
+            <div className="mb-3 space-y-2" aria-label="Comparaison avec l’état courant">
+              <h4 className="font-semibold">Comparaison avec l’état courant</h4>
+              {'unavailable' in props.comparison ? (
+                <p className="text-hub-muted">{props.comparison.unavailable}</p>
+              ) : (
+                <>
+                  <p>{props.comparison.view.summary}</p>
+                  {props.comparison.view.groups.map((g) => (
+                    <div key={g.title} className="overflow-x-auto">
+                      <h5 className="mb-1 text-hub-muted">{g.title}</h5>
+                      <table className="w-full text-left">
+                        <thead className="text-hub-muted"><tr>{g.headers.map((h) => <th key={h} className="py-1 pr-3">{h}</th>)}</tr></thead>
+                        <tbody>
+                          {g.rows.map((r) => (
+                            <tr key={r.join('|')} className="border-t border-hub-line align-top">{r.map((c, i) => <td key={i} className="py-1 pr-3">{c}</td>)}</tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ))}
+                  <p className="text-hub-muted">{props.comparison.view.note}</p>
+                </>
+              )}
+            </div>
+          )}
 
           <h4 className="mb-1 font-semibold">Éléments figés</h4>
           {props.detail.items === null ? (

@@ -1,0 +1,46 @@
+# Recette F6 — Valider, archiver, comparer les documents (version 0.16.0, schéma 8 inchangé)
+
+**Ce que F6 change** : dans l'écran **Documents**, le détail d'un document propose maintenant quatre gestes. **Valider** (brouillon vers validé) ouvre un cadre de confirmation avec un commentaire facultatif de 500 caractères au plus ; **une validation ne s'annule pas**. **Archiver** sort le document de la liste, **Désarchiver** le remet (en Validé s'il l'avait été, sinon en Brouillon). **Comparer avec l'état courant** liste, à la demande, les éléments ajoutés, retirés, au statut modifié ou au titre modifié depuis la photographie ; rien n'est enregistré. La liste gagne la case **Afficher les archivés (N)**. Un fichier exporté d'un document validé porte « validé le JJ/MM/AAAA » sous le titre ; archivé : « archivé ». Livrables dit, quand le contenu est identique, si la version est validée ou archivée. Le Journal affiche « Brouillon → Validé », « Validé → Archivé »… **Aucune migration : le schéma reste 8.**
+
+**Précaution** : F6 n'a pas de migration, mais c'est le premier lot qui **écrit l'état de documents que tu as déjà créés**. Joue la recette sur une **copie de `BAMentorData`** (déjà passée en schéma 8 par la recette de F5), avec l'exécutable **0.16.0**. Les chiffres valent pour le **projet d'exemple neuf**, avec les tests 2 à 14 joués **dans l'ordre** : plusieurs dépendent de l'état laissé par le précédent.
+
+**Non vérifiable de mon côté** : le rendu réel et les clics (cadre de validation, boutons, cases), le cas de deux fenêtres ouvertes (la garde contre un état périmé est testée automatiquement, pas sur clé), les fichiers Word et HTML ouverts dans leurs logiciels, la boîte « Enregistrer sous », le contrôle réel des types React, le Rust, l'exécutable, la durée d'une comparaison sur un gros projet.
+
+## A. Contrôles à relever dans GitHub Actions
+
+Quatre jobs attendus verts. `build.yml` n'est pas modifié par F6. **Aucun fichier à supprimer à la main** cette fois ; vérifie seulement que les nouveaux fichiers sont dans le commit : `tests/f6-documents.test.ts` et `tests/ui-f6.test.ts`.
+
+| # | Où regarder | Résultat attendu |
+|---|---|---|
+| CI-1 | Le commit de l'exécution | C'est le commit qui contient les fichiers F6. |
+| CI-2 | `verify`, « Versions alignées » | Vert, **0.16.0**. |
+| CI-3 | `verify`, « Règles d'architecture » | Vert. |
+| CI-4 | `verify`, « Tests » | `fail 0` ; **545 tests** annoncés (508 avant). Si le nombre diffère, note-le : un fichier manque. |
+| CI-5 | Job `types` | **Vert, sans ligne `error TS`.** F6 modifie `DocumentsView.tsx` et `DocumentsScreen.tsx` (composants React). Relève les quatre versions (TypeScript 5.9.3, `@types/react` 18.3.32, `@types/react-dom` 18.3.7, `@types/node` 22.20.7). Si rouge : colle-moi les lignes `error TS`. |
+| CI-6 | `rust-tests` | Vert (aucun changement Rust). |
+| CI-7 | `build` | Vert ; l'artefact `ba-mentor-exe` affiche 0.16.0 à l'écran À propos. |
+
+## B. Recette sur clé (exécutable 0.16.0, copie de `BAMentorData`)
+
+| # | Action | Résultat attendu |
+|---|---|---|
+| 1 | Lancer la 0.16.0 sur la copie. Ouvrir **À propos**, puis **Technique**, carte « Base de données ». | Démarrage **sans erreur**. Version **0.16.0**, schéma **8** ; aucune nouvelle ligne « Sauvegarde avant migration » (pas de migration). |
+| 2 | Créer le projet d'exemple neuf (écran Projets), l'activer. **Livrables**, modèle **Registre des exigences**, **Enregistrer comme document**, puis **Ouvrir dans Documents**. | « Document enregistré : version 1 (brouillon). » Détail : État **Brouillon**, Version 1. Boutons : **Valider**, **Archiver**, **Comparer avec l'état courant**, Exporter en Markdown, HTML et Word. **Pas** de bouton Désarchiver. La liste a deux cases : « Afficher les versions remplacées (0) » et « Afficher les archivés (0) ». |
+| 3 | Clic sur **Valider**. Un cadre s'ouvre. Clic sur **Annuler**. Puis **Valider** à nouveau, saisir « Relu en recette F6 », **Confirmer la validation**. | Le cadre affiche « Une validation ne s'annule pas… » et une zone « Commentaire de validation (facultatif, 500 caractères) ». **Annuler** ferme le cadre, l'état reste Brouillon. Après confirmation : « Document validé le JJ/MM/AAAA. » (date du jour), État **Validé**, lignes « Validé le » (date et heure) et « Commentaire de validation : Relu en recette F6 ». Le bouton **Valider** a disparu ; **Archiver** reste. |
+| 4 | **Journal**, filtre « Documents ». | Deux lignes : **Document · Créé · Version 1** et **Document · Statut changé · Brouillon → Validé**, au nom du document. Le texte du commentaire n'apparaît **nulle part** dans le Journal. Aucune ligne pour l'annulation du cadre. |
+| 5 | Exporter le document en Markdown, puis en Word. Ouvrir les fichiers. | Sous le titre : « **Document :** version 1, validé le JJ/MM/AAAA ». Le commentaire de validation **n'est pas** dans le fichier. Le nom du fichier contient « v1 ». La signature en quatre lignes est présente. Le fichier Word s'ouvre sans erreur. |
+| 6 | **Exigences** : ajouter « — v2 » au titre de **EX-005**. **Livrables**, même modèle, **Enregistrer comme document**, **Ouvrir dans Documents**, cocher « Afficher les versions remplacées ». | « Version 2 enregistrée ; la version 1 est remplacée. » Liste : v2 **Brouillon** et v1 **Remplacé** (sa case est comptée : « (1) »). Détail de la **v1** : **aucun** bouton Valider, Archiver ni Désarchiver, mais « Validé le » et le commentaire restent visibles ; exports possibles. Export Markdown de la v1 : « version 1, validé le JJ/MM/AAAA, remplacée par la version 2 ». |
+| 7 | Sélectionner la **v2**. Clic sur **Comparer avec l'état courant**. Regarder le Journal ensuite. | Sous l'aperçu : « Aucun écart sur les éléments listés (code, titre, statut). Les descriptions, critères et liens ne sont pas comparés. » et « Calculé maintenant ; rien n'est enregistré. » **Aucune ligne de journal** nouvelle. |
+| 8 | Sur la v2 : **Archiver**. | « Document archivé. Il n'apparaît plus dans la liste ; cochez « Afficher les archivés » pour le retrouver. » Décocher « Afficher les versions remplacées » : la liste est vide (message « Aucun document à afficher. » : la v1 est masquée comme remplacée, la v2 comme archivée). Cocher « Afficher les archivés (1) » : la v2 réapparaît, état **Archivé**, ligne « Archivé le » ; boutons **Désarchiver**, Comparer et exports ; ni Archiver ni Valider. |
+| 9 | La v2 étant archivée : **Livrables**, même modèle, **Enregistrer comme document** sans rien changer. | « Contenu identique à la version 2, qui est archivée : désarchivez-la dans Documents pour la rouvrir. Aucune nouvelle version. » **Aucune** version 3 créée, aucune ligne de journal. Puis dans Documents : **Désarchiver** → « Document désarchivé : il est de nouveau Brouillon. » (la v2 n'a jamais été validée). |
+| 10 | Sur la v2 (Brouillon) : **Valider**, commentaire vide, **Confirmer la validation**. Puis Livrables, même modèle, **Enregistrer** sans rien changer. | v2 **Validé**, aucune ligne « Commentaire de validation » (commentaire vide). Livrables : « Contenu identique à la version 2, validée : aucune nouvelle version. » |
+| 11 | **Exigences** : passer **EX-005** à « Validé » ; ajouter « bis » au titre de **EX-006** ; **archiver EX-007** ; créer une nouvelle exigence (code **EX-009**). Dans Documents, v2, **Comparer avec l'état courant**. | Synthèse : « 1 ajouté, 1 retiré, 1 statut modifié, 1 titre modifié ». Tableaux : *Ajoutés* EX-009 ; *Retirés* EX-007 ; *Statut modifié* EX-005 « Brouillon → Validé » ; *Titre modifié* EX-006, ancien et nouveau titre. |
+| 12 | Livrables, même modèle, **Enregistrer comme document** ; ouvrir Documents. | « Version 3 enregistrée ; la version 2 est remplacée. » v3 **Brouillon** ; v2 (validée) passe à **Remplacé**, sans bouton de geste, sa date de validation restant visible. Comparer la v3 : « Aucun écart… ». |
+| 13 | Sur une **autre copie** : importer le jeu **fictif** de la V1 (test 5 de `TESTS-F1.md`). Dans un projet importé qui a des documents, ouvrir un document. | Boutons **Valider** et **Archiver** proposés (état d'origine permettant), **pas** de bouton Comparer. Valider ou archiver fonctionne. Export Markdown d'un import : **aucune ligne « Document : »**. |
+| 14 | Sur la v3 : **Archiver**, puis exporter en Markdown. Ouvrir **Journal**, filtre « Documents ». | Fichier : « version 3, archivé ». Journal, si tu as suivi les tests 2 à 12 puis 14 : **8 lignes** — Créé Version 1, Version 2, Version 3 ; Statut changé : Brouillon → Validé (v1), Brouillon → Archivé (v2), Archivé → Brouillon (v2), Brouillon → Validé (v2), Brouillon → Archivé (v3). |
+| 15 | Non-régression : sauvegarde manuelle puis restauration ; suppression d'un projet qui a des documents validés ou archivés ; Accueil ; exports des tests F5. | Comme en F5. La suppression du projet réussit et compte les documents dans la confirmation. |
+| 16 | **Facultatif**, sur une copie : rouvrir cette base avec l'exécutable **0.15.0**. | Elle s'ouvre sans erreur (même schéma 8) ; les documents s'affichent avec leurs états (la 0.15.0 ignore les gestes de F6). |
+
+## C. Si un test échoue
+
+Donne le **numéro du test**, ce que tu as vu et, pour le test 1, le **texte exact** d'une éventuelle erreur. Ne valide pas F6 tant qu'un test échoue ou qu'un contrôle CI est rouge.

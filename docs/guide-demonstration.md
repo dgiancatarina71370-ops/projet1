@@ -1,6 +1,6 @@
 ---
 title: "BA-Mentor — Guide de démonstration"
-subtitle: "Version 0.15.0 · Projet d'exemple « Portail de réservation de salles »"
+subtitle: "Version 0.16.0 · Projet d'exemple « Portail de réservation de salles »"
 lang: fr-FR
 ---
 
@@ -8,9 +8,9 @@ lang: fr-FR
 
 Il te permet de présenter BA-Mentor en **10 à 12 minutes**, devant un Business Manager, un recruteur ou un client, en suivant un fil unique : **du besoin exprimé en atelier jusqu'aux livrables, avec la traçabilité qui relie le tout.**
 
-Ce guide décrit uniquement ce que l'application fait aujourd'hui (version 0.15.0). Il ne contient **pas de captures d'écran** : ajoute les tiennes si tu veux un support imprimé.
+Ce guide décrit uniquement ce que l'application fait aujourd'hui (version 0.16.0). Il ne contient **pas de captures d'écran** : ajoute les tiennes si tu veux un support imprimé.
 
-**Avant chaque démonstration, vérifie** que la version affichée en pied de page est bien celle du guide (0.15.0). Si l'application a évolué, certains libellés ou nombres ci-dessous peuvent ne plus correspondre : rejoue la démonstration une fois en entier la veille.
+**Avant chaque démonstration, vérifie** que la version affichée en pied de page est bien celle du guide (0.16.0). Si l'application a évolué, certains libellés ou nombres ci-dessous peuvent ne plus correspondre : rejoue la démonstration une fois en entier la veille.
 
 # 2. Le message à faire passer
 
@@ -107,9 +107,12 @@ Les durées sont indicatives. L'application s'ouvre sur **Accueil** dès qu'un p
 2. Cliquer sur **Enregistrer comme document**, puis **Ouvrir dans Documents** : le document est en **Brouillon**, version 1, avec la liste figée des éléments. Cliquer sur **Exporter en Word** et ouvrir le fichier dans Word : sous le titre, « Document : version 1, brouillon », puis date, lieu, objectif, participants, éléments issus de l'atelier, notes, points ouverts.
 3. Changer de modèle : **Registre des risques**, cocher puis décocher **Inclure les éléments archivés ou rejetés** : RIS-004 apparaît et disparaît.
 4. Modifier une exigence, revenir dans Livrables et enregistrer à nouveau : une **version 2** apparaît, la version 1 passe à l'état « Remplacé » (case « Afficher les versions remplacées »). Enregistrer sans rien changer : « Contenu identique, aucune nouvelle version ».
-5. Citer les sept modèles : compte rendu d'atelier, registre des exigences, registre des décisions, registre des risques, backlog des user stories, cahier de recette, matrice de traçabilité.
+5. Dans **Documents**, ouvrir la version 2 et cliquer sur **Valider** : un cadre demande un commentaire facultatif et prévient qu'une validation ne s'annule pas ; **Confirmer la validation**. Le document passe à « Validé » avec sa date ; un export Word porte « validé le … » sous le titre.
+6. Cliquer sur **Comparer avec l'état courant** : « Aucun écart ». Renommer une exigence puis comparer à nouveau : le titre modifié apparaît. Préciser que la comparaison ne voit que code, titre et statut.
+7. **Archiver** le document : il sort de la liste ; cocher **Afficher les archivés** le montre ; **Désarchiver** le remet à « Validé ».
+8. Citer les sept modèles : compte rendu d'atelier, registre des exigences, registre des décisions, registre des risques, backlog des user stories, cahier de recette, matrice de traçabilité.
 
-**À dire** : « Ces documents ne sont pas tapés : ils sortent des données. Chaque enregistrement fige une photographie datée ; si je change une exigence, je régénère et j'obtiens la version suivante, l'ancienne reste consultable. Chaque fichier est signé du nom de l'application, de la version et de la date. »
+**À dire** : « Ces documents ne sont pas tapés : ils sortent des données. Chaque enregistrement fige une photographie datée ; si je change une exigence, je régénère et j'obtiens la version suivante, l'ancienne reste consultable. Un document validé ne se retouche pas : on le corrige par une nouvelle version, et l'outil me dit ce qui a changé depuis. Chaque fichier est signé du nom de l'application, de la version et de la date. »
 
 **Piège** : la matrice de traçabilité ignore l'option des archivés, c'est normal (l'écran l'explique).
 

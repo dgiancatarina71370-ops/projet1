@@ -5,7 +5,7 @@
 import { query, queryOne } from '../db.ts';
 import type { Row } from '../db.ts';
 import { mutate } from '../mutate.ts';
-import { GENERATED_KIND } from '../../domain/documents.ts';
+import { GENERATED_KIND, availableActions, normalizeValidationComment, unarchiveTarget } from '../../domain/documents.ts';
 
 export interface DocumentSummary extends Row {
   id: number;
@@ -21,6 +21,10 @@ export interface DocumentSummary extends Row {
   replaced_by_version: number | null;
   created_at: string;
   updated_at: string;
+  /** Lot F6 : date de validation, d'archivage et commentaire de validation (colonnes de la V1 et de la migration 8). */
+  validated_at: string | null;
+  archived_at: string | null;
+  validation_comment: string | null;
 }
 
 export interface DocumentDetail extends DocumentSummary {
@@ -32,7 +36,7 @@ export interface DocumentDetail extends DocumentSummary {
   replaces_version: number | null;
 }
 
-const SUMMARY_COLUMNS = `d.id, d.name, d.kind, d.status, d.version, d.series_key, d.template_ref, d.replaces_id, d.created_at, d.updated_at,
+const SUMMARY_COLUMNS = `d.id, d.name, d.kind, d.status, d.version, d.series_key, d.template_ref, d.replaces_id, d.created_at, d.updated_at, d.validated_at, d.archived_at, d.validation_comment,
   (SELECT r.id FROM documents r WHERE r.replaces_id = d.id ORDER BY r.version DESC LIMIT 1) AS replaced_by_id,
   (SELECT r.version FROM documents r WHERE r.replaces_id = d.id ORDER BY r.version DESC LIMIT 1) AS replaced_by_version`;
 
@@ -63,12 +67,12 @@ export async function getDocument(id: number): Promise<DocumentDetail | null> {
 }
 
 /** Dernière version d'une série dans un projet. */
-export async function latestInSeries(projectId: number, seriesKey: string): Promise<{ id: number; version: number; content: string } | null> {
-  const r = await queryOne<{ id: number; version: number; content: string }>(
-    'SELECT id, version, content FROM documents WHERE project_id = ? AND series_key = ? ORDER BY version DESC LIMIT 1',
+export async function latestInSeries(projectId: number, seriesKey: string): Promise<{ id: number; version: number; content: string; status: string } | null> {
+  const r = await queryOne<{ id: number; version: number; content: string; status: string }>(
+    'SELECT id, version, content, status FROM documents WHERE project_id = ? AND series_key = ? ORDER BY version DESC LIMIT 1',
     [projectId, seriesKey],
   );
-  return r ? { id: Number(r.id), version: Number(r.version), content: r.content } : null;
+  return r ? { id: Number(r.id), version: Number(r.version), content: r.content, status: r.status } : null;
 }
 
 export interface NewGeneratedDocument {
@@ -84,8 +88,8 @@ export interface NewGeneratedDocument {
 
 export type SaveOutcome =
   | { outcome: 'created'; id: number; version: number; replacedVersion: number | null }
-  /** Contenu identique à la dernière version de la série (F5-D05) : rien n'est écrit. */
-  | { outcome: 'identical'; id: number; version: number };
+  /** Contenu identique à la dernière version de la série (F5-D05) : rien n'est écrit. L'état de cette version sert au message (F6-D05). */
+  | { outcome: 'identical'; id: number; version: number; status: string };
 
 const nowIso = (): string => new Date().toISOString();
 
@@ -102,7 +106,7 @@ export async function saveGeneratedDocument(input: NewGeneratedDocument): Promis
   if (project.kind !== 'project') throw new Error('Un document se crée dans un projet, pas dans un dossier ni une archive.');
 
   const last = await latestInSeries(input.projectId, input.seriesKey);
-  if (last !== null && last.content === input.content) return { outcome: 'identical', id: last.id, version: last.version };
+  if (last !== null && last.content === input.content) return { outcome: 'identical', id: last.id, version: last.version, status: last.status };
 
   const version = last === null ? 1 : last.version + 1;
   const t = nowIso();
@@ -115,4 +119,74 @@ export async function saveGeneratedDocument(input: NewGeneratedDocument): Promis
     },
   ]);
   return { outcome: 'created', id: written.lastInsertRowid, version, replacedVersion: last === null ? null : last.version };
+}
+
+
+// ------------------------------------------------------------------ lot F6 : valider, archiver, désarchiver (F6-D01 à D04)
+
+/** État du document différent de celui que l'écran affichait (autre fenêtre, version suivante créée entre-temps) : rien n'a été écrit. */
+export class DocumentStateError extends Error {
+  constructor() {
+    super("Action impossible : l'état de ce document a changé. Rouvrez-le depuis la liste.");
+    this.name = 'DocumentStateError';
+  }
+}
+
+/** Aucune version suivante ne désigne ce document : condition de chaque geste (un document remplacé n'est jamais modifié, F5-D04). */
+const NOT_REPLACED = 'NOT EXISTS (SELECT 1 FROM documents r WHERE r.replaces_id = documents.id)';
+
+async function loadForAction(id: number): Promise<DocumentDetail> {
+  const doc = await getDocument(id);
+  if (!doc) throw new Error(`Document introuvable (n°${id}).`);
+  return doc;
+}
+
+/**
+ * Valide un brouillon (F6-D01). Date et commentaire facultatif enregistrés ; irréversible (F6-D02).
+ * L'UPDATE est gardé par l'état attendu : s'il ne trouve rien, `mutate()` n'écrit pas de ligne de journal et on refuse.
+ */
+export async function validateDocument(id: number, comment: string | null): Promise<void> {
+  const text = normalizeValidationComment(comment);
+  const doc = await loadForAction(id);
+  if (!availableActions(doc.status, doc.replaced_by_id !== null).includes('validate')) throw new DocumentStateError();
+  const t = nowIso();
+  const [r] = await mutate([
+    {
+      sql: `UPDATE documents SET status = 'validated', validated_at = ?, validation_comment = ?, updated_at = ? WHERE id = ? AND status = 'draft' AND ${NOT_REPLACED}`,
+      params: [t, text, t, id],
+      activity: { objectType: 'document', action: 'status_changed', objectId: id, projectId: doc.project_id, detail: 'draft>validated' },
+    },
+  ]);
+  if (r.changes === 0) throw new DocumentStateError();
+}
+
+/** Archive un brouillon ou un document validé non remplacé (F6-D03). Date de validation et commentaire conservés. */
+export async function archiveDocument(id: number): Promise<void> {
+  const doc = await loadForAction(id);
+  if (!availableActions(doc.status, doc.replaced_by_id !== null).includes('archive')) throw new DocumentStateError();
+  const t = nowIso();
+  const [r] = await mutate([
+    {
+      sql: `UPDATE documents SET status = 'archived', archived_at = ?, updated_at = ? WHERE id = ? AND status = ? AND ${NOT_REPLACED}`,
+      params: [t, t, id, doc.status],
+      activity: { objectType: 'document', action: 'status_changed', objectId: id, projectId: doc.project_id, detail: `${doc.status}>archived` },
+    },
+  ]);
+  if (r.changes === 0) throw new DocumentStateError();
+}
+
+/** Désarchive (F6-D04) : validé si le document l'a déjà été (date de validation renseignée), sinon brouillon. Retourne le statut retrouvé. */
+export async function unarchiveDocument(id: number): Promise<'validated' | 'draft'> {
+  const doc = await loadForAction(id);
+  if (!availableActions(doc.status, doc.replaced_by_id !== null).includes('unarchive')) throw new DocumentStateError();
+  const target = unarchiveTarget(doc.validated_at);
+  const [r] = await mutate([
+    {
+      sql: `UPDATE documents SET status = ?, archived_at = NULL, updated_at = ? WHERE id = ? AND status = 'archived' AND validated_at IS ${doc.validated_at === null ? '' : 'NOT '}NULL AND ${NOT_REPLACED}`,
+      params: [target, nowIso(), id],
+      activity: { objectType: 'document', action: 'status_changed', objectId: id, projectId: doc.project_id, detail: `archived>${target}` },
+    },
+  ]);
+  if (r.changes === 0) throw new DocumentStateError();
+  return target;
 }

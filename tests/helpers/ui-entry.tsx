@@ -104,8 +104,30 @@ export const render = {
     renderToStaticMarkup(<WorkshopDetailView row={p.row} onExportReport={p.withExport ? noop : undefined} {...detailProps(p)} />),
   deliverables: (p: Omit<DeliverablesViewProps, 'onModel' | 'onWorkshop' | 'onIncludeArchived' | 'onSave' | 'onOpenDocument'>): string =>
     renderToStaticMarkup(<DeliverablesView {...p} onModel={noop} onWorkshop={noop} onIncludeArchived={noop} onSave={noop} onOpenDocument={noop} />),
-  documents: (p: Omit<DocumentsViewProps, 'onShowReplaced' | 'onSelect' | 'onAskWhere' | 'onExport'>): string =>
-    renderToStaticMarkup(<DocumentsView {...p} onShowReplaced={noop} onSelect={noop} onAskWhere={noop} onExport={noop} />),
+  documents: (p: Omit<DocumentsViewProps, 'onShowReplaced' | 'onShowArchived' | 'onSelect' | 'onAskWhere' | 'onExport' | 'onStartValidate' | 'onCancelValidate' | 'onComment' | 'onConfirmValidate' | 'onArchive' | 'onUnarchive' | 'onCompare' | 'archivedCount' | 'showArchived' | 'validating' | 'comment' | 'comparison' | 'detail'> & Partial<Pick<DocumentsViewProps, 'archivedCount' | 'showArchived' | 'validating' | 'comment' | 'comparison'>> & { detail: (Omit<NonNullable<DocumentsViewProps['detail']>, 'actions' | 'canCompare'> & Partial<Pick<NonNullable<DocumentsViewProps['detail']>, 'actions' | 'canCompare'>>) | null }): string =>
+    renderToStaticMarkup(
+      <DocumentsView
+        archivedCount={0}
+        showArchived={false}
+        validating={false}
+        comment=""
+        comparison={null}
+        {...p}
+        detail={p.detail === null ? null : { actions: [], canCompare: false, ...p.detail }}
+        onShowReplaced={noop}
+        onShowArchived={noop}
+        onSelect={noop}
+        onAskWhere={noop}
+        onExport={noop}
+        onStartValidate={noop}
+        onCancelValidate={noop}
+        onComment={noop}
+        onConfirmValidate={noop}
+        onArchive={noop}
+        onUnarchive={noop}
+        onCompare={noop}
+      />,
+    ),
   wsForm: (p: { errors: Record<string, string>; askAbandon: boolean; values: { title: string; description: string; heldOn: string; place: string; objective: string; notes: string; followUp: string } }): string =>
     renderToStaticMarkup(
       <WorkshopFormView heading="Nouvel atelier" values={p.values} errors={p.errors} busy={false} error="" onChange={noop} onSubmit={noop} onCancel={noop} askAbandon={p.askAbandon} onConfirmAbandon={noop} onKeepEditing={noop} />,

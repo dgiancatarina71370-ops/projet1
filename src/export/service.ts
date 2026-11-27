@@ -11,8 +11,10 @@ import { exportDocument } from './pipeline.ts';
 import type { ExportFormat } from './pipeline.ts';
 import { deliverableItems, generateDeliverable, modelInfo } from './deliverables/models.ts';
 import type { DeliverableOptions } from './deliverables/models.ts';
-import { mentionLine, seriesKey, serializeOptions, serializeSnapshot, versionedTitle, withMention } from '../domain/documents.ts';
+import { compareSnapshots, mentionLine, modelOfSeries, parseOptions, parseSnapshot, seriesKey, serializeOptions, serializeSnapshot, versionedTitle, withMention } from '../domain/documents.ts';
+import type { Comparison } from '../domain/documents.ts';
 import { truncateBytes } from './filename.ts';
+import { formatLocal } from '../shared/format.ts';
 
 export interface ExportOptions {
   /** Version de l'application (app_info). */
@@ -20,6 +22,13 @@ export interface ExportOptions {
   /** Vrai : boîte « Enregistrer sous… ». Faux : dossier exports/ de BAMentorData, sans écrasement. */
   askWhere?: boolean;
   now?: Date;
+}
+
+/** Date de validation JJ/MM/AAAA (heure locale) pour la mention d'export (F6-D10) ; null si absente ou illisible. */
+function validationDate(validatedAt: string | null): string | null {
+  if (validatedAt === null) return null;
+  const ms = Date.parse(validatedAt);
+  return Number.isFinite(ms) ? formatLocal(ms).slice(0, 10) : null;
 }
 
 /**
@@ -32,7 +41,7 @@ export async function exportDocumentToFile(documentId: number, format: ExportFor
   if (!doc) throw new Error(`Livrable introuvable (n°${documentId}).`);
   const generated = doc.series_key !== null;
   const source = generated
-    ? { title: versionedTitle(truncateBytes(doc.name, 90), doc.version), markdown: withMention(doc.content, mentionLine(doc.version, doc.status, doc.replaced_by_version)) }
+    ? { title: versionedTitle(truncateBytes(doc.name, 90), doc.version), markdown: withMention(doc.content, mentionLine(doc.version, doc.status, doc.replaced_by_version, validationDate(doc.validated_at))) }
     : { title: doc.name, markdown: doc.content };
   const result = await exportDocument(source, format, { version: options.version, now: options.now });
   return saveExportFile(result.fileName, result.bytes, options.askWhere === true);
@@ -61,4 +70,30 @@ export async function saveDeliverable(projectId: number, modelId: string, option
     itemsSnapshot: serializeSnapshot(items),
   });
   return { ...saved, name: doc.title };
+}
+
+
+export type ComparisonResult = { available: true; comparison: Comparison } | { available: false; reason: string };
+
+/**
+ * Compare la liste figée d'un document généré aux éléments courants du même périmètre (F6-D06, D07).
+ * Lecture seule : aucune écriture, aucune ligne de journal. Le périmètre est recalculé avec le modèle, l'atelier et les options du document.
+ */
+export async function compareDocumentWithCurrent(documentId: number): Promise<ComparisonResult> {
+  const doc = await getDocument(documentId);
+  if (!doc) throw new Error(`Document introuvable (n°${documentId}).`);
+  if (doc.series_key === null) return { available: false, reason: 'Ce document a été importé de la V1 : il n’a pas de liste figée, la comparaison est impossible.' };
+  const frozen = parseSnapshot(doc.items_snapshot);
+  if (frozen === null) return { available: false, reason: 'La liste figée de ce document est absente ou illisible : la comparaison est impossible.' };
+  const options = parseOptions(doc.options_json);
+  const model = modelInfo(modelOfSeries(doc.series_key));
+  if (options === null || !model) return { available: false, reason: 'Les options de ce document ne sont pas enregistrées : la comparaison est impossible.' };
+  const data = await loadProjectData(doc.project_id);
+  if (!data) throw new Error(`Projet introuvable (n°${doc.project_id}).`);
+  try {
+    const current = deliverableItems(model.id, data, { includeArchived: options.includeArchived, workshopId: model.needsWorkshop ? options.workshopId : null });
+    return { available: true, comparison: compareSnapshots(frozen, current) };
+  } catch (e) {
+    return { available: false, reason: `${e instanceof Error ? e.message : String(e)} La comparaison est impossible.` };
+  }
 }

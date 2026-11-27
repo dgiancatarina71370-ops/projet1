@@ -1,6 +1,6 @@
 ---
 title: "BA-Mentor — Mémo du créateur"
-subtitle: "Version 0.15.0 · schéma de base 8 · pour David, sans prérequis de développeur"
+subtitle: "Version 0.16.0 · schéma de base 8 · pour David, sans prérequis de développeur"
 lang: fr-FR
 ---
 
@@ -118,7 +118,7 @@ Ce qu'il faut retenir :
 
 - **Une migration se fait toute seule** au premier lancement d'une version qui en contient une, après une sauvegarde « avant migration », en une seule opération « tout ou rien ».
 - **Elle ne se défait pas.** Une version plus ancienne **refuse** d'ouvrir une base plus récente, avec un message te demandant d'utiliser une version plus récente.
-- **Les lots M8, M8b, M9, F1, F2, F3 et F4 n'ont aucune migration** : le schéma restait 7. **Le lot F5 (0.15.0) ajoute la migration 8** : au premier démarrage, la base passe au schéma 8, après une sauvegarde automatique nommée `pre-migration`. Une application 0.14.0 ou plus ancienne **refuse** ensuite d'ouvrir cette base ; pour revenir en arrière, il faut restaurer une sauvegarde faite avant la migration (écran Technique). Tu lis le schéma dans l'écran À propos ou dans l'écran Technique, carte « Base de données ».
+- **Les lots M8, M8b, M9, F1, F2, F3 et F4 n'ont aucune migration** : le schéma restait 7. **Le lot F6 (0.16.0) n'en a pas non plus** : le schéma reste 8, et une base utilisée en 0.16.0 reste ouvrable par la 0.15.0. **Le lot F5 (0.15.0) ajoute la migration 8** : au premier démarrage, la base passe au schéma 8, après une sauvegarde automatique nommée `pre-migration`. Une application 0.14.0 ou plus ancienne **refuse** ensuite d'ouvrir cette base ; pour revenir en arrière, il faut restaurer une sauvegarde faite avant la migration (écran Technique). Tu lis le schéma dans l'écran À propos ou dans l'écran Technique, carte « Base de données ».
 - Avant une version qui change le schéma, **fais une copie complète de ton dossier** (exécutable et `BAMentorData`), c'est ton filet de sécurité absolu.
 
 # 8. Comment une version naît (le cycle de livraison)
@@ -147,7 +147,7 @@ Ce qu'il faut retenir :
 
 # 9. La numérotation des versions
 
-- Une version, par exemple **0.15.0**, doit être écrite à **trois endroits identiques** : `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`. Le contrôle « versions alignées » échoue si l'un diffère.
+- Une version, par exemple **0.16.0**, doit être écrite à **trois endroits identiques** : `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`. Le contrôle « versions alignées » échoue si l'un diffère.
 - C'est `tauri.conf.json` qui fait foi pour l'écran **À propos**, le pied de page et la signature des fichiers exportés.
 - Convention suivie jusqu'ici (une habitude, pas une règle contrôlée) : un lot qui ajoute une fonction visible augmente le deuxième chiffre (0.10 → 0.11 → 0.12) ; une refonte interne ou un correctif augmente le troisième (0.10.1, 0.10.2, 0.11.1).
 
@@ -199,13 +199,13 @@ Les fichiers `TESTS-*.md` du dépôt sont l'historique de toutes tes recettes : 
 - **Recherche des registres (0.12.0)** : elle porte sur le code, le titre et la description, dans le registre affiché et le projet actif ; pas sur les champs propres à un type (critères, plan de traitement, notes d'atelier), pas de tolérance aux fautes de frappe, pas de recherche entre registres. Sur plus de 50 éléments, seul un test automatique la couvre, pas ta recette.
 - **Accueil du projet (0.13.0)** : lecture seule. Les brouillons ne comptent que les besoins, les exigences et les user stories (seuls types avec un statut Brouillon) ; un clic ouvre le registre, sans filtre préappliqué. Les dix dernières modifications viennent du journal et ne portent que sur les éléments (pas les liens ni les documents) ; un élément supprimé s'affiche sans code ni titre, car le journal n'en garde pas. Un projet importé de la V1 n'y montre rien tant que ses éléments n'ont pas été touchés.
 - **Journal (0.14.0)** : l'écran Journal ne montre que les entrées du **projet actif**. Les entrées sans projet, écrites par l'import de la V1 (contacts, réglages, indicateurs, étapes PSPO, notes), restent dans la base mais ne sont plus affichées nulle part (décision du 27/11/2026). Un lien supprimé n'indique plus quels éléments il reliait (le journal ne garde que son type) ; les noms des champs modifiés sont affichés, pas leurs valeurs. Les entrées d'un projet supprimé restent dans la base, sans être visibles. La lecture n'est pas indexée : non mesurée sur une très grosse base.
-- **Documents (0.15.0)** : un livrable s'enregistre comme document (écran Livrables), l'export se fait depuis l'écran Documents ; il n'existe plus d'export direct. Un document ne se modifie ni ne se supprime en 0.15.0 : un document créé par erreur reste jusqu'à la suppression du projet (l'archivage arrive avec le lot F6). Seule la **dernière** version d'une série est comparée pour détecter un contenu identique : si le contenu d'une ancienne version revient, c'est une nouvelle version. Les documents importés de la V1 n'appartiennent à aucune série : régénérer un livrable ne les remplace pas. La liste figée d'une matrice de traçabilité est celle des éléments actifs de la chaîne ; sa correspondance exacte avec le texte n'est pas garantie. Chaque version stocke le texte complet : volume non mesuré. Le fichier exporté d'un document généré porte, sous le titre, une ligne « Document : version N, statut » et la version dans son nom.
+- **Documents (0.16.0)** : un livrable s'enregistre comme document (écran Livrables), l'export se fait depuis l'écran Documents ; il n'existe plus d'export direct. Un document se **valide** (avec un commentaire facultatif), s'**archive** et se **désarchive** ; il ne se modifie ni ne se supprime : un document créé par erreur peut être archivé, mais reste en base jusqu'à la suppression du projet. **Une validation ne s'annule pas** : pour corriger un document validé, on régénère depuis Livrables (version suivante en brouillon) ; le seul rattrapage d'une validation faite par erreur est d'archiver le document. **Comparer avec l'état courant** liste les éléments ajoutés, retirés, au statut modifié ou au titre modifié depuis la photographie ; elle ne voit ni les descriptions, ni les critères, ni les liens : « aucun écart » ne prouve pas que le document est à jour. Seule la **dernière** version d'une série est comparée pour détecter un contenu identique : si le contenu d'une ancienne version revient, c'est une nouvelle version. Les documents importés de la V1 n'appartiennent à aucune série : régénérer un livrable ne les remplace pas. La liste figée d'une matrice de traçabilité est celle des éléments actifs de la chaîne ; sa correspondance exacte avec le texte n'est pas garantie. Chaque version stocke le texte complet : volume non mesuré. Le fichier exporté d'un document généré porte, sous le titre, une ligne « Document : version N, statut » et la version dans son nom.
 - L'import des données de la V1 n'a été vu qu'avec les données d'exemple de la V1 ; un export plus riche (livrable validé, archivé, envoi, contact) n'a été passé que sous forme de jeu **fictif** (test 5 de `TESTS-F1.md`, réussi à ta recette du 27/11/2026). La 1.0 n'utilise que des données fictives ; une vraie migration de tes données V1 est hors périmètre.
 
 **Non vérifié par moi (à confirmer par GitHub Actions ou par toi)**
 
 - La compilation du Rust et de Tauri, la fabrication de l'exécutable, les boîtes de dialogue Windows : seul GitHub Actions le fait.
-- La **vérification des types avec les vrais types React** : je ne peux pas la lancer ici (registre npm refusé). Elle est verte sur la 0.14.0 (F4 validé le 27/11/2026) ; pour la 0.15.0, c'est le job `types` qui fait foi (section 8). Le lot F5 ajoute trois composants React, un écran et modifie l'écran Livrables.
+- La **vérification des types avec les vrais types React** : je ne peux pas la lancer ici (registre npm refusé). Elle est verte sur la 0.15.0 (F5 validé le 27/11/2026) ; pour la 0.16.0, c'est le job `types` qui fait foi (section 8). Le lot F6 modifie l'écran Documents (actions, cadre de validation, comparaison, case des archivés).
 - Le rendu réel et le comportement à l'écran de chaque lot : ta recette.
 - L'ouverture des fichiers Word dans Word, l'impression, l'aspect final.
 - La compatibilité d'un autre poste Windows que le tien (composant d'affichage WebView2, droits d'écriture sur la clé, antivirus ou avertissement SmartScreen sur un exécutable non signé). Ta clé fonctionne sur ta machine ; je n'ai aucune preuve pour une autre.
@@ -236,7 +236,7 @@ Les fichiers `TESTS-*.md` du dépôt sont l'historique de toutes tes recettes : 
 | **Migration** | La mise à jour de cette structure, faite automatiquement par une nouvelle version. |
 | **Transaction** | Un groupe d'écritures « tout ou rien » : si une échoue, aucune n'est gardée. |
 | **Dépôt (repository)** | Le code qui lit et écrit un type de données. Seul endroit autorisé à écrire. |
-| **Document** | Depuis F5, une photographie datée d'un livrable : son contenu ne change plus. Régénérer un livrable dont le contenu a changé crée la version suivante ; l’ancienne s’affiche « Remplacé ». |
+| **Document** | Depuis F5, une photographie datée d'un livrable : son contenu ne change plus. Régénérer un livrable dont le contenu a changé crée la version suivante ; l’ancienne s’affiche « Remplacé ». Depuis F6, un document se valide (irréversible), s’archive et se désarchive. |
 | **Journal d'activité** | La trace de qui a fait quoi : créer, modifier, supprimer, changer de statut. |
 | **CI / GitHub Actions** | Le serveur qui contrôle et fabrique l'application à chaque envoi. |
 | **Artefact** | Le fichier produit par la CI (ici l'exécutable). |
