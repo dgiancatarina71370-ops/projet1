@@ -3,7 +3,7 @@
 
 import type { ItemKind } from '../domain/kinds.ts';
 
-export type ScreenId = 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'stories' | 'tests' | 'traceability' | 'workshops' | 'deliverables' | 'technical';
+export type ScreenId = 'home' | 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'stories' | 'tests' | 'traceability' | 'workshops' | 'deliverables' | 'technical';
 
 export interface ScreenInfo {
   id: ScreenId;
@@ -18,7 +18,7 @@ export interface NavSection {
 
 // Menu regroupé (lot M5, décision D67, option B) : l'ordre suit la chaîne de traçabilité ; la section « Contrôle » (lot M6, D70) porte la vue calculée. Projets et Technique restent aux extrémités.
 export const NAV_SECTIONS: readonly NavSection[] = [
-  { title: null, screens: [{ id: 'projects', label: 'Projets' }] },
+  { title: null, screens: [{ id: 'home', label: 'Accueil' }, { id: 'projects', label: 'Projets' }] },
   { title: 'Analyse', screens: [{ id: 'workshops', label: 'Ateliers' }, { id: 'stakeholders', label: 'Parties prenantes' }, { id: 'needs', label: 'Besoins' }, { id: 'requirements', label: 'Exigences' }] },
   { title: 'Pilotage', screens: [{ id: 'decisions', label: 'Décisions' }, { id: 'risks', label: 'Risques' }, { id: 'deliverables', label: 'Livrables' }] },
   { title: 'Réalisation', screens: [{ id: 'stories', label: 'User stories' }, { id: 'tests', label: 'Tests' }] },
@@ -49,9 +49,9 @@ export function screenForKind(kind: ItemKind): ScreenId {
   }
 }
 
-/** Écran affiché au démarrage : les projets tant qu'il n'y en a aucun d'actif, sinon les parties prenantes (le travail courant). */
+/** Écran affiché au démarrage (lot F3, F3-D02) : les projets tant qu'il n'y en a aucun d'actif, sinon l'accueil du projet actif. */
 export function startScreen(activeProjectId: number | null): ScreenId {
-  return activeProjectId === null ? 'projects' : 'stakeholders';
+  return activeProjectId === null ? 'projects' : 'home';
 }
 
 export function isScreenId(value: string): value is ScreenId {

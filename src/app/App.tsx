@@ -28,6 +28,7 @@ import { WorkshopsScreen } from '../modules/workshops/WorkshopsScreen.tsx';
 import { StoriesScreen } from '../modules/stories/StoriesScreen.tsx';
 import { TestsScreen } from '../modules/testcases/TestsScreen.tsx';
 import { TraceabilityScreen } from '../modules/traceability/TraceabilityScreen.tsx';
+import { HomeScreen } from '../modules/home/HomeScreen.tsx';
 import { DeliverablesScreen } from '../modules/deliverables/DeliverablesScreen.tsx';
 import type { DeliverablePreset } from '../modules/deliverables/DeliverablesScreen.tsx';
 import { RequirementsScreen } from '../modules/analysis/RequirementsScreen.tsx';
@@ -55,6 +56,8 @@ export function App() {
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [notices, setNotices] = useState<Notice[]>([]);
   const [screen, setScreen] = useState<ScreenId>('projects');
+  // Onglet demandé à l'ouverture de Traçabilité depuis l'accueil (lot F3, F3-D04) : effacé par toute navigation par le menu.
+  const [traceTab, setTraceTab] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<number | null>(null);
   // Demande « ouvrir cette fiche » venue de la traçabilité (lot M6, D76) : traitée par l'écran du type, puis effacée.
   const [openRequest, setOpenRequest] = useState<{ kind: ItemKind; id: number } | null>(null);
@@ -154,14 +157,21 @@ export function App() {
   const navigate = useCallback((s: ScreenId) => {
     setOpenRequest(null);
     setDeliverablePreset(null);
+    setTraceTab(null);
     setScreen(s);
+  }, []);
+  const openOrphans = useCallback(() => {
+    setOpenRequest(null);
+    setDeliverablePreset(null);
+    setTraceTab('orphans');
+    setScreen('traceability');
   }, []);
   const openProps = (kind: ItemKind) => ({ openId: openRequest !== null && openRequest.kind === kind ? openRequest.id : null, onOpenHandled: clearOpen });
   const renderLinks = (itemId: number, kind: string) => <LinksSection key={itemId} itemId={itemId} kind={kind as ItemKind} onChanged={() => void refresh()} />;
 
   return (
     <Shell
-      intro="Lot M8 : livrables générés depuis les données du projet (compte rendu d’atelier, registres, backlog, cahier de recette, matrice de traçabilité), exportables en Markdown, HTML ou Word. Le schéma de la base reste à la version 7. Sauvegarde, import V1, export et À propos sont dans l’écran Technique."
+      intro="Analyse d’un projet : ateliers, parties prenantes, besoins, exigences, décisions, risques, user stories et tests, traçabilité calculée, livrables exportables en Markdown, HTML ou Word. Sauvegarde, import V1, export et À propos sont dans l’écran Technique."
       navigable={ready}
       screen={screen}
       onNavigate={navigate}
@@ -207,6 +217,18 @@ export function App() {
       {notices.map((n, i) => (
         <p key={i} role={n.level === 'error' ? 'alert' : 'status'} className={`rounded border px-3 py-2 text-sm ${n.level === 'error' ? 'border-hub-bad text-hub-bad' : n.level === 'warning' ? 'border-yellow-500 text-yellow-300' : 'border-hub-line text-hub-muted'}`}>{n.text}</p>
       ))}
+
+      {result?.status === 'ready' && screen === 'home' && (
+        <HomeScreen
+          projectId={active ? active.id : null}
+          projectName={active ? active.name : ''}
+          onGoToProjects={() => navigate('projects')}
+          onOpenTraceability={() => navigate('traceability')}
+          onOpenOrphans={openOrphans}
+          onOpenRegister={(kind) => navigate(screenForKind(kind))}
+          onOpenItem={openItem}
+        />
+      )}
 
       {result?.status === 'ready' && screen === 'projects' && snap && (
         <ProjectsScreen projects={snap.projects} activeId={activeId} onChanged={afterChange} onActivate={selectProject} />
@@ -307,6 +329,7 @@ export function App() {
           projectName={active ? active.name : ''}
           onGoToProjects={() => navigate('projects')}
           onOpenItem={openItem}
+          initialTab={traceTab ?? undefined}
         />
       )}
 

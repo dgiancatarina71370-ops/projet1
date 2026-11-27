@@ -23,6 +23,8 @@ import { RiskDetailView, RiskFormView, RiskListView } from '../../src/modules/ri
 import type { RiskRow } from '../../src/modules/risks/RisksView.tsx';
 import { NeedDetailView, NeedFormView, NeedListView, NoProjectView as AnalysisNoProject, RequirementDetailView, RequirementFormView, RequirementListView } from '../../src/modules/analysis/AnalysisView.tsx';
 import type { NeedRow, RequirementRow } from '../../src/modules/analysis/AnalysisView.tsx';
+import { HomeView } from '../../src/modules/home/HomeView.tsx';
+import type { HomeViewProps } from '../../src/modules/home/HomeView.tsx';
 import { NoProjectView, StakeholderDetailView, StakeholderFormView, StakeholderListView } from '../../src/modules/stakeholders/StakeholdersView.tsx';
 
 const noop = (): void => undefined;
@@ -35,7 +37,11 @@ const detailProps = (p: { confirm: string | null; error: string }) => ({
   onEdit: noop, onChangeStatus: noop, onAskDelete: noop, onConfirmDelete: noop, onCancelDelete: noop, onBack: noop,
 });
 
+/** Accueil (lot F3) : les rappels sont des fonctions vides, aucun clic n'est simulé. */
+const homeProps = (p: Omit<HomeViewProps, 'onOpenTraceability' | 'onOpenOrphans' | 'onOpenRegister' | 'onOpenItem'>): HomeViewProps => ({ ...p, onOpenTraceability: noop, onOpenOrphans: noop, onOpenRegister: noop, onOpenItem: noop });
+
 export const render = {
+  home: (p: Omit<HomeViewProps, 'onOpenTraceability' | 'onOpenOrphans' | 'onOpenRegister' | 'onOpenItem'>): string => renderToStaticMarkup(<HomeView {...homeProps(p)} />),
   analysisNoProject: (what: string): string => renderToStaticMarkup(<AnalysisNoProject what={what} onGoToProjects={noop} />),
   needList: (p: { rows: NeedRow[]; total: number; filter: string; query?: string }): string =>
     renderToStaticMarkup(<NeedListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} {...extras(p.rows, p.query)} />),
@@ -101,7 +107,7 @@ export const render = {
     renderToStaticMarkup(
       <LinksView rows={p.rows} options={p.options} optionKey={p.optionKey} candidates={p.candidates} candidateId={p.candidateId} busy={false} error={p.error} confirmRemove={p.confirmRemove} onOption={noop} onCandidate={noop} onAdd={noop} onAskRemove={noop} onConfirmRemove={noop} onCancelRemove={noop} />,
     ),
-  shell: (p: { navigable: boolean; screen: 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'workshops' | 'deliverables' | 'stories' | 'tests' | 'traceability' | 'technical'; projects: Array<{ id: number; name: string }>; activeId: number | null }): string =>
+  shell: (p: { navigable: boolean; screen: 'home' | 'projects' | 'stakeholders' | 'needs' | 'requirements' | 'decisions' | 'risks' | 'workshops' | 'deliverables' | 'stories' | 'tests' | 'traceability' | 'technical'; projects: Array<{ id: number; name: string }>; activeId: number | null }): string =>
     renderToStaticMarkup(
       <Shell intro="Introduction" navigable={p.navigable} screen={p.screen} onNavigate={noop} projects={p.projects} activeId={p.activeId} onSelectProject={noop} footer="Signature">
         <p>Contenu</p>

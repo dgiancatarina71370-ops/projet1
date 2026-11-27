@@ -5,10 +5,10 @@ import type { Traceability } from '../../domain/traceability.ts';
 import { NoProjectView, TraceabilityCard, TraceabilityPageView } from './TraceabilityView.tsx';
 import type { OpenItem } from './TraceabilityView.tsx';
 
-export function TraceabilityScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onOpenItem: OpenItem }) {
+export function TraceabilityScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onOpenItem: OpenItem; initialTab?: string }) {
   const { projectId } = props;
   const [data, setData] = useState<Traceability | null>(null);
-  const [tab, setTab] = useState('matrix');
+  const [tab, setTab] = useState(props.initialTab ?? 'matrix');
   const [filter, setFilter] = useState('all');
   const [error, setError] = useState('');
 

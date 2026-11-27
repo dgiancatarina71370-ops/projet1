@@ -1,6 +1,6 @@
 ---
 title: "BA-Mentor — Guide de démonstration"
-subtitle: "Version 0.12.0 · Projet d'exemple « Portail de réservation de salles »"
+subtitle: "Version 0.13.0 · Projet d'exemple « Portail de réservation de salles »"
 lang: fr-FR
 ---
 
@@ -8,9 +8,9 @@ lang: fr-FR
 
 Il te permet de présenter BA-Mentor en **10 à 12 minutes**, devant un Business Manager, un recruteur ou un client, en suivant un fil unique : **du besoin exprimé en atelier jusqu'aux livrables, avec la traçabilité qui relie le tout.**
 
-Ce guide décrit uniquement ce que l'application fait aujourd'hui (version 0.12.0). Il ne contient **pas de captures d'écran** : ajoute les tiennes si tu veux un support imprimé.
+Ce guide décrit uniquement ce que l'application fait aujourd'hui (version 0.13.0). Il ne contient **pas de captures d'écran** : ajoute les tiennes si tu veux un support imprimé.
 
-**Avant chaque démonstration, vérifie** que la version affichée en pied de page est bien celle du guide (0.12.0). Si l'application a évolué, certains libellés ou nombres ci-dessous peuvent ne plus correspondre : rejoue la démonstration une fois en entier la veille.
+**Avant chaque démonstration, vérifie** que la version affichée en pied de page est bien celle du guide (0.13.0). Si l'application a évolué, certains libellés ou nombres ci-dessous peuvent ne plus correspondre : rejoue la démonstration une fois en entier la veille.
 
 # 2. Le message à faire passer
 
@@ -37,7 +37,7 @@ Trois idées à garder en tête, pas plus :
 
 # 4. Le déroulé
 
-Les durées sont indicatives. Le menu de gauche est organisé en sections : **Analyse** (Ateliers, Parties prenantes, Besoins, Exigences), **Pilotage** (Décisions, Risques, Livrables), **Réalisation** (User stories, Tests), **Contrôle** (Traçabilité), puis Technique.
+Les durées sont indicatives. L'application s'ouvre sur **Accueil** dès qu'un projet est actif : couverture de traçabilité, orphelins, brouillons et dix dernières modifications du projet actif (avec le projet d'exemple : 5 sur 8 exigences avec une user story, 6 orphelins, 2 exigences et 2 user stories en brouillon). Le menu de gauche commence par **Accueil** et **Projets**, puis des sections : **Analyse** (Ateliers, Parties prenantes, Besoins, Exigences), **Pilotage** (Décisions, Risques, Livrables), **Réalisation** (User stories, Tests), **Contrôle** (Traçabilité), puis Technique.
 
 ## Étape 1 — Planter le décor (1 min) · écran Projets
 

@@ -12,12 +12,12 @@ import { MAX_TITLE_LENGTH } from '../src/data/repositories/items.ts';
 
 // ------------------------------------------------------------------ navigation et projets (logique pure)
 
-test('navigation : douze écrans regroupés en sections depuis M8, projets d\'abord tant qu\'aucun projet n\'est actif', () => {
-  assert.deepEqual(SCREENS.map((s) => s.id), ['projects', 'workshops', 'stakeholders', 'needs', 'requirements', 'decisions', 'risks', 'deliverables', 'stories', 'tests', 'traceability', 'technical']);
-  assert.deepEqual(SCREENS.map((s) => s.label), ['Projets', 'Ateliers', 'Parties prenantes', 'Besoins', 'Exigences', 'Décisions', 'Risques', 'Livrables', 'User stories', 'Tests', 'Traçabilité', 'Technique']);
+test('navigation : treize écrans regroupés en sections depuis F3, projets d\'abord tant qu\'aucun projet n\'est actif, accueil ensuite', () => {
+  assert.deepEqual(SCREENS.map((s) => s.id), ['home', 'projects', 'workshops', 'stakeholders', 'needs', 'requirements', 'decisions', 'risks', 'deliverables', 'stories', 'tests', 'traceability', 'technical']);
+  assert.deepEqual(SCREENS.map((s) => s.label), ['Accueil', 'Projets', 'Ateliers', 'Parties prenantes', 'Besoins', 'Exigences', 'Décisions', 'Risques', 'Livrables', 'User stories', 'Tests', 'Traçabilité', 'Technique']);
   assert.equal(startScreen(null), 'projects');
-  assert.equal(startScreen(3), 'stakeholders');
-  assert.ok(isScreenId('technical') && isScreenId('needs') && isScreenId('stories') && isScreenId('tests') && isScreenId('traceability') && isScreenId('workshops') && isScreenId('deliverables') && !isScreenId('matrix'), 'les douze écrans existent ; pas d\'écran fantôme');
+  assert.equal(startScreen(3), 'home');
+  assert.ok(isScreenId('home') && isScreenId('technical') && isScreenId('needs') && isScreenId('stories') && isScreenId('tests') && isScreenId('traceability') && isScreenId('workshops') && isScreenId('deliverables') && !isScreenId('matrix'), 'les treize écrans existent ; pas d\'écran fantôme');
 });
 
 test('projet actif : le dernier utilisé s\'il existe encore, sinon le premier projet, sinon aucun ; jamais un dossier', () => {
