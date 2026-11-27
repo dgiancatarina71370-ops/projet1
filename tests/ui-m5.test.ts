@@ -92,7 +92,7 @@ ui('rendu : le menu est regroupé en sections nommées, avec une seule entrée c
 ui('rendu : liste des user stories (rôle, statut au féminin, filtre « Toutes », singulier et pluriel, échappement, états vides)', (r) => {
   const html = r.storyList({ rows: [US, { ...US, id: 3, code: 'US-002', title: 'Autre', role: '', status: 'rejected' }], total: 2, filter: 'all' });
   assert.match(html, /2 user stories/);
-  for (const t of ['US-001', 'US-002', 'En tant que', 'Client &lt;x&gt;', 'Prête', 'Rejetée', 'Nouvelle user story', '>Toutes<', '>Brouillon<']) assert.ok(html.includes(t), t);
+  for (const t of ['US-001', 'US-002', 'En tant que', 'Client &lt;x&gt;', 'Prête', 'Rejetée', 'Nouvelle user story', '>Toutes (', '>Brouillon (']) assert.ok(html.includes(t), t);
   assert.ok(html.includes('Consulter &lt;b&gt;solde&lt;/b&gt;') && !html.includes('<b>solde</b>'));
   assert.match(r.storyList({ rows: [US], total: 1, filter: 'all' }), /1 user story\b(?!ies)/);
   assert.match(r.storyList({ rows: [], total: 0, filter: 'all' }), /Aucune user story dans ce projet/);
@@ -125,7 +125,7 @@ ui('rendu : formulaire d\'une user story (libellés, erreurs par champ, valeurs 
 ui('rendu : liste des tests (type, dernière exécution au format français, statut, échappement, états vides)', (r) => {
   const html = r.testList({ rows: [TS, { ...TS, id: 4, code: 'TEST-002', title: 'Autre', test_type: 'unit', last_run_on: '', status: 'passed' }], total: 2, filter: 'all' });
   assert.match(html, /2 tests/);
-  for (const t of ['TEST-001', 'TEST-002', 'Intégration', 'Unitaire', '25/11/2026', 'Échoué', 'Réussi', 'Nouveau test', '>Tous<', '>À exécuter<']) assert.ok(html.includes(t), t);
+  for (const t of ['TEST-001', 'TEST-002', 'Intégration', 'Unitaire', '25/11/2026', 'Échoué', 'Réussi', 'Nouveau test', '>Tous (', '>À exécuter (']) assert.ok(html.includes(t), t);
   assert.ok(html.includes('Connexion &lt;i&gt;ok&lt;/i&gt;') && !html.includes('<i>ok</i>'));
   assert.match(r.testList({ rows: [TS], total: 1, filter: 'all' }), /1 test\b(?!s)/);
   assert.match(r.testList({ rows: [], total: 0, filter: 'all' }), /Aucun test dans ce projet/);

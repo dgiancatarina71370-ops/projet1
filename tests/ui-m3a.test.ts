@@ -135,8 +135,8 @@ ui('écran : liste des parties prenantes (lignes, niveaux, filtre, états vides)
   assert.ok(html.includes('PP-001') && html.includes('PP-002'));
   assert.ok(html.includes('Élevé') && html.includes('Faible'));
   assert.ok(html.includes('Actif') && html.includes('Archivé'));
-  assert.match(html, /aria-pressed="true"[^>]*>Tous</);
-  assert.match(html, /aria-pressed="false"[^>]*>Actif</);
+  assert.match(html, /aria-pressed="true"[^>]*>Tous \(/);
+  assert.match(html, /aria-pressed="false"[^>]*>Actif \(/);
   assert.ok(html.includes('Nouvelle partie prenante'));
   assert.match(r.list({ rows: [], total: 0, filter: 'all' }), /Aucune partie prenante dans ce projet/);
   assert.match(r.list({ rows: [], total: 2, filter: 'archived' }), /Archivé.*2 au total/);

@@ -3,6 +3,7 @@
 // se vérifie à la recette sur clé. Ces rendus contrôlent la structure, les textes, les états vides et les messages d'erreur.
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Shell } from '../../src/app/Shell.tsx';
+import { statusCounts } from '../../src/shared/register-logic.ts';
 import { ProjectsView } from '../../src/modules/projects/ProjectsView.tsx';
 import { LinksView } from '../../src/shared/links-ui.tsx';
 import type { LinkCandidateView, LinkOptionView, LinkRowView } from '../../src/shared/links-ui.tsx';
@@ -26,6 +27,9 @@ import { NoProjectView, StakeholderDetailView, StakeholderFormView, StakeholderL
 
 const noop = (): void => undefined;
 
+/** Propriétés de recherche, de tri et de compteurs des listes (lot F2) : compteurs calculés sur les lignes reçues, recherche vide par défaut. */
+const extras = (rows: ReadonlyArray<{ status: string }>, query = '') => ({ counts: statusCounts(rows), query, onQuery: noop, sort: 'code-asc' as const, onSort: noop });
+
 const detailProps = (p: { confirm: string | null; error: string }) => ({
   busy: false, error: p.error, confirmDelete: p.confirm,
   onEdit: noop, onChangeStatus: noop, onAskDelete: noop, onConfirmDelete: noop, onCancelDelete: noop, onBack: noop,
@@ -33,56 +37,56 @@ const detailProps = (p: { confirm: string | null; error: string }) => ({
 
 export const render = {
   analysisNoProject: (what: string): string => renderToStaticMarkup(<AnalysisNoProject what={what} onGoToProjects={noop} />),
-  needList: (p: { rows: NeedRow[]; total: number; filter: string }): string =>
-    renderToStaticMarkup(<NeedListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} />),
+  needList: (p: { rows: NeedRow[]; total: number; filter: string; query?: string }): string =>
+    renderToStaticMarkup(<NeedListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} {...extras(p.rows, p.query)} />),
   needDetail: (p: { row: NeedRow; confirm: string | null; error: string }): string =>
     renderToStaticMarkup(<NeedDetailView row={p.row} {...detailProps(p)} />),
   needForm: (p: { errors: Record<string, string>; askAbandon: boolean; title: string }): string =>
     renderToStaticMarkup(
       <NeedFormView heading="Nouveau besoin" values={{ title: p.title, description: '' }} errors={p.errors} busy={false} error="" onChange={noop} onSubmit={noop} onCancel={noop} askAbandon={p.askAbandon} onConfirmAbandon={noop} onKeepEditing={noop} />,
     ),
-  reqList: (p: { rows: RequirementRow[]; total: number; filter: string }): string =>
-    renderToStaticMarkup(<RequirementListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} />),
+  reqList: (p: { rows: RequirementRow[]; total: number; filter: string; query?: string }): string =>
+    renderToStaticMarkup(<RequirementListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} {...extras(p.rows, p.query)} />),
   reqDetail: (p: { row: RequirementRow; confirm: string | null; error: string }): string =>
     renderToStaticMarkup(<RequirementDetailView row={p.row} {...detailProps(p)} />),
   reqForm: (p: { errors: Record<string, string>; askAbandon: boolean; title: string; nature: string; priority: string; criteria: string }): string =>
     renderToStaticMarkup(
       <RequirementFormView heading="Nouvelle exigence" values={{ title: p.title, description: '', nature: p.nature, priority: p.priority, criteria: p.criteria }} errors={p.errors} busy={false} error="" onChange={noop} onSubmit={noop} onCancel={noop} askAbandon={p.askAbandon} onConfirmAbandon={noop} onKeepEditing={noop} />,
     ),
-  decList: (p: { rows: DecisionRow[]; total: number; filter: string }): string =>
-    renderToStaticMarkup(<DecisionListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} />),
+  decList: (p: { rows: DecisionRow[]; total: number; filter: string; query?: string }): string =>
+    renderToStaticMarkup(<DecisionListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} {...extras(p.rows, p.query)} />),
   decDetail: (p: { row: DecisionRow; confirm: string | null; error: string }): string =>
     renderToStaticMarkup(<DecisionDetailView row={p.row} {...detailProps(p)} />),
   decForm: (p: { errors: Record<string, string>; askAbandon: boolean; values: { title: string; description: string; decidedOn: string; decider: string; alternatives: string; rationale: string } }): string =>
     renderToStaticMarkup(
       <DecisionFormView heading="Nouvelle décision" values={p.values} errors={p.errors} busy={false} error="" onChange={noop} onSubmit={noop} onCancel={noop} askAbandon={p.askAbandon} onConfirmAbandon={noop} onKeepEditing={noop} />,
     ),
-  riskList: (p: { rows: RiskRow[]; total: number; filter: string }): string =>
-    renderToStaticMarkup(<RiskListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} />),
+  riskList: (p: { rows: RiskRow[]; total: number; filter: string; query?: string }): string =>
+    renderToStaticMarkup(<RiskListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} {...extras(p.rows, p.query)} />),
   riskDetail: (p: { row: RiskRow; confirm: string | null; error: string }): string =>
     renderToStaticMarkup(<RiskDetailView row={p.row} {...detailProps(p)} />),
   riskForm: (p: { errors: Record<string, string>; askAbandon: boolean; values: { title: string; description: string; probability: string; impact: string; mitigation: string; owner: string } }): string =>
     renderToStaticMarkup(
       <RiskFormView heading="Nouveau risque" values={p.values} errors={p.errors} busy={false} error="" onChange={noop} onSubmit={noop} onCancel={noop} askAbandon={p.askAbandon} onConfirmAbandon={noop} onKeepEditing={noop} />,
     ),
-  storyList: (p: { rows: StoryRow[]; total: number; filter: string }): string =>
-    renderToStaticMarkup(<StoryListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} />),
+  storyList: (p: { rows: StoryRow[]; total: number; filter: string; query?: string }): string =>
+    renderToStaticMarkup(<StoryListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} {...extras(p.rows, p.query)} />),
   storyDetail: (p: { row: StoryRow; confirm: string | null; error: string }): string =>
     renderToStaticMarkup(<StoryDetailView row={p.row} {...detailProps(p)} />),
   storyForm: (p: { errors: Record<string, string>; askAbandon: boolean; values: { title: string; description: string; role: string; goal: string; benefit: string; criteria: string } }): string =>
     renderToStaticMarkup(
       <StoryFormView heading="Nouvelle user story" values={p.values} errors={p.errors} busy={false} error="" onChange={noop} onSubmit={noop} onCancel={noop} askAbandon={p.askAbandon} onConfirmAbandon={noop} onKeepEditing={noop} />,
     ),
-  testList: (p: { rows: TestRow[]; total: number; filter: string }): string =>
-    renderToStaticMarkup(<TestListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} />),
+  testList: (p: { rows: TestRow[]; total: number; filter: string; query?: string }): string =>
+    renderToStaticMarkup(<TestListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} {...extras(p.rows, p.query)} />),
   testDetail: (p: { row: TestRow; confirm: string | null; error: string }): string =>
     renderToStaticMarkup(<TestDetailView row={p.row} {...detailProps(p)} />),
   testForm: (p: { errors: Record<string, string>; askAbandon: boolean; values: { title: string; description: string; testType: string; preconditions: string; steps: string; expected: string; lastRunOn: string } }): string =>
     renderToStaticMarkup(
       <TestFormView heading="Nouveau test" values={p.values} errors={p.errors} busy={false} error="" onChange={noop} onSubmit={noop} onCancel={noop} askAbandon={p.askAbandon} onConfirmAbandon={noop} onKeepEditing={noop} />,
     ),
-  wsList: (p: { rows: WorkshopRow[]; total: number; filter: string }): string =>
-    renderToStaticMarkup(<WorkshopListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} />),
+  wsList: (p: { rows: WorkshopRow[]; total: number; filter: string; query?: string }): string =>
+    renderToStaticMarkup(<WorkshopListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} {...extras(p.rows, p.query)} />),
   wsDetail: (p: { row: WorkshopRow; confirm: string | null; error: string; withExport?: boolean }): string =>
     renderToStaticMarkup(<WorkshopDetailView row={p.row} onExportReport={p.withExport ? noop : undefined} {...detailProps(p)} />),
   deliverables: (p: Omit<DeliverablesViewProps, 'onModel' | 'onWorkshop' | 'onIncludeArchived' | 'onAskWhere' | 'onExport'>): string =>
@@ -104,8 +108,8 @@ export const render = {
       </Shell>,
     ),
   noProject: (): string => renderToStaticMarkup(<NoProjectView onGoToProjects={noop} />),
-  list: (p: { rows: Array<{ id: number; code: string; title: string; description: string; status: string; organisation: string; role: string; influence: string; interest: string }>; total: number; filter: 'all' | 'active' | 'archived' }): string =>
-    renderToStaticMarkup(<StakeholderListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} />),
+  list: (p: { rows: Array<{ id: number; code: string; title: string; description: string; status: string; organisation: string; role: string; influence: string; interest: string }>; total: number; filter: 'all' | 'active' | 'archived'; query?: string }): string =>
+    renderToStaticMarkup(<StakeholderListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} {...extras(p.rows, p.query)} />),
   detail: (p: { archived: boolean; confirm: string | null; error: string }): string =>
     renderToStaticMarkup(
       <StakeholderDetailView

@@ -1,7 +1,7 @@
 // Écran « Risques » (lot M4), versions d'affichage pures : elles reçoivent tout par propriétés.
 // Le conteneur (RisksScreen.tsx) les alimente. Le cadre de fiche, l'en-tête et l'écran « sans projet » viennent de shared/ui.tsx (décision D59).
-import { DetailFrame, FormButtons, NoProjectView, RegisterHeader, SelectField, StatusFilterBar, TextAreaField, TextField } from '../../shared/ui.tsx';
-import type { DetailActions } from '../../shared/ui.tsx';
+import { DetailFrame, EmptyListNotice, FormButtons, ListControls, NoProjectView, RegisterHeader, SelectField, TextAreaField, TextField } from '../../shared/ui.tsx';
+import type { DetailActions, ListExtras } from '../../shared/ui.tsx';
 import { statusLabel } from '../../domain/kinds.ts';
 import { levelLabel } from '../../domain/stakeholders.ts';
 import { LEVEL_OPTIONS, STATUS_FILTER_OPTIONS, STATUS_OPTIONS, emptyRisksMessage } from './logic.ts';
@@ -21,13 +21,13 @@ export interface RiskRow {
   owner: string;
 }
 
-export function RiskListView(props: { projectName: string; rows: RiskRow[]; total: number; filter: string; onFilter: (f: string) => void; onNew: () => void; onOpen: (id: number) => void }) {
+export function RiskListView(props: { projectName: string; rows: RiskRow[]; total: number; filter: string; onFilter: (f: string) => void; onNew: () => void; onOpen: (id: number) => void } & ListExtras) {
   return (
     <div className="space-y-3">
       <RegisterHeader projectName={props.projectName} total={props.total} singular="risque" plural="risques" newLabel="Nouveau risque" onNew={props.onNew} />
-      <StatusFilterBar options={STATUS_FILTER_OPTIONS} value={props.filter} onChange={props.onFilter} />
+      <ListControls options={STATUS_FILTER_OPTIONS} filter={props.filter} onFilter={props.onFilter} counts={props.counts} query={props.query} onQuery={props.onQuery} sort={props.sort} onSort={props.onSort} />
       {props.rows.length === 0 ? (
-        <p className="text-sm text-hub-muted">{emptyRisksMessage(props.total, props.filter)}</p>
+        <EmptyListNotice query={props.query} total={props.total} filter={props.filter} options={STATUS_FILTER_OPTIONS} fallback={emptyRisksMessage(props.total, props.filter)} />
       ) : (
         <table className="w-full text-left text-sm">
           <thead className="text-hub-muted"><tr><th className="py-1 pr-3">Code</th><th className="pr-3">Titre</th><th className="pr-3">Probabilité</th><th className="pr-3">Impact</th><th>Statut</th></tr></thead>

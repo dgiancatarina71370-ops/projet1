@@ -1,6 +1,7 @@
 // Écrans « Parties prenantes » (lot M3a), versions d'affichage pures : elles reçoivent tout par propriétés et ne touchent ni la base ni l'état.
 // Le conteneur (StakeholdersScreen.tsx) les alimente. Cette séparation permet de tester leur rendu sans interface réelle.
-import { BUTTON_PRIMARY, BUTTON_SECONDARY, ConfirmBar, FormButtons, ItemActionBar, SelectField, StatusFilterBar, TextAreaField, TextField } from '../../shared/ui.tsx';
+import { BUTTON_PRIMARY, BUTTON_SECONDARY, ConfirmBar, EmptyListNotice, FormButtons, ItemActionBar, ListControls, SelectField, TextAreaField, TextField } from '../../shared/ui.tsx';
+import type { ListExtras } from '../../shared/ui.tsx';
 import { levelLabel, statusLabel } from '../../domain/stakeholders.ts';
 import { emptyListMessage, LEVEL_OPTIONS, STATUS_FILTERS } from './logic.ts';
 import type { FormErrors, FormValues, StatusFilter } from './logic.ts';
@@ -34,16 +35,16 @@ export function StakeholderListView(props: {
   onFilter: (f: StatusFilter) => void;
   onNew: () => void;
   onOpen: (id: number) => void;
-}) {
+} & ListExtras) {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-hub-muted">Projet : <span className="text-hub-fg">{props.projectName}</span> · {props.total} partie{props.total > 1 ? 's' : ''} prenante{props.total > 1 ? 's' : ''}</p>
         <button type="button" className={BUTTON_PRIMARY} onClick={props.onNew}>Nouvelle partie prenante</button>
       </div>
-      <StatusFilterBar options={STATUS_FILTERS} value={props.filter} onChange={(v) => props.onFilter(v as StatusFilter)} />
+      <ListControls options={STATUS_FILTERS} filter={props.filter} onFilter={(v) => props.onFilter(v as StatusFilter)} counts={props.counts} query={props.query} onQuery={props.onQuery} sort={props.sort} onSort={props.onSort} />
       {props.rows.length === 0 ? (
-        <p className="text-sm text-hub-muted">{emptyListMessage(props.total, props.filter)}</p>
+        <EmptyListNotice query={props.query} total={props.total} filter={props.filter} options={STATUS_FILTERS} fallback={emptyListMessage(props.total, props.filter)} />
       ) : (
         <table className="w-full text-left text-sm">
           <thead className="text-hub-muted">

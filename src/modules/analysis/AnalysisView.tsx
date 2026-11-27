@@ -1,7 +1,7 @@
 // Écrans « Besoins » et « Exigences » (lot M3b), versions d'affichage pures : elles reçoivent tout par propriétés.
 // Les conteneurs (NeedsScreen.tsx, RequirementsScreen.tsx) les alimentent. Cette séparation permet de tester leur rendu sans interface réelle.
-import { DetailFrame, FormButtons, NoProjectView, RegisterHeader, SelectField, StatusFilterBar, TextAreaField, TextField } from '../../shared/ui.tsx';
-import type { DetailActions } from '../../shared/ui.tsx';
+import { DetailFrame, EmptyListNotice, FormButtons, ListControls, NoProjectView, RegisterHeader, SelectField, TextAreaField, TextField } from '../../shared/ui.tsx';
+import type { DetailActions, ListExtras } from '../../shared/ui.tsx';
 import { natureLabel, priorityLabel } from '../../domain/requirements.ts';
 import { statusLabel } from '../../domain/kinds.ts';
 import { NATURE_OPTIONS, PRIORITY_OPTIONS, STATUS_FILTER_OPTIONS, STATUS_OPTIONS, emptyNeedsMessage, emptyRequirementsMessage } from './logic.ts';
@@ -26,13 +26,13 @@ export { NoProjectView };
 
 // ------------------------------------------------------------------ besoins
 
-export function NeedListView(props: { projectName: string; rows: NeedRow[]; total: number; filter: string; onFilter: (f: string) => void; onNew: () => void; onOpen: (id: number) => void }) {
+export function NeedListView(props: { projectName: string; rows: NeedRow[]; total: number; filter: string; onFilter: (f: string) => void; onNew: () => void; onOpen: (id: number) => void } & ListExtras) {
   return (
     <div className="space-y-3">
       <RegisterHeader projectName={props.projectName} total={props.total} singular="besoin" plural="besoins" newLabel="Nouveau besoin" onNew={props.onNew} />
-      <StatusFilterBar options={STATUS_FILTER_OPTIONS} value={props.filter} onChange={props.onFilter} />
+      <ListControls options={STATUS_FILTER_OPTIONS} filter={props.filter} onFilter={props.onFilter} counts={props.counts} query={props.query} onQuery={props.onQuery} sort={props.sort} onSort={props.onSort} />
       {props.rows.length === 0 ? (
-        <p className="text-sm text-hub-muted">{emptyNeedsMessage(props.total, props.filter)}</p>
+        <EmptyListNotice query={props.query} total={props.total} filter={props.filter} options={STATUS_FILTER_OPTIONS} fallback={emptyNeedsMessage(props.total, props.filter)} />
       ) : (
         <table className="w-full text-left text-sm">
           <thead className="text-hub-muted"><tr><th className="py-1 pr-3">Code</th><th className="pr-3">Titre</th><th>Statut</th></tr></thead>
@@ -80,13 +80,13 @@ export function NeedFormView(props: {
 
 // ------------------------------------------------------------------ exigences
 
-export function RequirementListView(props: { projectName: string; rows: RequirementRow[]; total: number; filter: string; onFilter: (f: string) => void; onNew: () => void; onOpen: (id: number) => void }) {
+export function RequirementListView(props: { projectName: string; rows: RequirementRow[]; total: number; filter: string; onFilter: (f: string) => void; onNew: () => void; onOpen: (id: number) => void } & ListExtras) {
   return (
     <div className="space-y-3">
       <RegisterHeader projectName={props.projectName} total={props.total} singular="exigence" plural="exigences" newLabel="Nouvelle exigence" onNew={props.onNew} />
-      <StatusFilterBar options={STATUS_FILTER_OPTIONS} value={props.filter} onChange={props.onFilter} />
+      <ListControls options={STATUS_FILTER_OPTIONS} filter={props.filter} onFilter={props.onFilter} counts={props.counts} query={props.query} onQuery={props.onQuery} sort={props.sort} onSort={props.onSort} />
       {props.rows.length === 0 ? (
-        <p className="text-sm text-hub-muted">{emptyRequirementsMessage(props.total, props.filter)}</p>
+        <EmptyListNotice query={props.query} total={props.total} filter={props.filter} options={STATUS_FILTER_OPTIONS} fallback={emptyRequirementsMessage(props.total, props.filter)} />
       ) : (
         <table className="w-full text-left text-sm">
           <thead className="text-hub-muted"><tr><th className="py-1 pr-3">Code</th><th className="pr-3">Titre</th><th className="pr-3">Nature</th><th className="pr-3">Priorité</th><th>Statut</th></tr></thead>

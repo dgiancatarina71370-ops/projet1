@@ -95,8 +95,8 @@ ui('rendu : liste des besoins (lignes, statuts, filtre à quatre statuts, singul
   const html = r.needList({ rows: [NEED, { ...NEED, id: 2, code: 'BES-002', title: 'Autre', status: 'rejected' }], total: 2, filter: 'all' });
   assert.match(html, /2 besoins/);
   assert.ok(html.includes('BES-001') && html.includes('BES-002') && html.includes('Brouillon') && html.includes('Rejeté'));
-  for (const label of ['Tous', 'Brouillon', 'Validé', 'Rejeté', 'Archivé']) assert.ok(html.includes(`>${label}<`), label);
-  assert.match(html, /aria-pressed="true"[^>]*>Tous</);
+  for (const label of ['Tous', 'Brouillon', 'Validé', 'Rejeté', 'Archivé']) assert.ok(html.includes(`>${label} (`), label);
+  assert.match(html, /aria-pressed="true"[^>]*>Tous \(/);
   assert.ok(html.includes('Nouveau besoin'));
   assert.ok(html.includes('Suivre &lt;b&gt;les&lt;/b&gt; campagnes') && !html.includes('<b>les</b>'), 'titre échappé');
   assert.match(r.needList({ rows: [NEED], total: 1, filter: 'all' }), /1 besoin\b(?!s)/);

@@ -1,7 +1,7 @@
 // Écran « Tests » (lot M5), versions d'affichage pures : elles reçoivent tout par propriétés.
 // Le conteneur (TestsScreen.tsx) les alimente. Le cadre de fiche, l'en-tête et l'écran « sans projet » viennent de shared/ui.tsx (décision D59).
-import { DetailFrame, FormButtons, NoProjectView, RegisterHeader, SelectField, StatusFilterBar, TextAreaField, TextField } from '../../shared/ui.tsx';
-import type { DetailActions } from '../../shared/ui.tsx';
+import { DetailFrame, EmptyListNotice, FormButtons, ListControls, NoProjectView, RegisterHeader, SelectField, TextAreaField, TextField } from '../../shared/ui.tsx';
+import type { DetailActions, ListExtras } from '../../shared/ui.tsx';
 import { dayLabel } from '../../domain/decisions.ts';
 import { statusLabel } from '../../domain/kinds.ts';
 import { testTypeLabel } from '../../domain/testcases.ts';
@@ -23,13 +23,13 @@ export interface TestRow {
   last_run_on: string;
 }
 
-export function TestListView(props: { projectName: string; rows: TestRow[]; total: number; filter: string; onFilter: (f: string) => void; onNew: () => void; onOpen: (id: number) => void }) {
+export function TestListView(props: { projectName: string; rows: TestRow[]; total: number; filter: string; onFilter: (f: string) => void; onNew: () => void; onOpen: (id: number) => void } & ListExtras) {
   return (
     <div className="space-y-3">
       <RegisterHeader projectName={props.projectName} total={props.total} singular="test" plural="tests" newLabel="Nouveau test" onNew={props.onNew} />
-      <StatusFilterBar options={STATUS_FILTER_OPTIONS} value={props.filter} onChange={props.onFilter} />
+      <ListControls options={STATUS_FILTER_OPTIONS} filter={props.filter} onFilter={props.onFilter} counts={props.counts} query={props.query} onQuery={props.onQuery} sort={props.sort} onSort={props.onSort} />
       {props.rows.length === 0 ? (
-        <p className="text-sm text-hub-muted">{emptyTestsMessage(props.total, props.filter)}</p>
+        <EmptyListNotice query={props.query} total={props.total} filter={props.filter} options={STATUS_FILTER_OPTIONS} fallback={emptyTestsMessage(props.total, props.filter)} />
       ) : (
         <table className="w-full text-left text-sm">
           <thead className="text-hub-muted"><tr><th className="py-1 pr-3">Code</th><th className="pr-3">Titre</th><th className="pr-3">Type</th><th className="pr-3">Dernière exécution</th><th>Statut</th></tr></thead>

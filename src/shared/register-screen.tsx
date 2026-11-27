@@ -2,13 +2,14 @@
 // suppression confirmée, abandon de saisie, ouverture demandée par la traçabilité). Chaque écran fournit une CONFIGURATION : libellés, accès aux
 // données, vues et validation de son type. Règle R4 : ce fichier n'importe jamais la couche data ; les accès aux données lui sont injectés par la configuration.
 // Les transitions d'état sont dans register-state.ts (logique pure testée) ; ici ne reste que le branchement React.
-import { useCallback, useEffect, useReducer, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import type { ComponentType } from 'react';
-import { deletionMessage, filterByStatus } from './register-logic.ts';
+import { DEFAULT_SORT, deletionMessage, filterByStatus, searchRows, sortRows, statusCounts } from './register-logic.ts';
+import type { SortKey } from './register-logic.ts';
 import { initialState, registerReducer } from './register-state.ts';
 import type { RegisterAction, RegisterState } from './register-state.ts';
 import { Card, NoProjectView } from './ui.tsx';
-import type { DetailActions, LinksSlot } from './ui.tsx';
+import type { DetailActions, LinksSlot, ListExtras } from './ui.tsx';
 import { useOpenRequest } from './use-open-request.ts';
 
 /** Ce que le composant exige d'une ligne de registre. */
@@ -18,6 +19,8 @@ export interface RegisterRow {
   title: string;
   description: string;
   status: string;
+  /** Date de modification : lue par tous les dépôts de registre ; sert au tri « Modifié récemment » (lot F2). Absente, elle compte comme vide. */
+  updated_at?: string;
 }
 
 export type FormErrors<F> = Partial<Record<keyof F, string>>;
@@ -25,7 +28,7 @@ export type FormErrors<F> = Partial<Record<keyof F, string>>;
 /** Résultat de validation : soit les erreurs par champ, soit les valeurs normalisées prêtes à enregistrer (`V`). */
 export type Validation<F, V> = ({ ok: true } & V) | { ok: false; errors: FormErrors<F> };
 
-export interface RegisterListProps<Row> {
+export interface RegisterListProps<Row> extends ListExtras {
   projectName: string;
   rows: Row[];
   total: number;
@@ -104,6 +107,8 @@ export function RegisterScreen<Row extends RegisterRow, F extends object, V exte
   const { ListView, DetailView, FormView } = config;
   const [rows, setRows] = useState<Row[]>([]);
   const [filter, setFilter] = useState('all');
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState<SortKey>(DEFAULT_SORT);
   const [loadError, setLoadError] = useState('');
   const [state, dispatch] = useReducer(
     (s: RegisterState<F>, a: RegisterAction<F>) => registerReducer(s, a),
@@ -122,8 +127,10 @@ export function RegisterScreen<Row extends RegisterRow, F extends object, V exte
   }, [projectId, config]);
 
   // Changer de projet ramène à la liste : une fiche ouverte appartient à l'ancien projet.
+  // La recherche est vidée au changement de projet (F2-D05) ; le tri et le filtre gardent leur valeur.
   useEffect(() => {
     dispatch({ type: 'projectChanged' });
+    setQuery('');
     void reload();
   }, [reload]);
 
@@ -144,6 +151,11 @@ export function RegisterScreen<Row extends RegisterRow, F extends object, V exte
       dispatch({ type: 'runEnd' });
     }
   };
+
+  // Ordre de traitement (F2) : la recherche d'abord, les compteurs sur son résultat, puis le filtre de statut, puis le tri. Tout se passe en mémoire.
+  const searched = useMemo(() => searchRows(rows, query), [rows, query]);
+  const counts = useMemo(() => statusCounts(searched), [searched]);
+  const visible = useMemo(() => sortRows(filterByStatus(searched, filter), sort), [searched, filter, sort]);
 
   if (projectId === null) return <Card title={config.title}><NoProjectView what={config.what} onGoToProjects={props.onGoToProjects} /></Card>;
 
@@ -170,8 +182,13 @@ export function RegisterScreen<Row extends RegisterRow, F extends object, V exte
       {mode.kind === 'list' && (
         <ListView
           projectName={props.projectName}
-          rows={filterByStatus(rows, filter)}
+          rows={visible}
           total={rows.length}
+          counts={counts}
+          query={query}
+          onQuery={setQuery}
+          sort={sort}
+          onSort={setSort}
           filter={filter}
           onFilter={setFilter}
           onNew={() => openForm(null)}

@@ -78,7 +78,7 @@ ui('rendu : le menu place « Ateliers » en tête de la section Analyse', (r) =>
 ui('rendu : liste des ateliers (date, lieu, statut, filtre « Tous », singulier et pluriel, échappement, états vides)', (r) => {
   const html = r.wsList({ rows: [WS, { ...WS, id: 2, code: 'ATL-002', title: 'Autre', held_on: '', place: '', status: 'planned' }], total: 2, filter: 'all' });
   assert.match(html, /2 ateliers/);
-  for (const t of ['ATL-001', 'ATL-002', 'Lieu ou format', '26/11/2026', 'Salle &lt;x&gt;', 'Tenu', 'Planifié', 'Nouvel atelier', '>Tous<', '>Archivé<']) assert.ok(html.includes(t), t);
+  for (const t of ['ATL-001', 'ATL-002', 'Lieu ou format', '26/11/2026', 'Salle &lt;x&gt;', 'Tenu', 'Planifié', 'Nouvel atelier', '>Tous (', '>Archivé (']) assert.ok(html.includes(t), t);
   assert.ok(html.includes('Recueil &lt;b&gt;du besoin&lt;/b&gt;') && !html.includes('<b>du besoin</b>'));
   assert.match(r.wsList({ rows: [WS], total: 1, filter: 'all' }), /1 atelier\b(?!s)/);
   assert.match(r.wsList({ rows: [], total: 0, filter: 'all' }), /Aucun atelier dans ce projet/);

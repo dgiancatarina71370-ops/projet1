@@ -1,6 +1,6 @@
 ---
 title: "BA-Mentor — Guide de démonstration"
-subtitle: "Version 0.11.1 · Projet d'exemple « Portail de réservation de salles »"
+subtitle: "Version 0.12.0 · Projet d'exemple « Portail de réservation de salles »"
 lang: fr-FR
 ---
 
@@ -8,9 +8,9 @@ lang: fr-FR
 
 Il te permet de présenter BA-Mentor en **10 à 12 minutes**, devant un Business Manager, un recruteur ou un client, en suivant un fil unique : **du besoin exprimé en atelier jusqu'aux livrables, avec la traçabilité qui relie le tout.**
 
-Ce guide décrit uniquement ce que l'application fait aujourd'hui (version 0.11.1). Il ne contient **pas de captures d'écran** : ajoute les tiennes si tu veux un support imprimé.
+Ce guide décrit uniquement ce que l'application fait aujourd'hui (version 0.12.0). Il ne contient **pas de captures d'écran** : ajoute les tiennes si tu veux un support imprimé.
 
-**Avant chaque démonstration, vérifie** que la version affichée en pied de page est bien celle du guide (0.11.1). Si l'application a évolué, certains libellés ou nombres ci-dessous peuvent ne plus correspondre : rejoue la démonstration une fois en entier la veille.
+**Avant chaque démonstration, vérifie** que la version affichée en pied de page est bien celle du guide (0.12.0). Si l'application a évolué, certains libellés ou nombres ci-dessous peuvent ne plus correspondre : rejoue la démonstration une fois en entier la veille.
 
 # 2. Le message à faire passer
 
@@ -66,6 +66,8 @@ Les durées sont indicatives. Le menu de gauche est organisé en sections : **An
 **À montrer** : la liste des 8 exigences. Ouvrir **EX-003** (blocage d'un créneau déjà réservé) : priorité indispensable, critères d'acceptation rédigés, et dans les liens le besoin d'origine, la user story qui l'implémente, le test qui la vérifie.
 
 **À dire** : « Chaque exigence a ses critères d'acceptation, une priorité, une nature. Fonctionnelle, non fonctionnelle, contrainte : on le voit dans la liste. »
+
+**Facultatif (15 secondes)** : dans le champ **Rechercher**, taper `creneau` (sans accent) : EX-003 et EX-005 restent affichées, et les boutons de statut montrent leurs compteurs, par exemple « Brouillon (1) ». La recherche porte sur le code, le titre et la description, dans le registre affiché seulement. Le menu **Trier par** propose le code, le titre et la date de modification.
 
 ## Étape 5 — Les décisions (1 min) · Décisions
 

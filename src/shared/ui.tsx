@@ -1,5 +1,7 @@
 // Éléments d'interface communs (lot M3a). Couche « shared » : elle ne dépend que de shared/ (règle R4).
 import type { ReactNode } from 'react';
+import { SORT_OPTIONS, isSearching, noResultText } from './register-logic.ts';
+import type { SortKey } from './register-logic.ts';
 
 export function Card(props: { title: string; children: ReactNode }) {
   return (
@@ -85,6 +87,57 @@ export function StatusFilterBar(props: { options: ReadonlyArray<{ value: string;
       ))}
     </div>
   );
+}
+
+/** Propriétés de recherche, de tri et de compteurs que l'écran de registre transmet à chaque liste (lot F2). */
+export interface ListExtras {
+  /** Nombre d'éléments par statut, calculé sur le résultat de la recherche ; « all » = tous (F2-D03). */
+  counts: Record<string, number>;
+  query: string;
+  onQuery: (query: string) => void;
+  sort: SortKey;
+  onSort: (sort: SortKey) => void;
+}
+
+/** Barre de contrôle d'une liste de registre (lot F2) : recherche, tri, puis filtre par statut avec compteurs. */
+export function ListControls(props: ListExtras & { options: ReadonlyArray<{ value: string; label: string }>; filter: string; onFilter: (v: string) => void }) {
+  const counted = props.options.map((o) => ({ value: o.value, label: `${o.label} (${props.counts[o.value] ?? 0})` }));
+  return (
+    <div className="space-y-2">
+      <div role="search" className="flex flex-wrap items-end gap-3 text-sm">
+        <div className="min-w-[12rem] flex-1 space-y-1">
+          <label htmlFor="register-search" className="block text-hub-muted">Rechercher</label>
+          <div className="flex gap-2">
+            <input
+              id="register-search"
+              type="text"
+              autoComplete="off"
+              placeholder="Code, titre ou description"
+              className={INPUT_CLASS}
+              value={props.query}
+              onChange={(e) => props.onQuery(e.target.value)}
+            />
+            {props.query !== '' && (
+              <button type="button" className="rounded border border-hub-line px-2 py-1 text-hub-muted" onClick={() => props.onQuery('')}>Effacer</button>
+            )}
+          </div>
+        </div>
+        <div className="space-y-1">
+          <label htmlFor="register-sort" className="block text-hub-muted">Trier par</label>
+          <select id="register-sort" className={INPUT_CLASS} value={props.sort} onChange={(e) => props.onSort(e.target.value as SortKey)}>
+            {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+      </div>
+      <StatusFilterBar options={counted} value={props.filter} onChange={props.onFilter} />
+    </div>
+  );
+}
+
+/** Message d'une liste vide (lot F2) : si une recherche est en cours, le message de recherche sans résultat ; sinon `fallback`, le message propre au registre. */
+export function EmptyListNotice(props: { query: string; total: number; filter: string; options: ReadonlyArray<{ value: string; label: string }>; fallback: string }) {
+  const label = props.filter === 'all' ? null : props.options.find((o) => o.value === props.filter)?.label ?? props.filter;
+  return <p className="text-sm text-hub-muted">{isSearching(props.query) ? noResultText(props.query, props.total, label) : props.fallback}</p>;
 }
 
 /** Onglets d'un écran (lot M6) : une seule vue affichée à la fois ; l'onglet courant est annoncé par aria-selected. */

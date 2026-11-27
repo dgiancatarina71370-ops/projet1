@@ -115,10 +115,10 @@ ui('rendu : sans projet actif, décisions et risques renvoient vers les projets 
 ui('rendu : liste des décisions (date, décideur, statut au féminin, filtre « Toutes », singulier et pluriel, états vides)', (r) => {
   const html = r.decList({ rows: [DEC, { ...DEC, id: 3, code: 'DEC-002', title: 'Autre', status: 'archived', decided_on: '', decider: '' }], total: 2, filter: 'all' });
   assert.match(html, /2 décisions/);
-  for (const t of ['DEC-001', 'DEC-002', '05/11/2026', 'Prise', 'Archivée', 'Nouvelle décision', '>Toutes<', '>Proposée<', '>Remplacée<', '>Annulée<']) assert.ok(html.includes(t), t);
+  for (const t of ['DEC-001', 'DEC-002', '05/11/2026', 'Prise', 'Archivée', 'Nouvelle décision', '>Toutes (', '>Proposée (', '>Remplacée (', '>Annulée (']) assert.ok(html.includes(t), t);
   assert.ok(html.includes('Choisir &lt;b&gt;SQLite&lt;/b&gt;') && html.includes('Comité &lt;x&gt;') && !html.includes('<b>SQLite</b>'), 'textes échappés');
   assert.ok(html.includes('—'), 'date ou décideur absents : tiret');
-  assert.match(html, /aria-pressed="true"[^>]*>Toutes</);
+  assert.match(html, /aria-pressed="true"[^>]*>Toutes \(/);
   assert.match(r.decList({ rows: [DEC], total: 1, filter: 'all' }), /1 décision\b(?!s)/);
   const none = r.decList({ rows: [], total: 0, filter: 'all' });
   assert.match(none, /Aucune décision dans ce projet/);
@@ -154,7 +154,7 @@ ui('rendu : formulaire d\'une décision (champ date, erreurs par champ, valeurs 
 ui('rendu : liste des risques (probabilité, impact, statut, échappement, états vides)', (r) => {
   const html = r.riskList({ rows: [RSK, { ...RSK, id: 4, code: 'RIS-002', title: 'Autre', probability: 'high', impact: 'low', status: 'closed' }], total: 2, filter: 'all' });
   assert.match(html, /2 risques/);
-  for (const t of ['RIS-001', 'RIS-002', 'Probabilité', 'Impact', 'Faible', 'Élevé', 'En traitement', 'Clos', 'Nouveau risque', '>Tous<', '>Identifié<', '>Accepté<']) assert.ok(html.includes(t), t);
+  for (const t of ['RIS-001', 'RIS-002', 'Probabilité', 'Impact', 'Faible', 'Élevé', 'En traitement', 'Clos', 'Nouveau risque', '>Tous (', '>Identifié (', '>Accepté (']) assert.ok(html.includes(t), t);
   assert.ok(html.includes('Perte &lt;i&gt;de données&lt;/i&gt;') && !html.includes('<i>de données</i>'));
   assert.match(r.riskList({ rows: [RSK], total: 1, filter: 'all' }), /1 risque\b(?!s)/);
   assert.match(r.riskList({ rows: [], total: 0, filter: 'all' }), /Aucun risque dans ce projet/);
