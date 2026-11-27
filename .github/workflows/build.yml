@@ -20,9 +20,20 @@ jobs:
         run: npm run check:architecture
       - name: Tests E8, E10, E13 (bloquant)
         run: npm test
-      - name: Vérification des types (non bloquante au premier lot)
+
+  # Contrôle des types TypeScript (BLOQUANT pour la validation d'un lot : un job rouge ici = ne pas valider, V1-D15).
+  # Job séparé de `verify` : `build` et `rust-tests` n'en dépendent pas, donc l'exécutable reste produit même si les types échouent.
+  types:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 22 }
+      - run: npm install
+      - name: Versions utilisées (information)
+        run: npm ls typescript @types/react @types/react-dom @types/node --depth=0 || true
+      - name: Vérification des types (bloquante)
         run: npm run typecheck
-        continue-on-error: true
 
   # Tests du noyau Rust (BLOQUANTS : un job rouge ici = ne pas valider le lot, même si l'exécutable a été produit).
   # Séparés du build pour qu'un échec de test ne vous prive pas de l'exécutable nécessaire au diagnostic.
