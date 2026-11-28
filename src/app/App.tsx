@@ -34,6 +34,7 @@ import type { DeliverablePreset } from '../modules/deliverables/DeliverablesScre
 import { DocumentsScreen } from '../modules/documents/DocumentsScreen.tsx';
 import { RequirementsScreen } from '../modules/analysis/RequirementsScreen.tsx';
 import { LinksSection } from './LinksSection.tsx';
+import { HistorySection } from './HistorySection.tsx';
 import type { ItemKind } from '../domain/kinds.ts';
 
 interface Snapshot {
@@ -66,7 +67,12 @@ export function App() {
   // Demande « ouvrir ce document » venue de Livrables (lot F5, F5-D10) : l'écran Documents sélectionne le document, puis l'efface.
   const [documentRequest, setDocumentRequest] = useState<number | null>(null);
 
-  const refresh = useCallback(async () => setSnap(await takeSnapshot()), []);
+  // Compteur d'écritures (F7-D08) : chaque écriture faite depuis un registre appelle « refresh » ; l'historique de la fiche ouverte se relit alors.
+  const [historyTick, setHistoryTick] = useState(0);
+  const refresh = useCallback(async () => {
+    setHistoryTick((t) => t + 1);
+    setSnap(await takeSnapshot());
+  }, []);
 
   const report = useCallback((text: string, level: Notice['level'] = 'error') => setNotices((old) => [...old.slice(-4), { level, text }]), []);
 
@@ -179,6 +185,7 @@ export function App() {
   }, []);
   const openProps = (kind: ItemKind) => ({ openId: openRequest !== null && openRequest.kind === kind ? openRequest.id : null, onOpenHandled: clearOpen });
   const renderLinks = (itemId: number, kind: string) => <LinksSection key={itemId} itemId={itemId} kind={kind as ItemKind} onChanged={() => void refresh()} />;
+  const renderHistory = (itemId: number, kind: string) => <HistorySection key={itemId} itemId={itemId} kind={kind as ItemKind} tick={historyTick} />;
 
   return (
     <Shell
@@ -252,6 +259,7 @@ export function App() {
           onGoToProjects={() => navigate('projects')}
           onChanged={() => void refresh()}
           renderLinks={renderLinks}
+          renderHistory={renderHistory}
           onExportReport={exportWorkshopReport}
           {...openProps('workshop')}
         />
@@ -264,6 +272,7 @@ export function App() {
           onGoToProjects={() => navigate('projects')}
           onChanged={() => void refresh()}
           renderLinks={renderLinks}
+          renderHistory={renderHistory}
           {...openProps('stakeholder')}
         />
       )}
@@ -275,6 +284,7 @@ export function App() {
           onGoToProjects={() => navigate('projects')}
           onChanged={() => void refresh()}
           renderLinks={renderLinks}
+          renderHistory={renderHistory}
           {...openProps('need')}
         />
       )}
@@ -286,6 +296,7 @@ export function App() {
           onGoToProjects={() => navigate('projects')}
           onChanged={() => void refresh()}
           renderLinks={renderLinks}
+          renderHistory={renderHistory}
           {...openProps('requirement')}
         />
       )}
@@ -297,6 +308,7 @@ export function App() {
           onGoToProjects={() => navigate('projects')}
           onChanged={() => void refresh()}
           renderLinks={renderLinks}
+          renderHistory={renderHistory}
           {...openProps('decision')}
         />
       )}
@@ -308,6 +320,7 @@ export function App() {
           onGoToProjects={() => navigate('projects')}
           onChanged={() => void refresh()}
           renderLinks={renderLinks}
+          renderHistory={renderHistory}
           {...openProps('risk')}
         />
       )}
@@ -319,6 +332,7 @@ export function App() {
           onGoToProjects={() => navigate('projects')}
           onChanged={() => void refresh()}
           renderLinks={renderLinks}
+          renderHistory={renderHistory}
           {...openProps('story')}
         />
       )}
@@ -330,6 +344,7 @@ export function App() {
           onGoToProjects={() => navigate('projects')}
           onChanged={() => void refresh()}
           renderLinks={renderLinks}
+          renderHistory={renderHistory}
           {...openProps('test')}
         />
       )}

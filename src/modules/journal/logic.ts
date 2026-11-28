@@ -2,6 +2,7 @@
 import { isKind, kindInfo } from '../../domain/kinds.ts';
 import type { ItemKind } from '../../domain/kinds.ts';
 import { actionLabel, deletedLabel, fieldsText, linkTypeLabel, objectTypeLabel, statusTransition } from '../../domain/activity-labels.ts';
+import { linkTypeOfDetail } from '../../domain/link-detail.ts';
 import { formatLocal } from '../../shared/format.ts';
 
 /** Nombre de pages : au moins une, même sans entrée (jamais « Page 1 sur 0 »). */
@@ -86,7 +87,8 @@ export function journalLine(e: JournalRowInput): JournalLine {
   const none = { code: null, kind: null, itemId: null } as const;
   if (e.object_type === 'item') return itemLine(e, base);
   if (e.object_type === 'link') {
-    const type = linkTypeLabel(e.link_type ?? e.detail);
+    // Le détail d'un lien s'écrit « type » (jusqu'à la 0.16.0) ou « type:origine>cible » (dès la 0.17.0, F7-D03) : le Journal lit le type dans les deux (F7-D10).
+    const type = linkTypeLabel(e.link_type ?? linkTypeOfDetail(e.detail));
     if (e.action === 'deleted') return { ...base, object: 'Lien', label: 'Lien supprimé', ...none, detail: type };
     if (e.from_code === null || e.to_code === null) return { ...base, object: 'Lien', label: `(lien ${GONE})`, ...none, detail: type };
     return { ...base, object: 'Lien', label: `${e.from_code} → ${e.to_code}`, ...none, detail: type };

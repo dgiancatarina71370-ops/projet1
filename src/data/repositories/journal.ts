@@ -3,6 +3,7 @@
 import { query } from '../db.ts';
 import type { Row } from '../db.ts';
 import { objectGroupTypes } from '../../domain/activity-labels.ts';
+import { linkDetailPatterns, parseLinkDetail } from '../../domain/link-detail.ts';
 
 /** Entrées par page (F4-D09). */
 export const JOURNAL_PAGE_SIZE = 25;
@@ -83,4 +84,93 @@ WHERE ${w.sql}
 ORDER BY a.id DESC LIMIT ? OFFSET ?`,
     [...w.params, pageSize, offset],
   );
+}
+
+// ------------------------------------------------------------------ historique d'un élément (lot F7)
+
+/** Lignes par tranche dans la fiche (F7-D05). */
+export const HISTORY_PAGE_SIZE = 10;
+
+export interface HistoryEntry extends Row {
+  id: number;
+  at: string;
+  /** « item » ou « link ». */
+  object_type: string;
+  action: string;
+  detail: string | null;
+  /** Lignes de lien : type du lien, sens vu depuis l'élément (« out » = l'élément est l'origine) et code de l'autre extrémité (null si elle n'existe plus). */
+  link_type: string | null;
+  direction: 'out' | 'in' | null;
+  other_code: string | null;
+}
+
+interface RawHistory extends Row {
+  id: number;
+  at: string;
+  object_type: string;
+  action: string;
+  detail: string | null;
+  link_type: string | null;
+  link_from: number | null;
+  link_to: number | null;
+}
+
+// Trois sources, une seule condition (F7 conception) : les lignes de l'élément ; les lignes de lien dont le lien existe encore et touche l'élément ;
+// les lignes de lien écrites dès la 0.17.0, dont le détail porte les identifiants des deux extrémités (F7-D03). Bornée au projet de l'élément.
+// Une ligne de lien supprimé écrite avant la 0.17.0 ne porte aucune extrémité : elle n'est rattachée à aucune fiche (limite annoncée).
+function historyWhere(itemId: number): Where {
+  const p = linkDetailPatterns(itemId);
+  return {
+    sql: `a.project_id = (SELECT project_id FROM items WHERE id = ?)
+AND ((a.object_type = 'item' AND a.object_id = ?)
+  OR (a.object_type = 'link' AND (l.from_id = ? OR l.to_id = ? OR a.detail LIKE ? OR a.detail LIKE ?)))`,
+    params: [itemId, itemId, itemId, itemId, p.asFrom, p.asTo],
+  };
+}
+
+const HISTORY_FROM = `FROM activity_log a
+LEFT JOIN links l ON a.object_type = 'link' AND a.action <> 'deleted' AND l.id = a.object_id`;
+
+/** Nombre total de lignes d'historique de l'élément. */
+export async function countItemHistory(itemId: number): Promise<number> {
+  const w = historyWhere(itemId);
+  const [r] = await query<{ n: number }>(`SELECT count(*) AS n ${HISTORY_FROM} WHERE ${w.sql}`, w.params);
+  return Number(r.n);
+}
+
+/**
+ * Une tranche de l'historique de l'élément, la plus récente d'abord (ordre décroissant de l'identifiant, comme le Journal). Lecture seule : rien n'est écrit, pas même au journal.
+ * Le code de l'autre extrémité d'un lien se lit dans « items », tant qu'elle existe.
+ */
+export async function itemHistory(itemId: number, limit = HISTORY_PAGE_SIZE, offset = 0): Promise<HistoryEntry[]> {
+  const w = historyWhere(itemId);
+  const raw = await query<RawHistory>(
+    `SELECT a.id, a.at, a.object_type, a.action, a.detail, l.link_type AS link_type, l.from_id AS link_from, l.to_id AS link_to
+${HISTORY_FROM}
+WHERE ${w.sql}
+ORDER BY a.id DESC LIMIT ? OFFSET ?`,
+    [...w.params, limit, Math.max(0, offset)],
+  );
+  const resolved = raw.map((r) => {
+    if (r.object_type !== 'link') return { r, type: null, from: null as number | null, to: null as number | null };
+    const parsed = parseLinkDetail(r.detail);
+    return { r, type: r.link_type ?? (parsed ? parsed.type : null), from: r.link_from ?? (parsed ? parsed.fromId : null), to: r.link_to ?? (parsed ? parsed.toId : null) };
+  });
+  const otherIds = new Set<number>();
+  for (const x of resolved) {
+    if (x.from === null || x.to === null) continue;
+    otherIds.add(x.from === itemId ? x.to : x.from);
+  }
+  const codes = new Map<number, string>();
+  if (otherIds.size > 0) {
+    const ids = [...otherIds];
+    const found = await query<{ id: number; code: string }>(`SELECT id, code FROM items WHERE id IN (${ids.map(() => '?').join(', ')})`, ids);
+    for (const f of found) codes.set(f.id, f.code);
+  }
+  return resolved.map(({ r, type, from, to }) => {
+    const hasEnds = from !== null && to !== null;
+    const direction = hasEnds ? (from === itemId ? 'out' : 'in') : null;
+    const other = hasEnds ? (from === itemId ? to : from) : null;
+    return { id: r.id, at: r.at, object_type: r.object_type, action: r.action, detail: r.detail, link_type: type, direction, other_code: other === null ? null : codes.get(other) ?? null };
+  });
 }

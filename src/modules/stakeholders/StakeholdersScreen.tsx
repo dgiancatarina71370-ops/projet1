@@ -5,7 +5,7 @@ import { commonItemOps } from '../../data/repositories/register-ops.ts';
 import { createStakeholder, listStakeholders, updateStakeholder } from '../../data/repositories/stakeholders.ts';
 import { RegisterScreen } from '../../shared/register-screen.tsx';
 import type { RegisterConfig, RegisterListProps } from '../../shared/register-screen.tsx';
-import type { DetailActions, LinksSlot } from '../../shared/ui.tsx';
+import type { DetailActions, HistorySlot, LinksSlot } from '../../shared/ui.tsx';
 import { StakeholderDetailView, StakeholderFormView, StakeholderListView } from './StakeholdersView.tsx';
 import type { StakeholderRow } from './StakeholdersView.tsx';
 import { EMPTY_FORM, formFrom, validateForm } from './logic.ts';
@@ -43,6 +43,6 @@ const CONFIG: RegisterConfig<StakeholderRow, FormValues, Valid> = {
   FormView: StakeholderFormView,
 };
 
-export function StakeholdersScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void; renderLinks?: LinksSlot; openId?: number | null; onOpenHandled?: () => void }) {
+export function StakeholdersScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void; renderLinks?: LinksSlot; renderHistory?: HistorySlot; openId?: number | null; onOpenHandled?: () => void }) {
   return <RegisterScreen config={CONFIG} {...props} />;
 }

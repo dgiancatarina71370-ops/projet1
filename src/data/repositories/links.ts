@@ -4,6 +4,7 @@ import type { Row } from '../db.ts';
 import { mutate } from '../mutate.ts';
 import { assertLinkAllowed, canLoop, findPath, isLinkType, linkRule } from '../../domain/links.ts';
 import type { Direction, LinkType } from '../../domain/links.ts';
+import { formatLinkDetail } from '../../domain/link-detail.ts';
 import { kindInfo } from '../../domain/kinds.ts';
 import type { ItemKind } from '../../domain/kinds.ts';
 
@@ -66,7 +67,7 @@ export async function createLink(input: { type: LinkType; fromId: number; toId: 
       // La clé étrangère composée de la table refuse en dernier recours un lien entre deux projets.
       sql: 'INSERT INTO links (project_id, link_type, from_id, to_id, created_at) VALUES (?, ?, ?, ?, ?)',
       params: [from.project_id, input.type, input.fromId, input.toId, new Date().toISOString()],
-      activity: { objectType: 'link', action: 'created', objectId: 'inserted', projectId: from.project_id, detail: input.type },
+      activity: { objectType: 'link', action: 'created', objectId: 'inserted', projectId: from.project_id, detail: formatLinkDetail(input.type, input.fromId, input.toId) },
     },
   ]);
   return r.lastInsertRowid;
@@ -79,7 +80,7 @@ export async function deleteLink(id: number): Promise<void> {
     {
       sql: 'DELETE FROM links WHERE id = ?',
       params: [id],
-      activity: { objectType: 'link', action: 'deleted', objectId: id, projectId: link.project_id, detail: link.link_type },
+      activity: { objectType: 'link', action: 'deleted', objectId: id, projectId: link.project_id, detail: formatLinkDetail(link.link_type, link.from_id, link.to_id) },
     },
   ]);
 }

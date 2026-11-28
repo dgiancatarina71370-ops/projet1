@@ -4,7 +4,7 @@ import { createWorkshop, listWorkshops, updateWorkshop } from '../../data/reposi
 import type { Workshop } from '../../data/repositories/workshops.ts';
 import { RegisterScreen } from '../../shared/register-screen.tsx';
 import type { RegisterConfig } from '../../shared/register-screen.tsx';
-import type { LinksSlot } from '../../shared/ui.tsx';
+import type { HistorySlot, LinksSlot } from '../../shared/ui.tsx';
 import { WorkshopDetailView, WorkshopFormView, WorkshopListView } from './WorkshopsView.tsx';
 import { EMPTY_WORKSHOP_FORM, validateWorkshopForm } from './logic.ts';
 import type { WorkshopForm, WorkshopFormResult } from './logic.ts';
@@ -33,7 +33,7 @@ const CONFIG: RegisterConfig<Workshop, WorkshopForm, Valid, DetailExtra> = {
   FormView: WorkshopFormView,
 };
 
-export function WorkshopsScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void; renderLinks?: LinksSlot; openId?: number | null; onOpenHandled?: () => void; onExportReport?: (workshopId: number) => void }) {
+export function WorkshopsScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void; renderLinks?: LinksSlot; renderHistory?: HistorySlot; openId?: number | null; onOpenHandled?: () => void; onExportReport?: (workshopId: number) => void }) {
   const { onExportReport, ...common } = props;
   // Le bouton « Exporter le compte rendu » (D92) n'existe que si l'application fournit l'action.
   return <RegisterScreen config={CONFIG} {...common} detailExtra={(row) => ({ onExportReport: onExportReport ? () => onExportReport(row.id) : undefined })} />;

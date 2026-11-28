@@ -4,7 +4,7 @@ import { createRisk, listRisks, updateRisk } from '../../data/repositories/risks
 import type { Risk } from '../../data/repositories/risks.ts';
 import { RegisterScreen } from '../../shared/register-screen.tsx';
 import type { RegisterConfig } from '../../shared/register-screen.tsx';
-import type { LinksSlot } from '../../shared/ui.tsx';
+import type { HistorySlot, LinksSlot } from '../../shared/ui.tsx';
 import { RiskDetailView, RiskFormView, RiskListView } from './RisksView.tsx';
 import { EMPTY_RISK_FORM, validateRiskForm } from './logic.ts';
 import type { RiskForm, RiskFormResult } from './logic.ts';
@@ -32,6 +32,6 @@ const CONFIG: RegisterConfig<Risk, RiskForm, Valid> = {
   FormView: RiskFormView,
 };
 
-export function RisksScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void; renderLinks?: LinksSlot; openId?: number | null; onOpenHandled?: () => void }) {
+export function RisksScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void; renderLinks?: LinksSlot; renderHistory?: HistorySlot; openId?: number | null; onOpenHandled?: () => void }) {
   return <RegisterScreen config={CONFIG} {...props} />;
 }

@@ -1,6 +1,6 @@
 ---
 title: "BA-Mentor — Guide de démonstration"
-subtitle: "Version 0.16.0 · Projet d'exemple « Portail de réservation de salles »"
+subtitle: "Version 0.17.0 · Projet d'exemple « Portail de réservation de salles »"
 lang: fr-FR
 ---
 
@@ -8,9 +8,9 @@ lang: fr-FR
 
 Il te permet de présenter BA-Mentor en **10 à 12 minutes**, devant un Business Manager, un recruteur ou un client, en suivant un fil unique : **du besoin exprimé en atelier jusqu'aux livrables, avec la traçabilité qui relie le tout.**
 
-Ce guide décrit uniquement ce que l'application fait aujourd'hui (version 0.16.0). Il ne contient **pas de captures d'écran** : ajoute les tiennes si tu veux un support imprimé.
+Ce guide décrit uniquement ce que l'application fait aujourd'hui (version 0.17.0). Il ne contient **pas de captures d'écran** : ajoute les tiennes si tu veux un support imprimé.
 
-**Avant chaque démonstration, vérifie** que la version affichée en pied de page est bien celle du guide (0.16.0). Si l'application a évolué, certains libellés ou nombres ci-dessous peuvent ne plus correspondre : rejoue la démonstration une fois en entier la veille.
+**Avant chaque démonstration, vérifie** que la version affichée en pied de page est bien celle du guide (0.17.0). Si l'application a évolué, certains libellés ou nombres ci-dessous peuvent ne plus correspondre : rejoue la démonstration une fois en entier la veille.
 
 # 2. Le message à faire passer
 
@@ -96,6 +96,7 @@ Les durées sont indicatives. L'application s'ouvre sur **Accueil** dès qu'un p
 3. **Le filtre « Indispensable (Must) seulement »** : les quatre exigences critiques sont toutes testées, et l'une d'elles est en échec.
 4. **L'onglet Orphelins (6)** : les éléments sans lien attendu.
 5. **Cliquer sur un code** (par exemple EX-003) : la fiche s'ouvre directement.
+6. **Descendre jusqu'à la section Historique de la fiche** : création, changements de statut, modifications (les noms des champs, pas leurs valeurs) et liens ajoutés, du plus récent au plus ancien, par tranches de 10. Dire que les liens retirés avant la version 0.17.0 n'y figurent pas (phrase affichée sous la liste) ; ils restent dans le Journal du projet.
 
 **À dire** : « Voici ce que je ne peux pas voir dans un tableur : où sont les trous. Cette exigence indispensable est en échec. Celle-ci n'a aucune story. Cette story n'a aucune exigence derrière elle. L'outil le calcule à chaque fois, je n'ai rien à maintenir à la main. »
 

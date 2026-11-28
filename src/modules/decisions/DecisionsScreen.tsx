@@ -4,7 +4,7 @@ import { createDecision, listDecisions, updateDecision } from '../../data/reposi
 import type { Decision } from '../../data/repositories/decisions.ts';
 import { RegisterScreen } from '../../shared/register-screen.tsx';
 import type { RegisterConfig } from '../../shared/register-screen.tsx';
-import type { LinksSlot } from '../../shared/ui.tsx';
+import type { HistorySlot, LinksSlot } from '../../shared/ui.tsx';
 import { DecisionDetailView, DecisionFormView, DecisionListView } from './DecisionsView.tsx';
 import { EMPTY_DECISION_FORM, validateDecisionForm } from './logic.ts';
 import type { DecisionForm, DecisionFormResult } from './logic.ts';
@@ -32,6 +32,6 @@ const CONFIG: RegisterConfig<Decision, DecisionForm, Valid> = {
   FormView: DecisionFormView,
 };
 
-export function DecisionsScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void; renderLinks?: LinksSlot; openId?: number | null; onOpenHandled?: () => void }) {
+export function DecisionsScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void; renderLinks?: LinksSlot; renderHistory?: HistorySlot; openId?: number | null; onOpenHandled?: () => void }) {
   return <RegisterScreen config={CONFIG} {...props} />;
 }

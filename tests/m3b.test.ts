@@ -397,6 +397,7 @@ test('sauvegarde et restauration : besoins, exigences, détails et liens revienn
 
 // ------------------------------------------------------------------ journal : aucune création de lien ne perd l'inverse
 
+// Lot F7 (F7-D03) : le détail d'un lien est « type:origine>cible » (identifiants seulement) au lieu de « type » seul ; toujours sans titre ni code.
 test('journal : créer puis supprimer un lien écrit deux lignes « link », sans contenu', async () => {
   const t = await migratedDb();
   const c = await chain();
@@ -405,7 +406,7 @@ test('journal : créer puis supprimer un lien écrit deux lignes « link », san
   await deleteLink(id);
   assert.equal(await count('activity_log'), before + 2);
   const lines = await query<{ object_type: string; action: string; detail: string }>('SELECT object_type, action, detail FROM activity_log ORDER BY id DESC LIMIT 2');
-  assert.deepEqual(lines.map((l) => [l.object_type, l.action, l.detail]), [['link', 'deleted', 'derives'], ['link', 'created', 'derives']]);
+  assert.deepEqual(lines.map((l) => [l.object_type, l.action, l.detail]), [['link', 'deleted', `derives:${c.need.id}>${c.e1.id}`], ['link', 'created', `derives:${c.need.id}>${c.e1.id}`]]);
   assert.equal((await listLinks(c.p)).length, 0);
   t.close();
 });

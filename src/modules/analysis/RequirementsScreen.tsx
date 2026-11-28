@@ -4,7 +4,7 @@ import { createRequirement, listRequirements, updateRequirement } from '../../da
 import type { Requirement } from '../../data/repositories/requirements.ts';
 import { RegisterScreen } from '../../shared/register-screen.tsx';
 import type { RegisterConfig } from '../../shared/register-screen.tsx';
-import type { LinksSlot } from '../../shared/ui.tsx';
+import type { HistorySlot, LinksSlot } from '../../shared/ui.tsx';
 import { RequirementDetailView, RequirementFormView, RequirementListView } from './AnalysisView.tsx';
 import { EMPTY_REQUIREMENT_FORM, validateRequirementForm } from './logic.ts';
 import type { RequirementForm, RequirementFormResult } from './logic.ts';
@@ -32,6 +32,6 @@ const CONFIG: RegisterConfig<Requirement, RequirementForm, Valid> = {
   FormView: RequirementFormView,
 };
 
-export function RequirementsScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void; renderLinks?: LinksSlot; openId?: number | null; onOpenHandled?: () => void }) {
+export function RequirementsScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void; renderLinks?: LinksSlot; renderHistory?: HistorySlot; openId?: number | null; onOpenHandled?: () => void }) {
   return <RegisterScreen config={CONFIG} {...props} />;
 }

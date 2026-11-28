@@ -9,7 +9,7 @@ import type { SortKey } from './register-logic.ts';
 import { initialState, registerReducer } from './register-state.ts';
 import type { RegisterAction, RegisterState } from './register-state.ts';
 import { Card, NoProjectView } from './ui.tsx';
-import type { DetailActions, LinksSlot, ListExtras } from './ui.tsx';
+import type { DetailActions, HistorySlot, LinksSlot, ListExtras } from './ui.tsx';
 import { useOpenRequest } from './use-open-request.ts';
 
 /** Ce que le composant exige d'une ligne de registre. */
@@ -94,6 +94,7 @@ export interface RegisterScreenProps<Row extends RegisterRow, F extends object, 
   onGoToProjects: () => void;
   onChanged: () => void;
   renderLinks?: LinksSlot;
+  renderHistory?: HistorySlot;
   openId?: number | null;
   onOpenHandled?: () => void;
   /** Propriétés supplémentaires de la fiche, calculées pour la ligne affichée. */
@@ -219,6 +220,7 @@ export function RegisterScreen<Row extends RegisterRow, F extends object, V exte
             onBack={() => dispatch({ type: 'backToList' })}
           />
           {props.renderLinks?.(current.id, config.kind)}
+          {props.renderHistory?.(current.id, config.kind)}
         </div>
       )}
       {mode.kind === 'detail' && !current && (

@@ -4,7 +4,7 @@ import { createItem, listItems, updateItem } from '../../data/repositories/items
 import type { Item } from '../../data/repositories/items.ts';
 import { RegisterScreen } from '../../shared/register-screen.tsx';
 import type { RegisterConfig } from '../../shared/register-screen.tsx';
-import type { LinksSlot } from '../../shared/ui.tsx';
+import type { HistorySlot, LinksSlot } from '../../shared/ui.tsx';
 import { NeedDetailView, NeedFormView, NeedListView } from './AnalysisView.tsx';
 import { EMPTY_NEED_FORM, validateNeedForm } from './logic.ts';
 import type { NeedForm, NeedFormResult } from './logic.ts';
@@ -32,6 +32,6 @@ const CONFIG: RegisterConfig<Item, NeedForm, Valid> = {
   FormView: NeedFormView,
 };
 
-export function NeedsScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void; renderLinks?: LinksSlot; openId?: number | null; onOpenHandled?: () => void }) {
+export function NeedsScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void; renderLinks?: LinksSlot; renderHistory?: HistorySlot; openId?: number | null; onOpenHandled?: () => void }) {
   return <RegisterScreen config={CONFIG} {...props} />;
 }

@@ -7,6 +7,7 @@ import type { WriteOp } from '../mutate.ts';
 import { KINDS_WITH_DETAILS, initialStatus, isKind, isValidStatus, kindInfo } from '../../domain/kinds.ts';
 import type { ItemKind } from '../../domain/kinds.ts';
 import { sequenceName } from '../../domain/codes.ts';
+import { formatLinkDetail } from '../../domain/link-detail.ts';
 
 export interface Item extends Row {
   id: number;
@@ -175,11 +176,11 @@ export async function updateItem(id: number, changes: { title?: string; descript
 export async function deleteItem(id: number): Promise<void> {
   const item = await getItem(id);
   if (!item) return;
-  const links = await query<{ id: number; link_type: string }>('SELECT id, link_type FROM links WHERE from_id = ? OR to_id = ? ORDER BY id', [id, id]);
+  const links = await query<{ id: number; link_type: string; from_id: number; to_id: number }>('SELECT id, link_type, from_id, to_id FROM links WHERE from_id = ? OR to_id = ? ORDER BY id', [id, id]);
   const ops: WriteOp[] = links.map((l) => ({
     sql: 'DELETE FROM links WHERE id = ?',
     params: [l.id],
-    activity: { objectType: 'link', action: 'deleted', objectId: l.id, projectId: item.project_id, detail: l.link_type },
+    activity: { objectType: 'link', action: 'deleted', objectId: l.id, projectId: item.project_id, detail: formatLinkDetail(l.link_type, l.from_id, l.to_id) },
   }));
   ops.push({
     sql: 'DELETE FROM items WHERE id = ?',

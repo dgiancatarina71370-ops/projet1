@@ -554,5 +554,7 @@ test('branchement : écritures dans le dépôt seulement (R8), gardées par l\'�
   const service = read('src/export/service.ts');
   const cmp = service.slice(service.indexOf('export async function compareDocumentWithCurrent'));
   assert.ok(!/mutate|saveGeneratedDocument|validateDocument|archiveDocument/.test(cmp), 'la comparaison n\'écrit rien');
-  assert.equal(fs.readFileSync('src-tauri/tauri.conf.json', 'utf8').includes('"version": "0.16.0"'), true);
+  // La version n'est plus figée sur 0.16.0 : chaque lot la change. Les trois fichiers contrôlés doivent seulement rester alignés (check:versions).
+  const pkgVersion = (JSON.parse(read('package.json')) as { version: string }).version;
+  assert.equal(fs.readFileSync('src-tauri/tauri.conf.json', 'utf8').includes(`"version": "${pkgVersion}"`), true);
 });

@@ -30,6 +30,8 @@ import type { HomeViewProps } from '../../src/modules/home/HomeView.tsx';
 import { JournalView } from '../../src/modules/journal/JournalView.tsx';
 import type { JournalViewProps } from '../../src/modules/journal/JournalView.tsx';
 import { AboutPanel } from '../../src/app/AboutPanel.tsx';
+import { HistoryView } from '../../src/shared/history-ui.tsx';
+import type { HistoryLineView } from '../../src/shared/history-ui.tsx';
 import { NoProjectView, StakeholderDetailView, StakeholderFormView, StakeholderListView } from '../../src/modules/stakeholders/StakeholdersView.tsx';
 
 const noop = (): void => undefined;
@@ -46,6 +48,8 @@ const detailProps = (p: { confirm: string | null; error: string }) => ({
 const homeProps = (p: Omit<HomeViewProps, 'onOpenTraceability' | 'onOpenOrphans' | 'onOpenRegister' | 'onOpenItem'>): HomeViewProps => ({ ...p, onOpenTraceability: noop, onOpenOrphans: noop, onOpenRegister: noop, onOpenItem: noop });
 
 export const render = {
+  history: (p: { lines: HistoryLineView[]; countText: string; emptyText: string; limitNote: string; moreLabel: string | null; busy?: boolean; error?: string }): string =>
+    renderToStaticMarkup(<HistoryView lines={p.lines} countText={p.countText} emptyText={p.emptyText} limitNote={p.limitNote} moreLabel={p.moreLabel} busy={p.busy ?? false} error={p.error ?? ''} onMore={noop} />),
   journal: (p: Omit<JournalViewProps, 'onGroup' | 'onAction' | 'onPrevious' | 'onNext' | 'onOpenItem'>): string => renderToStaticMarkup(<JournalView {...p} onGroup={noop} onAction={noop} onPrevious={noop} onNext={noop} onOpenItem={noop} />),
   about: (p: { version: string; buildDate: string; dataDir: string; schema: number | null }): string => renderToStaticMarkup(<AboutPanel {...p} />),
   home: (p: Omit<HomeViewProps, 'onOpenTraceability' | 'onOpenOrphans' | 'onOpenRegister' | 'onOpenItem'>): string => renderToStaticMarkup(<HomeView {...homeProps(p)} />),

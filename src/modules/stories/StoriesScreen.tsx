@@ -4,7 +4,7 @@ import { createStory, listStories, updateStory } from '../../data/repositories/s
 import type { Story } from '../../data/repositories/stories.ts';
 import { RegisterScreen } from '../../shared/register-screen.tsx';
 import type { RegisterConfig } from '../../shared/register-screen.tsx';
-import type { LinksSlot } from '../../shared/ui.tsx';
+import type { HistorySlot, LinksSlot } from '../../shared/ui.tsx';
 import { StoryDetailView, StoryFormView, StoryListView } from './StoriesView.tsx';
 import { EMPTY_STORY_FORM, validateStoryForm } from './logic.ts';
 import type { StoryForm, StoryFormResult } from './logic.ts';
@@ -32,6 +32,6 @@ const CONFIG: RegisterConfig<Story, StoryForm, Valid> = {
   FormView: StoryFormView,
 };
 
-export function StoriesScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void; renderLinks?: LinksSlot; openId?: number | null; onOpenHandled?: () => void }) {
+export function StoriesScreen(props: { projectId: number | null; projectName: string; onGoToProjects: () => void; onChanged: () => void; renderLinks?: LinksSlot; renderHistory?: HistorySlot; openId?: number | null; onOpenHandled?: () => void }) {
   return <RegisterScreen config={CONFIG} {...props} />;
 }

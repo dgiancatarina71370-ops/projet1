@@ -198,6 +198,9 @@ export function FormButtons(props: { busy: boolean; askAbandon: boolean; onCance
 /** Zone « Liens » d'une fiche, fournie par l'application : les écrans de registre ne dépendent pas les uns des autres (règle R1), l'application les assemble. */
 export type LinksSlot = (itemId: number, kind: string) => ReactNode;
 
+/** Section « Historique » d'une fiche (lot F7), fournie par l'application pour la même raison que la zone Liens. */
+export type HistorySlot = (itemId: number, kind: string) => ReactNode;
+
 /** Changement de statut en un clic : un bouton par statut, sauf le statut courant (transitions libres, décision D47). */
 export function StatusSwitcher(props: { statuses: ReadonlyArray<{ value: string; label: string }>; current: string; busy: boolean; onChange: (status: string) => void }) {
   return (
