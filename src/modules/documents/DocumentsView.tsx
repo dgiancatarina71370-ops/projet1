@@ -3,6 +3,7 @@
 import { Card, NoProjectView } from '../../shared/ui.tsx';
 import { FORMATS } from '../../export/pipeline.ts';
 import type { ExportFormat } from '../../export/pipeline.ts';
+import type { ReactNode } from 'react';
 import { emptyDocumentsText, MAX_COMMENT_HINT } from './logic.ts';
 import type { ComparisonView, DocumentDetailView, DocumentLine } from './logic.ts';
 
@@ -22,6 +23,8 @@ export interface DocumentsViewProps {
   /** Texte brut du contenu stocké. Jamais interprété. */
   preview: string;
   askWhere: boolean;
+  /** Section « Diffusion » (lot F8), fournie par le conteneur. */
+  diffusion?: ReactNode;
   busy: boolean;
   message: { level: 'ok' | 'error'; text: string } | null;
   /** Cadre de validation ouvert (F6-D01) et commentaire en cours de saisie. */
@@ -173,6 +176,8 @@ export function DocumentsView(props: DocumentsViewProps) {
               )}
             </div>
           )}
+
+          {props.diffusion}
 
           <h4 className="mb-1 font-semibold">Éléments figés</h4>
           {props.detail.items === null ? (

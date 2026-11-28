@@ -216,7 +216,7 @@ test('branchement : un emplacement renderHistory dans les huit registres, un seu
   assert.ok(!/mutate|INSERT|UPDATE |DELETE/.test(section), 'la section n\'écrit rien');
   assert.match(section, /props\.tick/);
   const pkg = (JSON.parse(read('package.json')) as { version: string }).version;
-  assert.equal(pkg, '0.17.0');
+  assert.match(pkg, /^0\.\d+\.\d+$/, 'version alignée aux trois endroits (la valeur exacte change à chaque lot)');
   assert.ok(read('src-tauri/tauri.conf.json').includes(`"version": "${pkg}"`));
   assert.ok(read('src-tauri/Cargo.toml').includes(`version = "${pkg}"`));
 });

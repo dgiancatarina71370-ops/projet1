@@ -10,6 +10,7 @@ import { FORMATS } from '../../export/pipeline.ts';
 import type { ExportFormat } from '../../export/pipeline.ts';
 import { formatBytes } from '../../shared/format.ts';
 import { Card } from '../../shared/ui.tsx';
+import { DiffusionSection } from './DiffusionSection.tsx';
 import { DocumentsView, NoProjectView } from './DocumentsView.tsx';
 import { archivedCount, archivedMessage, comparisonView, detailView, documentLine, exportedMessage, replacedCount, unarchivedMessage, validatedMessage, visibleDocuments } from './logic.ts';
 import type { ComparisonView } from './logic.ts';
@@ -159,6 +160,7 @@ export function DocumentsScreen(props: { projectId: number | null; projectName: 
       detail={detail === null ? null : detailView(detail)}
       preview={detail === null ? '' : detail.content}
       askWhere={askWhere}
+      diffusion={detail === null ? null : <DiffusionSection detail={detail} />}
       busy={busy}
       message={message}
       onShowReplaced={setShowReplaced}

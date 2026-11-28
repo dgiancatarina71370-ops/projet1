@@ -2,6 +2,7 @@
 import { isKind, kindInfo } from '../../domain/kinds.ts';
 import type { ItemKind } from '../../domain/kinds.ts';
 import { actionLabel, deletedLabel, fieldsText, linkTypeLabel, objectTypeLabel, statusTransition } from '../../domain/activity-labels.ts';
+import { isVerdict, verdictLabel } from '../../domain/distribution.ts';
 import { linkTypeOfDetail } from '../../domain/link-detail.ts';
 import { formatLocal } from '../../shared/format.ts';
 
@@ -70,6 +71,20 @@ function documentDetail(action: string, detail: string | null): string {
   return m ? `Version ${m[1]}` : '';
 }
 
+/** Détail d'une diffusion (F8-D11) : des codes (« prepared>sent », « reply:approved »), jamais d'adresse, d'objet ni de commentaire. */
+export function distributionDetail(action: string, detail: string | null): string {
+  if (action === 'created') return 'Diffusion préparée';
+  if (action === 'deleted') return 'Diffusion supprimée';
+  if (action === 'status_changed') {
+    if (detail === 'prepared>sent') return 'Préparée → Envoyée';
+    if (detail === 'sent>prepared') return 'Envoi annulé : Envoyée → Préparée';
+    return 'statut modifié';
+  }
+  const m = /^reply:(.+)$/.exec(detail ?? '');
+  if (m) return m[1] === 'removed' ? 'Réponse retirée' : isVerdict(m[1]) ? `Réponse : ${verdictLabel(m[1]).toLowerCase()}` : 'Réponse saisie';
+  return `Diffusion modifiée : ${fieldsText(detail, null)}`;
+}
+
 function itemLine(e: JournalRowInput, base: Omit<JournalLine, 'label' | 'code' | 'kind' | 'itemId' | 'detail' | 'object'>): JournalLine {
   if (e.action === 'deleted') return { ...base, object: 'Élément', label: deletedLabel(e.detail), code: null, kind: null, itemId: null, detail: '' };
   const kind: ItemKind | null = isKind(e.item_kind) ? e.item_kind : null;
@@ -96,6 +111,10 @@ export function journalLine(e: JournalRowInput): JournalLine {
   if (e.object_type === 'document') {
     const label = e.document_name ?? (e.action === 'deleted' ? 'Document supprimé' : `(document ${GONE})`);
     return { ...base, object: 'Document', label, ...none, detail: e.action === 'imported' ? 'Importé depuis la V1' : documentDetail(e.action, e.detail) };
+  }
+  if (e.object_type === 'distribution') {
+    const label = e.document_name ?? (e.action === 'deleted' ? 'Document diffusé' : `(document ${GONE})`);
+    return { ...base, object: 'Document', label, ...none, detail: distributionDetail(e.action, e.detail) };
   }
   if (e.object_type === 'document_send') return { ...base, object: 'Document', label: 'Envoi de document', ...none, detail: e.action === 'imported' ? 'Importé depuis la V1' : '' };
   if (e.object_type === 'project' || e.object_type === 'folder') {

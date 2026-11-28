@@ -12,7 +12,7 @@ import { query } from '../src/data/db.ts';
 import { createProject } from '../src/data/repositories/projects.ts';
 
 const EXPECTED_TABLES = [
-  'activity_log', 'backups_log', 'contacts', 'decision_details', 'document_sends', 'documents', 'dod_items', 'flags', 'items', 'links', 'meta',
+  'activity_log', 'backups_log', 'contacts', 'decision_details', 'distribution_recipients', 'distributions', 'document_sends', 'documents', 'dod_items', 'flags', 'items', 'links', 'meta',
   'projects', 'pspo_progress', 'requirement_details', 'risk_details', 'sequences', 'settings', 'stakeholder_details', 'story_details', 'template_defaults', 'templates', 'test_details', 'workshop_details', 'workspace_notes',
 ];
 
@@ -27,13 +27,13 @@ const v2: Migration = {
   statements: ['CREATE TABLE extra (id INTEGER PRIMARY KEY, label TEXT NOT NULL)', "INSERT INTO extra (label) VALUES ('x')"],
 };
 
-test('base vierge : migre vers le dernier schéma et crée exactement les vingt-quatre tables', async () => {
+test('base vierge : migre vers le dernier schéma et crée exactement les vingt-six tables', async () => {
   const t = await emptyDb();
   const report = await migrate(migrations, { backup: t.driver.backup });
   assert.equal(report.from, 0);
   assert.equal(report.to, SCHEMA_VERSION);
   assert.deepEqual(await tableNames(), EXPECTED_TABLES);
-  assert.equal(EXPECTED_TABLES.length, 24);
+  assert.equal(EXPECTED_TABLES.length, 26);
   assert.equal(await getSchemaVersion(), SCHEMA_VERSION);
   assert.equal(t.backups.length, 0, 'une base vierge n\'a rien à sauvegarder');
   t.close();
@@ -103,9 +103,9 @@ test('migration en échec : base inchangée (aucune table à moitié créée, do
 
 test('base plus récente que l\'application : refusée, rien n\'est modifié ni sauvegardé', async () => {
   const t = await migratedDb();
-  t.raw.exec("UPDATE meta SET value = '9' WHERE key = 'schema_version'");
+  t.raw.exec("UPDATE meta SET value = '10' WHERE key = 'schema_version'");
   await assert.rejects(() => migrate(migrations, { backup: t.driver.backup }), SchemaTooNewError);
-  assert.equal(await getSchemaVersion(), 9);
+  assert.equal(await getSchemaVersion(), 10);
   assert.equal(t.backups.length, 0);
   t.close();
 });

@@ -143,7 +143,7 @@ test('pagination pure : nombre de pages, bornes, textes (F4-D09, F4-D10)', () =>
   assert.equal(emptyJournalText(118), 'Aucune entrée pour ces filtres (118 au total dans ce projet).');
   assert.deepEqual(OBJECT_GROUPS.map((g) => g.label), ['Tous', 'Éléments', 'Liens', 'Documents', 'Projet']);
   assert.deepEqual(ACTION_OPTIONS.map((a) => a.label), ['Toutes', 'Créé', 'Modifié', 'Statut changé', 'Supprimé', 'Importé']);
-  assert.deepEqual([...objectGroupTypes('document')], ['document', 'document_send']);
+  assert.deepEqual([...objectGroupTypes('document')], ['document', 'document_send', 'distribution']);
   assert.deepEqual([...objectGroupTypes('project')], ['project', 'folder']);
   assert.deepEqual([...objectGroupTypes('all')], []);
   assert.deepEqual([...objectGroupTypes('inconnu')], []);

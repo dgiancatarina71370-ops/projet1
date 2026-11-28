@@ -21,12 +21,13 @@ export interface Stakeholder extends Row {
   role: string;
   influence: string;
   interest: string;
+  email: string;
   created_at: string;
   updated_at: string;
 }
 
 const SELECT = `SELECT i.id, i.project_id, i.number, i.code, i.title, i.description, i.status, i.created_at, i.updated_at,
-  d.organisation, d.role, d.influence, d.interest
+  d.organisation, d.role, d.influence, d.interest, d.email
 FROM items i JOIN stakeholder_details d ON d.item_id = i.id`;
 
 const nowIso = (): string => new Date().toISOString();
@@ -55,9 +56,9 @@ export async function createStakeholder(input: NewStakeholder): Promise<{ id: nu
   const seq = sequenceName(input.projectId, 'stakeholder');
   const detailsOp: WriteOp = {
     // L'élément qui vient d'être créé est celui dont le numéro est la valeur courante du compteur (même transaction).
-    sql: `INSERT INTO stakeholder_details (item_id, organisation, role, influence, interest)
-SELECT id, ?, ?, ?, ? FROM items WHERE project_id = ? AND kind = 'stakeholder' AND number = (SELECT value FROM sequences WHERE name = ?)`,
-    params: [fields.organisation, fields.role, fields.influence, fields.interest, input.projectId, seq],
+    sql: `INSERT INTO stakeholder_details (item_id, organisation, role, influence, interest, email)
+SELECT id, ?, ?, ?, ?, ? FROM items WHERE project_id = ? AND kind = 'stakeholder' AND number = (SELECT value FROM sequences WHERE name = ?)`,
+    params: [fields.organisation, fields.role, fields.influence, fields.interest, fields.email, input.projectId, seq],
     extension: true,
   };
   return createItem({
@@ -84,7 +85,7 @@ export async function updateStakeholder(id: number, changes: StakeholderChanges)
   if (!cur) throw new Error('La partie prenante n\'existe pas.');
   const title = changes.title !== undefined ? normalizeTitle(changes.title) : cur.title;
   const description = changes.description !== undefined ? normalizeDescription(changes.description) : cur.description;
-  const before = normalizeFields({ organisation: cur.organisation, role: cur.role, influence: cur.influence as StakeholderFields['influence'], interest: cur.interest as StakeholderFields['interest'] });
+  const before = normalizeFields({ organisation: cur.organisation, role: cur.role, influence: cur.influence as StakeholderFields['influence'], interest: cur.interest as StakeholderFields['interest'], email: cur.email });
   const after = normalizeFields({ ...before, ...(changes.fields ?? {}) });
 
   const names: string[] = [];
@@ -103,8 +104,8 @@ export async function updateStakeholder(id: number, changes: StakeholderChanges)
   ];
   if (detailNames.length > 0) {
     ops.push({
-      sql: 'UPDATE stakeholder_details SET organisation = ?, role = ?, influence = ?, interest = ? WHERE item_id = ?',
-      params: [after.organisation, after.role, after.influence, after.interest, id],
+      sql: 'UPDATE stakeholder_details SET organisation = ?, role = ?, influence = ?, interest = ?, email = ? WHERE item_id = ?',
+      params: [after.organisation, after.role, after.influence, after.interest, after.email, id],
       extension: true,
     });
   }

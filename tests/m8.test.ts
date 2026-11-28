@@ -412,7 +412,7 @@ test('lecteur : réunit éléments, champs des tables d\'extension et liens d\'u
     assert.ok(!data.items.some((i) => i.title.includes('ailleurs')));
     assert.equal(data.links.length, 8);
     const by = (code: string): DItem => data.items.find((i) => i.code === code)!;
-    assert.deepEqual(by('PP-001').d, { organisation: 'DSI', role: 'Sponsor', influence: 'medium', interest: 'medium' });
+    assert.deepEqual(by('PP-001').d, { organisation: 'DSI', role: 'Sponsor', influence: 'medium', interest: 'medium', email: '' });
     assert.equal(by('EX-001').d.priority, 'must');
     assert.equal(by('TEST-001').d.steps, 'a\nb');
     assert.equal(by('ATL-001').d.held_on, '2026-11-20');

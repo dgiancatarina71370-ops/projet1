@@ -74,7 +74,7 @@ test('parties prenantes : le formulaire est validé champ par champ avec les rè
   assert.ok(good.ok);
   if (good.ok) {
     assert.equal(good.title, 'Responsable CRP');
-    assert.deepEqual(good.fields, { organisation: 'La Poste', role: 'Sponsor', influence: 'high', interest: 'low' });
+    assert.deepEqual(good.fields, { organisation: 'La Poste', role: 'Sponsor', influence: 'high', interest: 'low', email: '' });
   }
 });
 

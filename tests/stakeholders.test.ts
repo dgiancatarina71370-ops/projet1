@@ -37,7 +37,7 @@ test('domaine : statuts d\'une partie prenante, niveaux et règles de saisie', (
   assert.equal(levelLabel('high'), 'Élevé');
   assert.equal(statusLabel('active'), 'Actif');
   assert.deepEqual(normalizeFields({}), DEFAULT_FIELDS);
-  assert.deepEqual(normalizeFields({ organisation: '  DSI ', role: ' Sponsor ' }), { organisation: 'DSI', role: 'Sponsor', influence: 'medium', interest: 'medium' });
+  assert.deepEqual(normalizeFields({ organisation: '  DSI ', role: ' Sponsor ' }), { organisation: 'DSI', role: 'Sponsor', influence: 'medium', interest: 'medium', email: '' });
   assert.throws(() => normalizeFields({ organisation: 'x'.repeat(201) }), /organisation est limitée à 200/);
   assert.throws(() => normalizeFields({ role: 'x'.repeat(201) }), /rôle est limité à 200/);
   assert.throws(() => normalizeFields({ influence: 'énorme' as 'low' }), /influence inconnu/);

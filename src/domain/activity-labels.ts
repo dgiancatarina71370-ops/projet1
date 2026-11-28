@@ -51,7 +51,7 @@ export const OBJECT_GROUPS: ReadonlyArray<FilterOption & { types: readonly strin
   { value: 'all', label: 'Tous', types: [] },
   { value: 'item', label: 'Éléments', types: ['item'] },
   { value: 'link', label: 'Liens', types: ['link'] },
-  { value: 'document', label: 'Documents', types: ['document', 'document_send'] },
+  { value: 'document', label: 'Documents', types: ['document', 'document_send', 'distribution'] },
   { value: 'project', label: 'Projet', types: ['project', 'folder'] },
 ];
 
@@ -79,6 +79,7 @@ const OBJECT_TYPE_LABELS: Record<string, string> = {
   link: 'Lien',
   document: 'Document',
   document_send: 'Document',
+  distribution: 'Document',
   project: 'Projet',
   folder: 'Projet',
 };
@@ -116,6 +117,11 @@ const FIELD_LABELS: Record<string, string> = {
   notes: 'Notes',
   followUp: 'Points ouverts et actions',
   name: 'Nom',
+  email: 'E-mail',
+  subject: 'Objet',
+  message: 'Message',
+  due_on: 'Échéance',
+  recipients: 'Destinataires',
 };
 
 /** « role » s'appelle « En tant que » dans une user story et « Rôle dans le projet » pour une partie prenante. */

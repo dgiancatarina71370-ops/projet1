@@ -21,7 +21,9 @@ export const FIXTURES: Record<string, string[]> = {
     `INSERT INTO items (id, project_id, kind, number, code, title, description, status, created_at, updated_at) VALUES (7, 1, 'test', 1, 'TEST-001', 'Test de test', '', 'to_run', '${T}', '${T}')`,
     `INSERT INTO items (id, project_id, kind, number, code, title, description, status, created_at, updated_at) VALUES (8, 1, 'workshop', 1, 'ATL-001', 'Atelier de test', '', 'planned', '${T}', '${T}')`,
   ],
-  stakeholder_details: ["INSERT INTO stakeholder_details (item_id, organisation, role, influence, interest) VALUES (3, 'Service Test', 'Sponsor', 'high', 'medium')"],
+  stakeholder_details: ["INSERT INTO stakeholder_details (item_id, organisation, role, influence, interest, email) VALUES (3, 'Service Test', 'Sponsor', 'high', 'medium', 'sponsor@exemple.test')"],
+  distributions: [`INSERT INTO distributions (id, document_id, subject, message, due_on, prepared_on, sent_on, created_at, updated_at) VALUES (1, 1, 'Objet de test', 'Message éé de test', '2026-12-15', '2026-11-20', '2026-11-21', '${T}', '${T}')`],
+  distribution_recipients: ["INSERT INTO distribution_recipients (id, distribution_id, stakeholder_id, name, email, role, verdict, replied_on, reply_comment) VALUES (1, 1, 3, 'Partie prenante de test', 'sponsor@exemple.test', 'validate', 'approved_with_reserves', '2026-11-22', 'Réserve de test')"],
   requirement_details: ["INSERT INTO requirement_details (item_id, nature, priority, criteria) VALUES (2, 'functional', 'must', 'Critère de test')"],
   decision_details: ["INSERT INTO decision_details (item_id, decided_on, decider, alternatives, rationale) VALUES (4, '2026-11-20', 'Comité', 'Option B', 'Coût')"],
   risk_details: ["INSERT INTO risk_details (item_id, probability, impact, mitigation, owner) VALUES (5, 'high', 'medium', 'Plan de repli', 'Chef de projet')"],
@@ -42,7 +44,7 @@ export const FIXTURES: Record<string, string[]> = {
 };
 
 // Ordre d'insertion compatible avec les clés étrangères.
-const ORDER = ['settings', 'flags', 'projects', 'documents', 'items', 'stakeholder_details', 'requirement_details', 'decision_details', 'risk_details', 'story_details', 'test_details', 'workshop_details', 'links', 'document_sends', 'contacts', 'dod_items', 'workspace_notes', 'pspo_progress', 'templates', 'template_defaults', 'activity_log', 'sequences', 'backups_log'];
+const ORDER = ['settings', 'flags', 'projects', 'documents', 'items', 'stakeholder_details', 'requirement_details', 'decision_details', 'risk_details', 'story_details', 'test_details', 'workshop_details', 'links', 'distributions', 'distribution_recipients', 'document_sends', 'contacts', 'dod_items', 'workspace_notes', 'pspo_progress', 'templates', 'template_defaults', 'activity_log', 'sequences', 'backups_log'];
 
 export function listTables(db: DatabaseSync): string[] {
   return (db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all() as Array<{ name: string }>).map((r) => r.name);

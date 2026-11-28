@@ -1,6 +1,6 @@
 ---
 title: "BA-Mentor — Guide de démonstration"
-subtitle: "Version 0.17.0 · Projet d'exemple « Portail de réservation de salles »"
+subtitle: "Version 0.18.0 · Projet d'exemple « Portail de réservation de salles »"
 lang: fr-FR
 ---
 
@@ -8,9 +8,9 @@ lang: fr-FR
 
 Il te permet de présenter BA-Mentor en **10 à 12 minutes**, devant un Business Manager, un recruteur ou un client, en suivant un fil unique : **du besoin exprimé en atelier jusqu'aux livrables, avec la traçabilité qui relie le tout.**
 
-Ce guide décrit uniquement ce que l'application fait aujourd'hui (version 0.17.0). Il ne contient **pas de captures d'écran** : ajoute les tiennes si tu veux un support imprimé.
+Ce guide décrit uniquement ce que l'application fait aujourd'hui (version 0.18.0). Il ne contient **pas de captures d'écran** : ajoute les tiennes si tu veux un support imprimé.
 
-**Avant chaque démonstration, vérifie** que la version affichée en pied de page est bien celle du guide (0.17.0). Si l'application a évolué, certains libellés ou nombres ci-dessous peuvent ne plus correspondre : rejoue la démonstration une fois en entier la veille.
+**Avant chaque démonstration, vérifie** que la version affichée en pied de page est bien celle du guide (0.18.0). Si l'application a évolué, certains libellés ou nombres ci-dessous peuvent ne plus correspondre : rejoue la démonstration une fois en entier la veille.
 
 # 2. Le message à faire passer
 
@@ -96,7 +96,7 @@ Les durées sont indicatives. L'application s'ouvre sur **Accueil** dès qu'un p
 3. **Le filtre « Indispensable (Must) seulement »** : les quatre exigences critiques sont toutes testées, et l'une d'elles est en échec.
 4. **L'onglet Orphelins (6)** : les éléments sans lien attendu.
 5. **Cliquer sur un code** (par exemple EX-003) : la fiche s'ouvre directement.
-6. **Descendre jusqu'à la section Historique de la fiche** : création, changements de statut, modifications (les noms des champs, pas leurs valeurs) et liens ajoutés, du plus récent au plus ancien, par tranches de 10. Dire que les liens retirés avant la version 0.17.0 n'y figurent pas (phrase affichée sous la liste) ; ils restent dans le Journal du projet.
+6. **Descendre jusqu'à la section Historique de la fiche** : création, changements de statut, modifications (les noms des champs, pas leurs valeurs) et liens ajoutés, du plus récent au plus ancien, par tranches de 10. Dire que les liens retirés avant la version 0.18.0 n'y figurent pas (phrase affichée sous la liste) ; ils restent dans le Journal du projet.
 
 **À dire** : « Voici ce que je ne peux pas voir dans un tableur : où sont les trous. Cette exigence indispensable est en échec. Celle-ci n'a aucune story. Cette story n'a aucune exigence derrière elle. L'outil le calcule à chaque fois, je n'ai rien à maintenir à la main. »
 
@@ -117,6 +117,8 @@ Les durées sont indicatives. L'application s'ouvre sur **Accueil** dès qu'un p
 
 **Piège** : la matrice de traçabilité ignore l'option des archivés, c'est normal (l'écran l'explique).
 
+
+**Pour aller plus loin (facultatif, 1 min)** : dans le détail d'un document, la section **Diffusion**. Le projet d'exemple n'a **aucune adresse e-mail** : avant la démonstration, ajoute **une adresse fictive** (par exemple `sponsor@exemple.test`) à une partie prenante active, jamais une vraie. Cliquer sur **Préparer une diffusion**, choisir le destinataire et son rôle : objet et message sont proposés, modifiables. Montrer les boutons de copie, puis **Marquer comme envoyé** et la saisie d'une réponse. **À dire** : « L'outil n'envoie rien : il formalise le suivi de ce qui a été diffusé et de ce qui a été répondu. Une réponse ne valide pas le document à ma place. » **Piège** : ne jamais saisir une vraie adresse en démonstration ; la copie dans le presse-papiers n'a pas été essayée sur un poste réel avant ta recette.
 ## Étape 10 — Conclure (30 s)
 
 **À dire** : « L'objectif était de démontrer comment un Business Analyst peut conserver le lien entre ce qu'il entend en atelier, ce qu'il formalise, ce qu'il fait développer et ce qu'il fait tester. »

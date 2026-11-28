@@ -72,13 +72,15 @@ export async function listJournal(projectId: number, filter: JournalFilter, page
     `SELECT a.id, a.at, a.object_type, a.object_id, a.action, a.detail,
   i.kind AS item_kind, i.code AS item_code, i.title AS item_title,
   l.link_type AS link_type, fi.code AS from_code, ti.code AS to_code,
-  d.name AS document_name, p.name AS project_name
+  COALESCE(d.name, dd.name) AS document_name, p.name AS project_name
 FROM activity_log a
 LEFT JOIN items i ON a.object_type = 'item' AND a.action <> 'deleted' AND i.id = a.object_id
 LEFT JOIN links l ON a.object_type = 'link' AND a.action <> 'deleted' AND l.id = a.object_id
 LEFT JOIN items fi ON fi.id = l.from_id
 LEFT JOIN items ti ON ti.id = l.to_id
 LEFT JOIN documents d ON a.object_type = 'document' AND a.action <> 'deleted' AND d.id = a.object_id
+LEFT JOIN distributions dx ON a.object_type = 'distribution' AND a.action <> 'deleted' AND dx.id = a.object_id
+LEFT JOIN documents dd ON dd.id = dx.document_id
 LEFT JOIN projects p ON a.object_type IN ('project', 'folder') AND a.action <> 'deleted' AND p.id = a.object_id
 WHERE ${w.sql}
 ORDER BY a.id DESC LIMIT ? OFFSET ?`,

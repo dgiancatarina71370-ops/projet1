@@ -32,7 +32,7 @@ const OPT = { includeArchived: false };
 // ------------------------------------------------------------------ migration 8
 
 test('migration 8 : six colonnes et un index, documents importés intacts, sauvegarde pre-migration au schéma 7, 24 tables (F5-D02)', async () => {
-  assert.equal(SCHEMA_VERSION, 8);
+  assert.ok(SCHEMA_VERSION >= 8, 'la migration 8 reste livrée ; F8 en ajoute une neuvième');
   assert.equal(migrations[7].name, 'documents_workflow');
   const t = emptyDb();
   await migrate(migrations.slice(0, 7), { backup: t.driver.backup });
@@ -43,7 +43,8 @@ test('migration 8 : six colonnes et un index, documents importés intacts, sauve
   const old = t.raw.prepare('SELECT id, project_id, previous_project_id, kind, name, status, content, template_ref, created_at, updated_at, validated_at, archived_at FROM documents ORDER BY id').all();
   const tablesBefore = (t.raw.prepare("SELECT count(*) AS n FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").get() as { n: number }).n;
 
-  const report = await migrate(migrations, { backup: t.driver.backup });
+  // Le test s'arrête au schéma 8 : la migration 9 (F8) a son propre test.
+  const report = await migrate(migrations.slice(0, 8), { backup: t.driver.backup });
   assert.deepEqual(report.applied, [8]);
   assert.equal(await getSchemaVersion(), 8);
   assert.equal(t.backups.filter((b) => b.kind === 'pre-migration').length, 1);

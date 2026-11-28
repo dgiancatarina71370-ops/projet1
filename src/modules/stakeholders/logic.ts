@@ -29,12 +29,13 @@ export interface FormValues {
   role: string;
   influence: string;
   interest: string;
+  email: string;
 }
 
-export const EMPTY_FORM: FormValues = { title: '', description: '', organisation: '', role: '', influence: 'medium', interest: 'medium' };
+export const EMPTY_FORM: FormValues = { title: '', description: '', organisation: '', role: '', influence: 'medium', interest: 'medium', email: '' };
 
-export function formFrom(s: { title: string; description: string; organisation: string; role: string; influence: string; interest: string }): FormValues {
-  return { title: s.title, description: s.description, organisation: s.organisation, role: s.role, influence: s.influence, interest: s.interest };
+export function formFrom(s: { title: string; description: string; organisation: string; role: string; influence: string; interest: string; email?: string }): FormValues {
+  return { title: s.title, description: s.description, organisation: s.organisation, role: s.role, influence: s.influence, interest: s.interest, email: s.email ?? '' };
 }
 
 export type FormErrors = Partial<Record<keyof FormValues, string>>;
@@ -49,8 +50,8 @@ export function validateForm(values: FormValues): FormResult {
   const title = values.title.trim();
   if (title === '') errors.title = 'Le nom est obligatoire.';
   else if (title.length > MAX_TITLE) errors.title = `Le nom est limité à ${MAX_TITLE} caractères.`;
-  let fields: StakeholderFields = { organisation: '', role: '', influence: 'medium', interest: 'medium' };
-  for (const key of ['organisation', 'role', 'influence', 'interest'] as const) {
+  let fields: StakeholderFields = { organisation: '', role: '', influence: 'medium', interest: 'medium', email: '' };
+  for (const key of ['organisation', 'role', 'influence', 'interest', 'email'] as const) {
     try {
       fields = normalizeFields({ ...fields, [key]: values[key] } as Partial<StakeholderFields>);
     } catch (e) {
@@ -58,5 +59,5 @@ export function validateForm(values: FormValues): FormResult {
     }
   }
   if (Object.keys(errors).length > 0) return { ok: false, errors };
-  return { ok: true, title, description: values.description, fields: normalizeFields({ organisation: values.organisation, role: values.role, influence: values.influence as Level, interest: values.interest as Level }) };
+  return { ok: true, title, description: values.description, fields: normalizeFields({ organisation: values.organisation, role: values.role, influence: values.influence as Level, interest: values.interest as Level, email: values.email }) };
 }

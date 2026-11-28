@@ -15,6 +15,8 @@ import { TestDetailView, TestFormView, TestListView } from '../../src/modules/te
 import type { TestRow } from '../../src/modules/testcases/TestsView.tsx';
 import { DeliverablesView } from '../../src/modules/deliverables/DeliverablesView.tsx';
 import type { DeliverablesViewProps } from '../../src/modules/deliverables/DeliverablesView.tsx';
+import { DiffusionView } from '../../src/modules/documents/DiffusionView.tsx';
+import type { DiffusionViewProps } from '../../src/modules/documents/DiffusionView.tsx';
 import { DocumentsView } from '../../src/modules/documents/DocumentsView.tsx';
 import type { DocumentsViewProps } from '../../src/modules/documents/DocumentsView.tsx';
 import { WorkshopDetailView, WorkshopFormView, WorkshopListView } from '../../src/modules/workshops/WorkshopsView.tsx';
@@ -48,6 +50,15 @@ const detailProps = (p: { confirm: string | null; error: string }) => ({
 const homeProps = (p: Omit<HomeViewProps, 'onOpenTraceability' | 'onOpenOrphans' | 'onOpenRegister' | 'onOpenItem'>): HomeViewProps => ({ ...p, onOpenTraceability: noop, onOpenOrphans: noop, onOpenRegister: noop, onOpenItem: noop });
 
 export const render = {
+  diffusion: (p: Partial<DiffusionViewProps>): string =>
+    renderToStaticMarkup(
+      <DiffusionView
+        canDiffuse isDraft={false} lines={[]} candidates={[]} excluded={0} form={null} sendForm={null} replyForm={null} askDeleteId={null} busy={false} message={null}
+        onNew={noop} onForm={noop} onPick={noop} onSaveForm={noop} onCancelForm={noop} onEdit={noop} onAskDelete={noop} onDelete={noop} onStartSend={noop} onSendForm={noop}
+        onConfirmSend={noop} onCancelSend={noop} onCancelSent={noop} onCopy={noop} onStartReply={noop} onReplyForm={noop} onSaveReply={noop} onCancelReply={noop} onRemoveReply={noop}
+        {...p}
+      />,
+    ),
   history: (p: { lines: HistoryLineView[]; countText: string; emptyText: string; limitNote: string; moreLabel: string | null; busy?: boolean; error?: string }): string =>
     renderToStaticMarkup(<HistoryView lines={p.lines} countText={p.countText} emptyText={p.emptyText} limitNote={p.limitNote} moreLabel={p.moreLabel} busy={p.busy ?? false} error={p.error ?? ''} onMore={noop} />),
   journal: (p: Omit<JournalViewProps, 'onGroup' | 'onAction' | 'onPrevious' | 'onNext' | 'onOpenItem'>): string => renderToStaticMarkup(<JournalView {...p} onGroup={noop} onAction={noop} onPrevious={noop} onNext={noop} onOpenItem={noop} />),
@@ -151,10 +162,10 @@ export const render = {
   noProject: (): string => renderToStaticMarkup(<NoProjectView onGoToProjects={noop} />),
   list: (p: { rows: Array<{ id: number; code: string; title: string; description: string; status: string; organisation: string; role: string; influence: string; interest: string }>; total: number; filter: 'all' | 'active' | 'archived'; query?: string }): string =>
     renderToStaticMarkup(<StakeholderListView projectName="Mon projet" rows={p.rows} total={p.total} filter={p.filter} onFilter={noop} onNew={noop} onOpen={noop} {...extras(p.rows, p.query)} />),
-  detail: (p: { archived: boolean; confirm: string | null; error: string }): string =>
+  detail: (p: { archived: boolean; confirm: string | null; error: string; email?: string }): string =>
     renderToStaticMarkup(
       <StakeholderDetailView
-        row={{ id: 1, code: 'PP-001', title: 'Responsable <CRP>', description: '', status: p.archived ? 'archived' : 'active', organisation: '', role: 'Sponsor', influence: 'high', interest: 'low' }}
+        row={{ id: 1, code: 'PP-001', title: 'Responsable <CRP>', description: '', status: p.archived ? 'archived' : 'active', organisation: '', role: 'Sponsor', influence: 'high', interest: 'low', email: p.email }}
         busy={false}
         error={p.error}
         confirmDelete={p.confirm}
@@ -166,11 +177,11 @@ export const render = {
         onBack={noop}
       />,
     ),
-  form: (p: { errors: Record<string, string>; askAbandon: boolean; title: string }): string =>
+  form: (p: { errors: Record<string, string>; askAbandon: boolean; title: string; email?: string }): string =>
     renderToStaticMarkup(
       <StakeholderFormView
         heading="Nouvelle partie prenante"
-        values={{ title: p.title, description: '', organisation: '', role: '', influence: 'medium', interest: 'high' }}
+        values={{ title: p.title, description: '', organisation: '', role: '', influence: 'medium', interest: 'high', email: p.email ?? '' }}
         errors={p.errors}
         busy={false}
         error=""

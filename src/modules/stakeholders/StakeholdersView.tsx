@@ -16,6 +16,8 @@ export interface StakeholderRow {
   role: string;
   influence: string;
   interest: string;
+  /** Adresse e-mail (lot F8) : absente ou vide si la partie prenante n'en a pas. */
+  email?: string;
 }
 
 export function NoProjectView(props: { onGoToProjects: () => void }) {
@@ -93,6 +95,7 @@ export function StakeholderDetailView(props: {
         <dt className="text-hub-muted">Rôle</dt><dd>{r.role || '—'}</dd>
         <dt className="text-hub-muted">Influence</dt><dd>{levelLabel(r.influence)}</dd>
         <dt className="text-hub-muted">Intérêt</dt><dd>{levelLabel(r.interest)}</dd>
+        <dt className="text-hub-muted">E-mail</dt><dd>{r.email || '—'}</dd>
         <dt className="text-hub-muted">Description</dt><dd className="whitespace-pre-wrap">{r.description || '—'}</dd>
       </dl>
       {props.error && <p role="alert" className="text-sm text-hub-bad">{props.error}</p>}
@@ -132,6 +135,7 @@ export function StakeholderFormView(props: {
         <SelectField id="sh-influence" label="Influence" value={v.influence} options={LEVEL_OPTIONS} error={props.errors.influence} onChange={(x) => props.onChange('influence', x)} />
         <SelectField id="sh-interest" label="Intérêt" value={v.interest} options={LEVEL_OPTIONS} error={props.errors.interest} onChange={(x) => props.onChange('interest', x)} />
       </div>
+      <TextField id="sh-email" label="E-mail" hint="Facultatif. La version 1.0 est prévue pour des adresses fictives." value={v.email} error={props.errors.email} onChange={(x) => props.onChange('email', x)} />
       <TextAreaField id="sh-description" label="Description" value={v.description} error={props.errors.description} onChange={(x) => props.onChange('description', x)} />
       {props.error && <p role="alert" className="text-sm text-hub-bad">{props.error}</p>}
       <FormButtons busy={props.busy} askAbandon={props.askAbandon} onCancel={props.onCancel} onConfirmAbandon={props.onConfirmAbandon} onKeepEditing={props.onKeepEditing} />
