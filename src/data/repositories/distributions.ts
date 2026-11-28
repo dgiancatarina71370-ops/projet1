@@ -42,7 +42,17 @@ export interface DistributionRow extends Row {
   updated_at: string;
 }
 
-export interface DistributionWithRecipients extends DistributionRow {
+/** Diffusion et ses destinataires. N'étend pas « Row » : une ligne de base ne porte que des valeurs simples, pas une liste. */
+export interface DistributionWithRecipients {
+  id: number;
+  document_id: number;
+  subject: string;
+  message: string;
+  due_on: string | null;
+  prepared_on: string;
+  sent_on: string | null;
+  created_at: string;
+  updated_at: string;
   recipients: RecipientRow[];
 }
 

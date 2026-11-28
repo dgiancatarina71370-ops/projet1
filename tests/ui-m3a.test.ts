@@ -70,7 +70,7 @@ test('parties prenantes : le formulaire est validé champ par champ avec les rè
   }
   const long = validateForm({ ...EMPTY_FORM, title: 'x'.repeat(201) });
   assert.ok(!long.ok && /limité à 200/.test(long.errors.title ?? ''));
-  const good = validateForm({ title: '  Responsable CRP ', description: 'Texte', organisation: ' La Poste ', role: 'Sponsor', influence: 'high', interest: 'low' });
+  const good = validateForm({ title: '  Responsable CRP ', description: 'Texte', organisation: ' La Poste ', role: 'Sponsor', influence: 'high', interest: 'low', email: '' });
   assert.ok(good.ok);
   if (good.ok) {
     assert.equal(good.title, 'Responsable CRP');
